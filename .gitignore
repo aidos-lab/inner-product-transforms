@@ -1,3 +1,4 @@
 data/
 ect/
 **/__pycache__
+trained_models/**
