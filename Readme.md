@@ -16,3 +16,5 @@ graph.
 
 
 
+### Ideas
+- Try nonsymetric function for the filtered backprojection to remove points.
