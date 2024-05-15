@@ -1,5 +1,5 @@
 from torch_geometric.datasets import TUDataset
-
+import torch
 from torch.utils.data import random_split
 
 from torch_geometric import transforms
@@ -37,6 +37,7 @@ transforms_dict = {
     "Cuneiform": [CenterTransform()],
     "COLLAB": [CenterTransform()],
     "DHFR": [CenterTransform()],
+    "alchemy_full": [CenterTransform()],
 }
 
 #  ╭──────────────────────────────────────────────────────────╮
@@ -48,6 +49,13 @@ transforms_dict = {
 Define the dataset classes, provide dataset/dataloader parameters 
 in the config file or overwrite them in the class definition.
 """
+
+
+@dataclass
+class TUAlchemyConfig(DataModuleConfig):
+    module: str = "datasets.tu"
+    name: str = "alchemy_full"
+    cleaned: bool = True
 
 
 @dataclass
@@ -210,6 +218,7 @@ class TUDataModule(DataModule):
         )
 
     def setup(self):
+        generator1 = torch.Generator().manual_seed(42)
         self.entire_ds = TUDataset(
             pre_transform=transforms.Compose(transforms_dict[self.config.name]),
             name=self.config.name,
@@ -223,7 +232,6 @@ class TUDataModule(DataModule):
                 int(0.8 * len(self.entire_ds)),
                 len(self.entire_ds) - int(0.8 * len(self.entire_ds)),
             ],
+            generator=generator1,
         )  # type: ignore
         self.train_ds, self.val_ds = random_split(inter_ds, [int(0.8 * len(inter_ds)), len(inter_ds) - int(0.8 * len(inter_ds))])  # type: ignore
-
-

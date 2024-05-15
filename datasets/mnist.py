@@ -4,12 +4,14 @@ from torch.utils.data import random_split
 from torchvision.datasets import MNIST
 import torchvision.transforms as transforms
 
+
 from torch_geometric.data import InMemoryDataset
 from torch_geometric.transforms import FaceToEdge
 
-from datasets.transforms import CenterTransform
+from datasets.transforms import CenterTransform, SkeletonGraph
 from datasets.base_dataset import DataModule
-from datasets.transforms import MnistTransform, EctTransform, Mnist3DTransform
+from datasets.transforms import MnistTransform, EctTransform, Mnist3DTransform, Skeleton
+
 
 class Mnist3DDataModule(DataModule):
     def __init__(self, config):
@@ -41,8 +43,11 @@ class Mnist3DDataModule(DataModule):
 class EctMnistDataModule(DataModule):
     def __init__(self, config):
         self.config = config
+        # self.transform = transforms.Compose(
+        #     [MnistTransform(), CenterTransform(), EctTransform()]
+        # )
         self.transform = transforms.Compose(
-            [MnistTransform(), CenterTransform(),EctTransform()]
+            [SkeletonGraph(), CenterTransform(), EctTransform()]
         )
         super().__init__(
             config.root, config.batch_size, config.num_workers, config.pin_memory
@@ -69,7 +74,10 @@ class MnistDataModule(DataModule):
     def __init__(self, config):
         self.config = config
         self.transform = transforms.Compose(
-            [MnistTransform(), FaceToEdge(remove_faces=False), CenterTransform()]
+            [
+                SkeletonGraph(),
+                CenterTransform(),
+            ]
         )
         super().__init__(
             config.root, config.batch_size, config.num_workers, config.pin_memory

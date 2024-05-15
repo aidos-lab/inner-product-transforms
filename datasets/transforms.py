@@ -4,9 +4,12 @@ from torch_geometric.data import Data
 import matplotlib.pyplot as plt
 import torchvision
 import vedo
+from torch_geometric.transforms import KNNGraph, RandomJitter
 from layers.ect import EctLayer
 from layers.config import EctConfig
 from torch_geometric.data import Batch, Data
+from skimage.morphology import skeletonize
+import numpy as np
 
 
 def plot_batch(data):
@@ -28,6 +31,17 @@ def plot_batch(data):
     ax.set_ylim([-1, 1])
     ax.set_zlim([-1, 1])
     plt.show()
+
+
+class Skeleton:
+    def __init__(self):
+        self.tr = torchvision.transforms.ToTensor()
+
+    def __call__(self, data):
+        image, y = data
+        # perform skeletonization
+        skeleton = skeletonize(image.numpy()) / 255
+        return (skeleton, y)
 
 
 class ThresholdTransform(object):
@@ -77,17 +91,43 @@ class ModelNetTransform(object):
         data.pos = None
         return data
 
+
 class PosToXTransform(object):
     def __call__(self, data):
         data.x = data.pos
         data.pos = None
         return data
 
+
 class Project(object):
     def __call__(self, batch):
         batch.x = batch.x[:, :2]
         # scaling
         return batch
+
+
+class SkeletonGraph:
+    def __init__(self):
+        self.tr = torchvision.transforms.ToTensor()
+        self.knn = KNNGraph(k=2, force_undirected=True)
+        self.lin = torch.linspace(-1, 1, 28)
+        self.translate = RandomJitter(translate=0.05)
+
+    def __call__(self, data):
+        image, y = data
+        # perform skeletonization
+        skeleton = skeletonize(self.tr(image).squeeze().numpy())
+        coordinates = np.where(skeleton > 0.5)
+        x_hat = torch.vstack(
+            [self.lin[coordinates[0]].squeeze(), self.lin[coordinates[1]].squeeze()]
+        ).T
+
+        data = Data(pos=x_hat, y=y)
+        data = self.knn(data)
+        data = self.translate(data)
+        data.x = data.pos
+        data.pos = None
+        return data
 
 
 class MnistTransform:
@@ -102,14 +142,15 @@ class MnistTransform:
         img = self.tr(img)
         idx = torch.nonzero(img.squeeze(), as_tuple=True)
         gp = torch.vstack([self.X[idx], self.Y[idx]]).T
-        dly = vedo.delaunay2d(gp, mode="xy", alpha=0.03).c("w").lc("o").lw(1)
+        dly = vedo.delaunay2d(gp, mode="xy", alpha=0.4).c("w").lc("o").lw(1)
 
         return Data(
             x=torch.vstack([self.X[idx], self.Y[idx]]).T,
             face=torch.tensor(dly.faces(), dtype=torch.long).T,
             y=torch.tensor(y, dtype=torch.long),
         )
-    
+
+
 class Mnist3DTransform:
     def __init__(self):
         xcoords = torch.linspace(-0.5, 0.5, 28)
@@ -123,7 +164,7 @@ class Mnist3DTransform:
         idx = torch.nonzero(img.squeeze(), as_tuple=True)
         gp = torch.vstack([self.X[idx], self.Y[idx]]).T
         dly = vedo.delaunay2d(gp, mode="xy", alpha=0.03).c("w").lc("o").lw(1)
-
+        print(dly.faces())
         return Data(
             x=torch.tensor(dly.points()),
             face=torch.tensor(dly.faces(), dtype=torch.long).T,
@@ -133,15 +174,24 @@ class Mnist3DTransform:
 
 class EctTransform:
     def __init__(self, normalized=True):
-        self.layer = EctLayer(EctConfig(),fixed=True)
-        self.normalized = True
-    def __call__(self,data):
+        config = EctConfig()
+        v = torch.vstack(
+            [
+                torch.sin(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
+                torch.cos(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
+            ]
+        )
+        self.layer = EctLayer(config=config, v=v)
+        self.normalized = normalized
+
+    def __call__(self, data):
         batch = Batch.from_data_list([data])
         ect = self.layer(batch)
         if self.normalized:
-            return Data(x=ect/ect.max(),pts=data.x)
-        else: 
-            return Data(x=ect,pts=data.x)
+            return Data(x=ect / ect.max(), pts=data.x)
+        else:
+            return Data(x=ect, pts=data.x)
+
 
 class WeightedMnistTransform:
     def __init__(self):
@@ -154,7 +204,7 @@ class WeightedMnistTransform:
 
         return Data(
             x=self.grid.x,
-            node_weights = img.view(-1,1),
+            node_weights=img.view(-1, 1),
             edge_index=self.grid.edge_index,
             face=self.grid.face,
             y=torch.tensor(y, dtype=torch.long),

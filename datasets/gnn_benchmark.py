@@ -4,8 +4,6 @@ from torch_geometric.datasets import GNNBenchmarkDataset
 import torchvision.transforms as transforms
 from datasets.transforms import CenterTransform, ThresholdTransform
 
-from loaders.factory import register
-
 
 transforms_dict = {
     "MNIST": [
@@ -47,7 +45,3 @@ class GNNBenchmarkDataModule(DataModule):
             pre_transform=self.transform,
             split="val",
         )
-
-
-def initialize():
-    register("dataset", GNNBenchmarkDataModule)
