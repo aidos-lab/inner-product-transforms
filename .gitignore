@@ -3,3 +3,5 @@ ect/
 **/__pycache__
 trained_models/**
 figures/
+ **/*.pt
+ **.pt
