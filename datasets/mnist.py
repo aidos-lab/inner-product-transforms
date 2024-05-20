@@ -73,12 +73,7 @@ class EctMnistDataModule(DataModule):
 class MnistDataModule(DataModule):
     def __init__(self, config):
         self.config = config
-        self.transform = transforms.Compose(
-            [
-                SkeletonGraph(),
-                CenterTransform(),
-            ]
-        )
+        self.transform = transforms.Compose([MnistTransform(), CenterTransform()])
         super().__init__(
             config.root, config.batch_size, config.num_workers, config.pin_memory
         )
@@ -138,7 +133,3 @@ class MnistDataset(InMemoryDataset):
         torch.save((train_data, train_slices), self.processed_paths[0])
         test_data, test_slices = self.collate(test_data_list)
         torch.save((test_data, test_slices), self.processed_paths[1])
-
-
-def initialize():
-    register("dataset", MnistDataModule)

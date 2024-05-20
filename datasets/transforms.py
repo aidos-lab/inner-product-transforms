@@ -174,7 +174,7 @@ class Mnist3DTransform:
 
 class EctTransform:
     def __init__(self, normalized=True):
-        config = EctConfig()
+        config = EctConfig(num_thetas=64, bump_steps=64)
         v = torch.vstack(
             [
                 torch.sin(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
@@ -188,9 +188,9 @@ class EctTransform:
         batch = Batch.from_data_list([data])
         ect = self.layer(batch)
         if self.normalized:
-            return Data(x=ect / ect.max(), pts=data.x)
+            return Data(x=ect.unsqueeze(0) / ect.max(), pts=data.x)
         else:
-            return Data(x=ect, pts=data.x)
+            return Data(x=ect.unsqueeze(0), pts=data.x)
 
 
 class WeightedMnistTransform:
