@@ -141,12 +141,12 @@ class MnistTransform:
         img, y = data
         img = self.tr(img)
         idx = torch.nonzero(img.squeeze(), as_tuple=True)
-        gp = torch.vstack([self.X[idx], self.Y[idx]]).T
-        dly = vedo.delaunay2d(gp, mode="xy", alpha=0.4).c("w").lc("o").lw(1)
+        # gp = torch.vstack([self.X[idx], self.Y[idx]]).T
+        # dly = vedo.delaunay2d(gp, mode="xy", alpha=0.4).c("w").lc("o").lw(1)
 
         return Data(
             x=torch.vstack([self.X[idx], self.Y[idx]]).T,
-            face=torch.tensor(dly.faces(), dtype=torch.long).T,
+            # face=torch.tensor(dly.cells(), dtype=torch.long).T,
             y=torch.tensor(y, dtype=torch.long),
         )
 

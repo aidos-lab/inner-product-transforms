@@ -10,35 +10,7 @@ from torch_geometric.transforms import FaceToEdge
 
 from datasets.transforms import CenterTransform, SkeletonGraph
 from datasets.base_dataset import DataModule
-from datasets.transforms import MnistTransform, EctTransform, Mnist3DTransform, Skeleton
-
-
-class Mnist3DDataModule(DataModule):
-    def __init__(self, config):
-        self.config = config
-        self.transform = transforms.Compose(
-            [Mnist3DTransform(), FaceToEdge(remove_faces=False), CenterTransform()]
-        )
-        super().__init__(
-            config.root, config.batch_size, config.num_workers, config.pin_memory
-        )
-
-    def setup(self):
-        self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
-        self.train_ds, self.val_ds = random_split(
-            self.entire_ds,
-            [
-                int(0.9 * len(self.entire_ds)),
-                len(self.entire_ds) - int(0.9 * len(self.entire_ds)),
-            ],
-        )  # type: ignore
-
-        self.test_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=False
-        )
-
+from datasets.transforms import MnistTransform, EctTransform
 
 class EctMnistDataModule(DataModule):
     def __init__(self, config):
@@ -78,7 +50,12 @@ class MnistDataModule(DataModule):
             config.root, config.batch_size, config.num_workers, config.pin_memory
         )
 
-    def setup(self):
+    def prepare_data(self):
+        MnistDataset(
+            root=self.config.root, pre_transform=self.transform, train=True
+        )
+
+    def setup(self,**kwargs):
         self.entire_ds = MnistDataset(
             root=self.config.root, pre_transform=self.transform, train=True
         )

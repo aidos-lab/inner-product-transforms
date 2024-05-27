@@ -1,9 +1,10 @@
+from lightning import LightningDataModule
 from abc import ABC, abstractmethod
 from torch_geometric.loader import DataLoader, ImbalancedSampler
 from torch_geometric.data import Dataset
 
 
-class DataModule(ABC):
+class DataModule(LightningDataModule):
     train_ds: Dataset
     test_ds: Dataset
     val_ds: Dataset
@@ -21,6 +22,11 @@ class DataModule(ABC):
     @abstractmethod
     def setup(self):
         raise NotImplementedError()
+
+    @abstractmethod
+    def prepare_data(self):
+        raise NotImplementedError()
+
 
     def train_dataloader(self):
         return DataLoader(

@@ -1,4 +1,3 @@
-from uu import decode
 import torch
 import torch.nn as nn
 import numpy as np
@@ -18,7 +17,8 @@ from datasets.config import MnistDataModuleConfig
 
 from notebooks.helper_plotting import plot_training_loss
 from notebooks.helper_plotting import plot_generated_images
-from model import VanillaVAE
+from models.vae import VanillaVAE
+
 
 NUM_PTS = 5
 CUDA_DEVICE_NUM = 0
@@ -41,6 +41,7 @@ V = torch.vstack(
 dataset = MnistDataModule(
     MnistDataModuleConfig(root="./data/mnistpointcloud", batch_size=BATCH_SIZE)
 )
+
 
 layer = EctLayer(
     EctConfig(num_thetas=64, bump_steps=64, normalized=True, device=DEVICE), v=V
