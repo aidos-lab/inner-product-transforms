@@ -5,5 +5,5 @@ lightning_logs/
 **/__pycache__
 trained_models/**
 figures/
- **/*.pt
- **.pt
+**/*.pt
+*.pt

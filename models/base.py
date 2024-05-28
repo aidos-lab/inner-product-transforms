@@ -35,7 +35,7 @@ class BaseModel(L.LightningModule):
         self, batch, batch_idx, step: Literal["train", "test", "validation"]
     ):
         batch_len = len(batch.y)
-        ect = self.layer(batch).unsqueeze(1)
+        ect = self.layer(batch).unsqueeze(1) * 2 - 1
         decoded, _, z_mean, z_log_var = self(ect)
         # Squeeze x_hat to match the shape of y
 

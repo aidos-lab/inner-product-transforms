@@ -1,17 +1,31 @@
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 
-def compute_mse_loss_fn(decoded,z_mean,z_log_var, ect):
-        kl_div = -0.5 * torch.sum(
-        1 + z_log_var - z_mean**2 - torch.exp(z_log_var),
-        axis=1,
-        )  # sum over latent dimension
-        batchsize = kl_div.size(0)
-        kl_div = kl_div.mean()  # average over batch dimension
+# recons = args[0]
+# input = args[1]
+# mu = args[2]
+# log_var = args[3]
 
-        pixelwise = nn.functional.mse_loss(decoded, ect, reduction="none")
-        pixelwise = pixelwise.view(batchsize, -1).sum(axis=1)  # sum over pixels
-        pixelwise = pixelwise.mean()  # average over batch dimension
+# kld_weight = kwargs["M_N"]  # Account for the minibatch samples from the dataset
+# recons_loss = F.mse_loss(recons, input)
 
-        return pixelwise + kl_div
+# kld_loss = torch.mean(
+#     -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
+# )
 
+# loss = recons_loss + kld_weight * kld_loss
+# return {
+#     "loss": loss,
+#     "Reconstruction_Loss": recons_loss.detach(),
+#     "KLD": -kld_loss.detach(),
+# }
+
+
+def compute_mse_loss_fn(decoded, mu, log_var, ect):
+    kld_loss = torch.mean(
+        -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
+    )
+
+    pixelwise = F.mse_loss(decoded, ect)
+
+    return pixelwise + 0.00025 * kld_loss

@@ -47,7 +47,7 @@ layer = EctLayer(
 dm = MnistDataModule(MnistDataModuleConfig(root="./data/mnistpointcloud"))
 
 
-model = VanillaVAE(in_channels=1, latent_dim=256)
+model = VanillaVAE(in_channels=1, latent_dim=64)
 
 
 litmodel = BaseModel(
@@ -55,12 +55,26 @@ litmodel = BaseModel(
     *get_mse_metrics(),
     accuracies_fn=compute_mse_accuracies,
     loss_fn=compute_mse_loss_fn,
-    learning_rate=0.01,
+    learning_rate=0.005,
     layer=layer,
 )
 
-config = OmegaConf.load("./config.yaml")
+# metrics = get_mse_metrics()
 
+
+# litmodel = BaseModel.load_from_checkpoint(
+#     "./trained_models/vae.ckpt",
+#     model=model,
+#     training_accuracy=metrics[0],
+#     test_accuracy=metrics[1],
+#     validation_accuracy=metrics[2],
+#     accuracies_fn=compute_mse_accuracies,
+#     loss_fn=compute_mse_loss_fn,
+#     learning_rate=0.005,
+#     layer=layer,
+# )
+
+config = OmegaConf.load("./config.yaml")
 
 logger = get_wandb_logger(config.loggers)
 
@@ -73,4 +87,4 @@ trainer = L.Trainer(
 )
 
 trainer.fit(litmodel, dm)
-trainer.save_checkpoint("./trained_models/example.ckpt")
+trainer.save_checkpoint("./trained_models/vae.ckpt")
