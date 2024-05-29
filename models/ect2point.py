@@ -9,18 +9,18 @@ Tensor: TypeAlias = torch.Tensor
 
 
 class Autoencoder(nn.Module):
-    def __init__(self, num_pts: int, ect_size: int) -> None:
+    def __init__(self, num_pts: int, ect_size: int, hidden_size: int) -> None:
         super().__init__()
 
         self.encoder = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(ect_size**2, 512),  # (N, 784) -> (N, 128)
+            nn.Linear(ect_size**2, hidden_size),
             nn.ReLU(),
-            nn.Linear(512, 512),  # (N, 784) -> (N, 128)
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(512, 512),  # (N, 784) -> (N, 128)
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(512, 2 * num_pts),
+            nn.Linear(hidden_size, 2 * num_pts),
         )
 
     def forward(self, ect: Tensor) -> Tensor:
