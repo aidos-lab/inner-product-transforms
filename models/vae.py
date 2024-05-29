@@ -1,43 +1,20 @@
 from torch import nn
 from abc import abstractmethod
 import torch
-from typing import List, Callable, Union, Any, TypeVar, Tuple
-
-# from torch import tensor as Tensor
-
-Tensor = TypeVar("torch.tensor")
+from typing import List, Any, TypeAlias
 
 
-class BaseVAE(nn.Module):
-
-    def __init__(self) -> None:
-        super(BaseVAE, self).__init__()
-
-    def encode(self, input: Tensor) -> List[Tensor]:
-        raise NotImplementedError
-
-    def decode(self, input: Tensor) -> Any:
-        raise NotImplementedError
-
-    def sample(self, batch_size: int, current_device: int, **kwargs) -> Tensor:
-        raise NotImplementedError
-
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
-        raise NotImplementedError
-
-    @abstractmethod
-    def forward(self, *inputs: Tensor) -> Tensor:
-        pass
-
-    @abstractmethod
-    def loss_function(self, *inputs: Any, **kwargs) -> Tensor:
-        pass
+Tensor: TypeAlias = torch.Tensor
 
 
-class VanillaVAE(BaseVAE):
+class VanillaVAE(nn.Module):
 
     def __init__(
-        self, in_channels: int, latent_dim: int, hidden_dims: List = None, **kwargs
+        self,
+        in_channels: int,
+        latent_dim: int,
+        hidden_dims: List | None = None,
+        **kwargs
     ) -> None:
         super(VanillaVAE, self).__init__()
 
@@ -163,9 +140,7 @@ class VanillaVAE(BaseVAE):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples, self.latent_dim)
-
-        z = z.to(current_device)
+        z = torch.randn(num_samples, self.latent_dim, device=self.device)
 
         samples = self.decode(z)
         return samples
@@ -178,9 +153,3 @@ class VanillaVAE(BaseVAE):
         """
 
         return self.forward(x)[0]
-
-
-if __name__ == "__main__":
-    model = VanillaVAE(in_channels=1, latent_dim=512)
-    x = torch.zeros(size=(2, 1, 64, 64))
-    print(model(x)[0].shape)
