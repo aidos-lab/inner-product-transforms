@@ -4,11 +4,11 @@ import torch
 torch.set_float32_matmul_precision("medium")
 
 
-from models.vae import VanillaVAE, BaseModel
+from models.ectencoder import EctEncoder, BaseModel
 
 from metrics.metrics import get_mse_metrics
 from metrics.accuracies import compute_mse_accuracies
-from metrics.loss import compute_mse_kld_loss_fn
+from metrics.loss import compute_mse_loss_fn
 
 import lightning as L
 from omegaconf import OmegaConf
@@ -38,19 +38,19 @@ layer = EctLayer(
 dm = MnistDataModule(MnistDataModuleConfig(root="./data/mnistpointcloud"))
 
 
-model = VanillaVAE(in_channels=1, latent_dim=64)
+model = EctEncoder(num_pts=100, ect_size=64, hidden_size=512)
 
 
 litmodel = BaseModel(
     model,
     *get_mse_metrics(),
     accuracies_fn=compute_mse_accuracies,
-    loss_fn=compute_mse_kld_loss_fn,
-    learning_rate=0.005,
+    loss_fn=compute_mse_loss_fn,
+    learning_rate=0.001,
     layer=layer,
 )
 
-config = OmegaConf.load("./config.yaml")
+config = OmegaConf.load("./config_ect_encoder.yaml")
 
 logger = get_wandb_logger(config.loggers)
 
@@ -59,8 +59,8 @@ trainer = L.Trainer(
     accelerator=config.trainer.accelerator,
     max_epochs=config.trainer.max_epochs,
     log_every_n_steps=config.trainer.log_every_n_steps,
-    fast_dev_run=True,
+    fast_dev_run=False,
 )
 
 trainer.fit(litmodel, dm)
-trainer.save_checkpoint("./trained_models/vae.ckpt")
+trainer.save_checkpoint("./trained_models/ectencoder.ckpt")

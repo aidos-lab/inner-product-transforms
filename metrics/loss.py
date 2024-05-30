@@ -21,7 +21,12 @@ import torch.nn.functional as F
 # }
 
 
-def compute_mse_loss_fn(decoded, mu, log_var, ect):
+def compute_mse_loss_fn(ect_hat, ect):
+    pixelwise = F.mse_loss(ect_hat, ect)
+    return pixelwise
+
+
+def compute_mse_kld_loss_fn(decoded, mu, log_var, ect):
     kld_loss = torch.mean(
         -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
     )

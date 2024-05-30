@@ -1,7 +1,15 @@
-from typing import Literal
-import lightning as L
 import torch
-from torchmetrics.regression import MeanSquaredError
+from torch import nn
+import lightning as L
+from typing import List, Any, Literal, TypeAlias
+from torch_geometric.data import Batch, Data
+
+from typing import TypeAlias
+
+
+# from torch import tensor as Tensor
+
+Tensor: TypeAlias = torch.Tensor
 
 
 class BaseModel(L.LightningModule):
@@ -25,7 +33,10 @@ class BaseModel(L.LightningModule):
         self.model = model
         self.learning_rate = learning_rate
         self.layer = layer
-        self.mse = MeanSquaredError()
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        return optimizer
 
     def forward(self, batch):
         x = self.model(batch)
@@ -35,11 +46,18 @@ class BaseModel(L.LightningModule):
         self, batch, batch_idx, step: Literal["train", "test", "validation"]
     ):
         batch_len = len(batch.y)
-        ect = self.layer(batch).unsqueeze(1) * 2 - 1
-        decoded, _, z_mean, z_log_var = self(ect)
-        # Squeeze x_hat to match the shape of y
+        _batch = batch.clone()
 
-        loss = self.loss_fn(decoded, z_mean, z_log_var, ect)
+        ect = self.layer(batch, batch.batch)
+
+        _batch.x = self(ect).view(-1, 2)
+
+        _batch.batch = torch.arange(
+            batch.batch.max().item() + 1, device=self.device
+        ).repeat_interleave(100)
+
+        ect_hat = self.layer(_batch, _batch.batch)
+        loss = self.loss_fn(ect_hat, ect)
         self.log(
             f"{step}_loss",
             loss,
@@ -48,12 +66,8 @@ class BaseModel(L.LightningModule):
             on_step=False,
             on_epoch=True,
         )
-        self.log_accuracies(decoded, ect, batch_len, step)
+        self.log_accuracies(ect_hat, ect, batch_len, step)
         return loss
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        return optimizer
 
     def log_accuracies(
         self, x_hat, y, batch_len, step: Literal["train", "test", "validation"]
@@ -112,3 +126,22 @@ class BaseModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "train")
+
+
+class EctEncoder(nn.Module):
+    def __init__(self, num_pts: int, ect_size: int, hidden_size: int) -> None:
+        super().__init__()
+
+        self.encoder = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(ect_size**2, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 2 * num_pts),
+        )
+
+    def forward(self, ect: Tensor) -> Tensor:
+        return self.encoder(ect)

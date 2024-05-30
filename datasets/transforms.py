@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import torchvision
 import vedo
 from torch_geometric.transforms import KNNGraph, RandomJitter
-from layers.ect import EctLayer
-from layers.config import EctConfig
+from layers.ect import EctLayer, EctConfig
 from torch_geometric.data import Batch, Data
 from skimage.morphology import skeletonize
 import numpy as np
