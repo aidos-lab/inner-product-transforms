@@ -1,13 +1,14 @@
 import torch
 from torch import nn
 import lightning as L
-from typing import List, Any, Literal, TypeAlias
-from torch_geometric.data import Batch, Data
+from typing import Literal, TypeAlias
 
 from typing import TypeAlias
 
+from torchmetrics.regression import MeanSquaredError
 
-# from torch import tensor as Tensor
+from layers.ect import EctConfig, EctLayer
+
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -15,24 +16,29 @@ Tensor: TypeAlias = torch.Tensor
 class BaseModel(L.LightningModule):
     def __init__(
         self,
-        model,
-        training_accuracy,
-        test_accuracy,
-        validation_accuracy,
-        accuracies_fn,
-        loss_fn,
-        learning_rate,
         layer,
+        ect_size,
+        hidden_size,
+        num_pts,
     ):
         super().__init__()
-        self.training_accuracy = training_accuracy
-        self.validation_accuracy = validation_accuracy
-        self.test_accuracy = test_accuracy
-        self.loss_fn = loss_fn
-        self.accuracies_fn = accuracies_fn
-        self.model = model
-        self.learning_rate = learning_rate
+        self.training_accuracy = MeanSquaredError()
+        self.validation_accuracy = MeanSquaredError()
+        self.test_accuracy = MeanSquaredError()
+        self.loss_fn = nn.MSELoss()
+        self.learning_rate = 0.001
         self.layer = layer
+
+        self.model = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(ect_size**2, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 2 * num_pts),
+        )
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -73,50 +79,27 @@ class BaseModel(L.LightningModule):
         self, x_hat, y, batch_len, step: Literal["train", "test", "validation"]
     ):
         if step == "train":
-            accuracies = self.accuracies_fn(
-                self.training_accuracy,
-                x_hat.reshape(batch_len, -1),
-                y.reshape(batch_len, -1),
-                "train_accuracy",
-            )
-            for accuracy in accuracies:
-                self.log(
-                    **accuracy,
-                    prog_bar=True,
-                    on_step=False,
-                    on_epoch=True,
-                    batch_size=batch_len,
-                )
+            accuracy_fn = self.training_accuracy
+            name = "train_accuracy"
         elif step == "test":
-            accuracies = self.accuracies_fn(
-                self.test_accuracy,
-                x_hat.reshape(batch_len, -1),
-                y.reshape(batch_len, -1),
-                "test_accuracy",
-            )
-            for accuracy in accuracies:
-                self.log(
-                    **accuracy,
-                    prog_bar=True,
-                    on_step=False,
-                    on_epoch=True,
-                    batch_size=batch_len,
-                )
+            accuracy_fn = self.test_accuracy
+            name = "test_accuracy"
         elif step == "validation":
-            accuracies = self.accuracies_fn(
-                self.validation_accuracy,
-                x_hat.reshape(batch_len, -1),
-                y.reshape(batch_len, -1),
-                "validation_accuracy",
-            )
-            for accuracy in accuracies:
-                self.log(
-                    **accuracy,
-                    prog_bar=True,
-                    on_step=False,
-                    on_epoch=True,
-                    batch_size=batch_len,
-                )
+            accuracy_fn = self.validation_accuracy
+            name = "validation_accuracy"
+
+        accuracy = accuracy_fn(
+            x_hat.reshape(batch_len, -1),
+            y.reshape(batch_len, -1),
+        )
+        self.log(
+            name,
+            accuracy,
+            prog_bar=True,
+            on_step=False,
+            on_epoch=True,
+            batch_size=batch_len,
+        )
 
     def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
@@ -126,22 +109,3 @@ class BaseModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "train")
-
-
-class EctEncoder(nn.Module):
-    def __init__(self, num_pts: int, ect_size: int, hidden_size: int) -> None:
-        super().__init__()
-
-        self.encoder = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(ect_size**2, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, 2 * num_pts),
-        )
-
-    def forward(self, ect: Tensor) -> Tensor:
-        return self.encoder(ect)

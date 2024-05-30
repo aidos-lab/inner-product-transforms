@@ -4,7 +4,7 @@ import torch
 torch.set_float32_matmul_precision("medium")
 
 
-from models.ectencoder import EctEncoder, BaseModel
+from models.ectencoder import BaseModel
 
 from metrics.metrics import get_mse_metrics
 from metrics.accuracies import compute_mse_accuracies
@@ -38,16 +38,11 @@ layer = EctLayer(
 dm = MnistDataModule(MnistDataModuleConfig(root="./data/mnistpointcloud"))
 
 
-model = EctEncoder(num_pts=100, ect_size=64, hidden_size=512)
-
-
 litmodel = BaseModel(
-    model,
-    *get_mse_metrics(),
-    accuracies_fn=compute_mse_accuracies,
-    loss_fn=compute_mse_loss_fn,
-    learning_rate=0.001,
     layer=layer,
+    ect_size=64,
+    hidden_size=512,
+    num_pts=100,
 )
 
 config = OmegaConf.load("./config_ect_encoder.yaml")
