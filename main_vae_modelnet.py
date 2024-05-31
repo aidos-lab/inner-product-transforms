@@ -1,23 +1,20 @@
-from directions import generate_2d_directions, generate_3d_directions
-from loggers import get_wandb_logger
 import torch
+from omegaconf import OmegaConf
 
 torch.set_float32_matmul_precision("medium")
 
 
 from models.vae_mnist import VanillaVAE, BaseModel
-
 from metrics.metrics import get_mse_metrics
 from metrics.accuracies import compute_mse_accuracies
 from metrics.loss import compute_mse_kld_loss_fn
 
 import lightning as L
-from omegaconf import OmegaConf
 from datasets.modelnet import ModelNetDataModule, ModelNetDataModuleConfig
-
+from directions import generate_3d_directions
+from loggers import get_wandb_logger
 
 from layers.ect import EctLayer, EctConfig
-import torch
 
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -67,4 +64,4 @@ trainer = L.Trainer(
 )
 
 trainer.fit(litmodel, dm)
-trainer.save_checkpoint("./trained_models/vae_modelnet.ckpt")
+trainer.save_checkpoint(f"./trained_models/{config.model.save_name}")

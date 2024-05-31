@@ -1,4 +1,3 @@
-import omegaconf
 import torch
 import lightning as L
 from omegaconf import OmegaConf
@@ -15,7 +14,7 @@ from loggers import get_wandb_logger
 torch.set_float32_matmul_precision("medium")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-config = OmegaConf.load("./configs/config_vae_encoder_modelnet.yaml")
+config = OmegaConf.load("./configs/config_encoder_modelnet.yaml")
 
 dm = ModelNetDataModule(
     ModelNetDataModuleConfig(name="10", samplepoints=config.data.samplepoints)

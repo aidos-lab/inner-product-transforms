@@ -1,8 +1,9 @@
 
 model:
-  model_name: VanillaVAE
   in_channels: 1
   latent_dim: 64
+  save_name: "vae_modelnet.ckpt"
+
 
 trainer:
   accelerator: auto

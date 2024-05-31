@@ -1,4 +1,4 @@
-encodermodel:
+model:
   hidden_size: 512
   num_pts: 128
   num_dims: 2

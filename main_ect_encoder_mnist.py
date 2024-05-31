@@ -1,10 +1,8 @@
-import omegaconf
 import torch
 import lightning as L
 from omegaconf import OmegaConf
 
-from datasets.config import MnistDataModuleConfig
-from datasets.mnist import MnistDataModule
+from datasets.mnist import MnistDataModule, MnistDataModuleConfig
 from models.ectencoder_mnist import BaseModel
 from layers.ect import EctLayer, EctConfig
 
@@ -35,10 +33,10 @@ layer = EctLayer(
 encodermodel = BaseModel(
     layer=layer,
     ect_size=config.layer.ect_size,
-    hidden_size=config.encodermodel.hidden_size,
-    num_pts=config.encodermodel.num_pts,
-    num_dims=config.encodermodel.num_dims,
-    learning_rate=config.encodermodel.learning_rate,
+    hidden_size=config.model.hidden_size,
+    num_pts=config.model.num_pts,
+    num_dims=config.model.num_dims,
+    learning_rate=config.model.learning_rate,
 )
 
 
@@ -54,4 +52,4 @@ trainer = L.Trainer(
 
 
 trainer.fit(encodermodel, dm)
-trainer.save_checkpoint(f"./trained_models/{config.encodermodel.save_name}")
+trainer.save_checkpoint(f"./trained_models/{config.model.save_name}")

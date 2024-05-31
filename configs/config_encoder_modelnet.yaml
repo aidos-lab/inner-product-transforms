@@ -6,7 +6,7 @@ encodermodel:
   num_pts: 1024
   num_dims: 3
   learning_rate: 0.001
-  save_name: "ectencoder_3d_final.ckpt" 
+  save_name: "ectencoder_modelnet.ckpt" 
 
 layer: 
   ect_size: 96

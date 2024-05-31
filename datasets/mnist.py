@@ -11,6 +11,17 @@ from torch_geometric.transforms import FaceToEdge
 from datasets.transforms import CenterTransform, SkeletonGraph
 from datasets.base_dataset import DataModule
 from datasets.transforms import MnistTransform, EctTransform
+from datasets.config import DataModuleConfig
+
+
+from dataclasses import dataclass
+
+
+@dataclass
+class MnistDataModuleConfig(DataModuleConfig):
+    root: str = "./data/MNIST"
+    module: str = "datasets.mnist"
+
 
 class EctMnistDataModule(DataModule):
     def __init__(self, config):
@@ -51,11 +62,9 @@ class MnistDataModule(DataModule):
         )
 
     def prepare_data(self):
-        MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
+        MnistDataset(root=self.config.root, pre_transform=self.transform, train=True)
 
-    def setup(self,**kwargs):
+    def setup(self, **kwargs):
         self.entire_ds = MnistDataset(
             root=self.config.root, pre_transform=self.transform, train=True
         )

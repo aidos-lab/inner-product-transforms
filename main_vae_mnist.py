@@ -14,9 +14,8 @@ from metrics.loss import compute_mse_kld_loss_fn
 import lightning as L
 from omegaconf import OmegaConf
 
+from datasets.mnist import MnistDataModule, MnistDataModuleConfig
 
-from datasets.mnist import MnistDataModule
-from datasets.config import MnistDataModuleConfig
 from layers.ect import EctLayer, EctConfig
 import torch
 
@@ -41,7 +40,9 @@ dm = MnistDataModule(MnistDataModuleConfig(root="./data/mnistpointcloud"))
 
 
 model = VanillaVAE(
-    in_channels=config.model.in_channels, latent_dim=config.model.latent_dim
+    in_channels=config.model.in_channels,
+    latent_dim=config.model.latent_dim,
+    img_size=config.layer.ect_size,
 )
 
 
@@ -65,4 +66,4 @@ trainer = L.Trainer(
 )
 
 trainer.fit(litmodel, dm)
-trainer.save_checkpoint("./trained_models/vae_mnist.ckpt")
+trainer.save_checkpoint(f"./trained_models/{config.model.save_name}")
