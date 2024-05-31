@@ -1,10 +1,11 @@
+from directions import generate_2d_directions
 from loggers import get_wandb_logger
 import torch
 
 torch.set_float32_matmul_precision("medium")
 
 
-from models.vae import VanillaVAE, BaseModel
+from models.vae_mnist import VanillaVAE, BaseModel
 
 from metrics.metrics import get_mse_metrics
 from metrics.accuracies import compute_mse_accuracies
@@ -22,23 +23,26 @@ import torch
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-V = torch.vstack(
-    [
-        torch.sin(torch.linspace(0, 2 * torch.pi, 64, device=DEVICE)),
-        torch.cos(torch.linspace(0, 2 * torch.pi, 64, device=DEVICE)),
-    ]
-)
+config = OmegaConf.load("./configs/config_vae_mnist.yaml")
 
 
 layer = EctLayer(
-    EctConfig(num_thetas=64, bump_steps=64, normalized=True, device=DEVICE), v=V
+    EctConfig(
+        num_thetas=config.layer.ect_size,
+        bump_steps=config.layer.ect_size,
+        normalized=True,
+        device=DEVICE,
+    ),
+    v=generate_2d_directions(config.layer.ect_size, DEVICE),
 )
 
 
 dm = MnistDataModule(MnistDataModuleConfig(root="./data/mnistpointcloud"))
 
 
-model = VanillaVAE(in_channels=1, latent_dim=64)
+model = VanillaVAE(
+    in_channels=config.model.in_channels, latent_dim=config.model.latent_dim
+)
 
 
 litmodel = BaseModel(
@@ -46,11 +50,9 @@ litmodel = BaseModel(
     *get_mse_metrics(),
     accuracies_fn=compute_mse_accuracies,
     loss_fn=compute_mse_kld_loss_fn,
-    learning_rate=0.005,
+    learning_rate=config.litmodel.learning_rate,
     layer=layer,
 )
-
-config = OmegaConf.load("./config.yaml")
 
 logger = get_wandb_logger(config.loggers)
 
@@ -59,8 +61,8 @@ trainer = L.Trainer(
     accelerator=config.trainer.accelerator,
     max_epochs=config.trainer.max_epochs,
     log_every_n_steps=config.trainer.log_every_n_steps,
-    fast_dev_run=True,
+    fast_dev_run=False,
 )
 
 trainer.fit(litmodel, dm)
-trainer.save_checkpoint("./trained_models/vae.ckpt")
+trainer.save_checkpoint("./trained_models/vae_mnist.ckpt")

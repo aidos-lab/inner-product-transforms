@@ -9,25 +9,24 @@ from torchmetrics.regression import MeanSquaredError
 
 from layers.ect import EctConfig, EctLayer
 
+from kaolin.metrics.pointcloud import chamfer_distance
 
 Tensor: TypeAlias = torch.Tensor
 
 
 class BaseModel(L.LightningModule):
-    def __init__(
-        self,
-        layer,
-        ect_size,
-        hidden_size,
-        num_pts,
-    ):
+    def __init__(self, layer, ect_size, hidden_size, num_pts, learning_rate, num_dims):
         super().__init__()
+
+        self.learning_rate = learning_rate
+        self.layer = layer
+        self.num_dims = num_dims
+        self.num_pts = num_pts
+
         self.training_accuracy = MeanSquaredError()
         self.validation_accuracy = MeanSquaredError()
         self.test_accuracy = MeanSquaredError()
         self.loss_fn = nn.MSELoss()
-        self.learning_rate = 0.001
-        self.layer = layer
 
         self.model = nn.Sequential(
             nn.Flatten(),
@@ -37,7 +36,7 @@ class BaseModel(L.LightningModule):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, 2 * num_pts),
+            nn.Linear(hidden_size, num_dims * num_pts),
         )
 
     def configure_optimizers(self):
@@ -48,22 +47,26 @@ class BaseModel(L.LightningModule):
         x = self.model(batch)
         return x
 
-    def general_step(
-        self, batch, batch_idx, step: Literal["train", "test", "validation"]
-    ):
+    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
         batch_len = len(batch.y)
         _batch = batch.clone()
 
         ect = self.layer(batch, batch.batch)
 
-        _batch.x = self(ect).view(-1, 2)
+        _batch.x = self(ect).view(-1, self.num_dims)
 
         _batch.batch = torch.arange(
             batch.batch.max().item() + 1, device=self.device
-        ).repeat_interleave(100)
+        ).repeat_interleave(self.num_pts)
 
         ect_hat = self.layer(_batch, _batch.batch)
-        loss = self.loss_fn(ect_hat, ect)
+
+        loss_ch = chamfer_distance(
+            batch.x.view(batch_len, -1, self.num_dims),
+            _batch.x.view(-1, self.num_pts, self.num_dims),
+        ).mean()
+
+        loss = loss_ch + self.loss_fn(ect_hat, ect)
         self.log(
             f"{step}_loss",
             loss,

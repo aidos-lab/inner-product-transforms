@@ -27,7 +27,6 @@ class DataModule(LightningDataModule):
     def prepare_data(self):
         raise NotImplementedError()
 
-
     def train_dataloader(self):
         return DataLoader(
             self.train_ds,

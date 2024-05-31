@@ -1,21 +1,21 @@
-task: betti_numbers
+
 model:
   model_name: VanillaVAE
-  hidden_channels: 64
-  num_hidden_layers: 3
-  num_node_features: 9
-  out_channels: 3
-  num_heads: 4
+  in_channels: 1
+  latent_dim: 64
+
 trainer:
   accelerator: auto
-  max_epochs: 20
+  max_epochs: 100
   log_every_n_steps: 1
 litmodel:
   learning_rate: 0.001
-data:
-  seed: 1234
+
+
+
 loggers: 
   project: "toporecon-dev"
   entity: aidos-labs
   save_dir: ./lightning_logs
-
+layer: 
+  ect_size: 64
