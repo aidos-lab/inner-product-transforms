@@ -150,6 +150,25 @@ class MnistTransform:
         )
 
 
+class DspritesTransform:
+    def __init__(self):
+        xcoords = torch.linspace(-0.5, 0.5, 64)
+        ycoords = torch.linspace(-0.5, 0.5, 64)
+        self.X, self.Y = torch.meshgrid(xcoords, ycoords)
+        self.tr = torchvision.transforms.ToTensor()
+
+    def __call__(self, data) -> Data:
+        idx = torch.nonzero(data.x, as_tuple=True)
+        # gp = torch.vstack([self.X[idx], self.Y[idx]]).T
+        # dly = vedo.delaunay2d(gp, mode="xy", alpha=0.4).c("w").lc("o").lw(1)
+
+        return Data(
+            x=torch.vstack([self.X[idx], self.Y[idx]]).T,
+            # face=torch.tensor(dly.cells(), dtype=torch.long).T,
+            latent=data.latent,
+        )
+
+
 class Mnist3DTransform:
     def __init__(self):
         xcoords = torch.linspace(-0.5, 0.5, 28)
