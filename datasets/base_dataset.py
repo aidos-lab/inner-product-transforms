@@ -2,6 +2,17 @@ from lightning import LightningDataModule
 from abc import ABC, abstractmethod
 from torch_geometric.loader import DataLoader, ImbalancedSampler
 from torch_geometric.data import Dataset
+from dataclasses import dataclass
+
+
+@dataclass
+class DataModuleConfig:
+    module: str
+    root: str = "./data"
+    num_workers: int = 0
+    batch_size: int = 64
+    pin_memory: bool = True
+    drop_last: bool = False
 
 
 class DataModule(LightningDataModule):

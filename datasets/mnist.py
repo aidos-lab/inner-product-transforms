@@ -8,10 +8,9 @@ import torchvision.transforms as transforms
 from torch_geometric.data import InMemoryDataset
 from torch_geometric.transforms import FaceToEdge
 
-from datasets.transforms import CenterTransform, SkeletonGraph
-from datasets.base_dataset import DataModule
+from datasets.transforms import CenterTransform, FixedLength, SkeletonGraph
+from datasets.base_dataset import DataModule, DataModuleConfig
 from datasets.transforms import MnistTransform, EctTransform
-from datasets.config import DataModuleConfig
 
 
 from dataclasses import dataclass
@@ -56,7 +55,9 @@ class EctMnistDataModule(DataModule):
 class MnistDataModule(DataModule):
     def __init__(self, config):
         self.config = config
-        self.transform = transforms.Compose([MnistTransform(), CenterTransform()])
+        self.transform = transforms.Compose(
+            [MnistTransform(), FixedLength(), CenterTransform()]
+        )
         super().__init__(
             config.root, config.batch_size, config.num_workers, config.pin_memory
         )

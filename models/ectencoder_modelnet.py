@@ -36,8 +36,6 @@ class BaseModel(L.LightningModule):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
             nn.Linear(hidden_size, num_dims * num_pts),
         )
 
@@ -68,7 +66,7 @@ class BaseModel(L.LightningModule):
             _batch.x.view(-1, self.num_pts, self.num_dims),
         ).mean()
 
-        loss = loss_ch + self.loss_fn(ect_hat, ect)
+        loss = loss_ch  # + self.loss_fn(ect_hat, ect)
         self.log(
             f"{step}_loss",
             loss,

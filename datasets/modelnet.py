@@ -3,7 +3,7 @@ from torch_geometric import transforms
 from torch.utils.data import random_split
 from dataclasses import dataclass
 
-from datasets.transforms import CenterTransform, ModelNetTransform
+from datasets.transforms import CenterTransform, ClassFilter, ModelNetTransform
 from datasets.base_dataset import DataModule
 
 
@@ -42,6 +42,7 @@ class ModelNetDataModule(DataModule):
                 CenterTransform(),
             ]
         )
+        self.pre_filter = ClassFilter()
         super().__init__(
             config.root, config.batch_size, config.num_workers, config.pin_memory
         )
@@ -54,6 +55,7 @@ class ModelNetDataModule(DataModule):
             root=self.config.root,
             pre_transform=self.pre_transform,
             train=True,
+            pre_filter=self.pre_filter,
             name=self.config.name,
         )
         self.train_ds, self.val_ds = random_split(
@@ -66,6 +68,7 @@ class ModelNetDataModule(DataModule):
         self.test_ds = ModelNet(
             root=self.config.root,
             pre_transform=self.pre_transform,
+            pre_filter=self.pre_filter,
             train=False,
             name=self.config.name,
         )

@@ -32,6 +32,42 @@ def plot_batch(data):
     plt.show()
 
 
+class To3D:
+    def __call__(self, data):
+        data.x = data.x[:, :3]
+        return data
+
+
+class EctTransform:
+    def __init__(self, normalized=True):
+        config = EctConfig(num_thetas=64, bump_steps=64)
+        v = torch.vstack(
+            [
+                torch.sin(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
+                torch.cos(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
+            ]
+        )
+        self.layer = EctLayer(config=config, v=v)
+        self.normalized = normalized
+
+    def __call__(self, data):
+        batch = Batch.from_data_list([data])
+        ect = self.layer(batch)
+        if self.normalized:
+            return Data(x=ect.unsqueeze(0) / ect.max(), pts=data.x)
+        else:
+            return Data(x=ect.unsqueeze(0), pts=data.x)
+
+
+class ClassFilter:
+    def __call__(self, data: Data) -> bool:
+        # Return classes
+        if data.y.item() in [2, 5, 7, 8, 9]:
+            return True
+        else:
+            return False
+
+
 class Skeleton:
     def __init__(self):
         self.tr = torchvision.transforms.ToTensor()
@@ -190,25 +226,42 @@ class Mnist3DTransform:
         )
 
 
-class EctTransform:
-    def __init__(self, normalized=True):
-        config = EctConfig(num_thetas=64, bump_steps=64)
-        v = torch.vstack(
-            [
-                torch.sin(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
-                torch.cos(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
-            ]
-        )
-        self.layer = EctLayer(config=config, v=v)
-        self.normalized = normalized
+class FixedLength:
+    def __init__(self, length=128):
+        self.length = length
 
     def __call__(self, data):
-        batch = Batch.from_data_list([data])
-        ect = self.layer(batch)
-        if self.normalized:
-            return Data(x=ect.unsqueeze(0) / ect.max(), pts=data.x)
+        res = data.clone()
+        if data.x.shape[0] < self.length:
+            idx = torch.tensor(np.random.choice(len(data.x), self.length, replace=True))
         else:
-            return Data(x=ect.unsqueeze(0), pts=data.x)
+            idx = torch.tensor(
+                np.random.choice(len(data.x), self.length, replace=False)
+            )
+        res.x = data.x[idx]
+        return res
+
+
+class FixedLengthBZR:
+    def __init__(self, length=128):
+        self.length = length
+
+    def __call__(self, data):
+        res = data.clone()
+        if data.x.shape[0] < self.length:
+            idx = torch.tensor(
+                np.random.choice(
+                    len(data.x), self.length - data.x.shape[0], replace=True
+                )
+            )
+            res.x = torch.vstack([data.x, data.x[idx]])
+            return res
+        else:
+            idx = torch.tensor(
+                np.random.choice(len(data.x), self.length, replace=False)
+            )
+            res.x = data.x[idx]
+            return res
 
 
 class WeightedMnistTransform:

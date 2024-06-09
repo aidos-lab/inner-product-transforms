@@ -5,12 +5,14 @@ from torch.utils.data import random_split
 from torch_geometric import transforms
 from torch_geometric.transforms import OneHotDegree
 
-from datasets.config import DataModuleConfig
-from datasets.base_dataset import DataModule
+from datasets.base_dataset import DataModule, DataModuleConfig
 from datasets.transforms import (
     CenterTransform,
+    FixedLength,
+    FixedLengthBZR,
     NormalizedDegree,
     NCI109Transform,
+    To3D,
 )
 
 from dataclasses import dataclass
@@ -30,7 +32,7 @@ transforms_dict = {
     ],
     "NCI1": [NCI109Transform(), CenterTransform()],
     "NCI109": [CenterTransform()],
-    "BZR": [CenterTransform()],
+    "BZR": [CenterTransform(), To3D(), FixedLengthBZR(length=64)],
     "COX2": [CenterTransform()],
     "FRANKENSTEIN": [CenterTransform()],
     "Fingerprint": [CenterTransform()],
@@ -217,14 +219,23 @@ class TUDataModule(DataModule):
             drop_last=self.config.drop_last,
         )
 
-    def setup(self):
+    def prepare_data(self):
+        TUDataset(
+            pre_transform=transforms.Compose(transforms_dict[self.config.name]),
+            name=self.config.name,
+            root=self.config.root,
+            cleaned=self.config.cleaned,
+            use_node_attr=self.config.use_node_attr,
+        )
+
+    def setup(self, **kwargs):
         generator1 = torch.Generator().manual_seed(42)
         self.entire_ds = TUDataset(
             pre_transform=transforms.Compose(transforms_dict[self.config.name]),
             name=self.config.name,
             root=self.config.root,
             cleaned=self.config.cleaned,
-            use_node_attr=True,
+            use_node_attr=self.config.use_node_attr,
         )
         inter_ds, self.test_ds = random_split(
             self.entire_ds,

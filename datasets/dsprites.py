@@ -1,54 +1,61 @@
 import torch
 from torch.utils.data import random_split
 
-from torchvision.datasets import MNIST
 import torchvision.transforms as transforms
 from disentanglement_datasets import DSprites
-from torch_geometric.data import Data
+from torch_geometric.data import Data, InMemoryDataset
 
-from torch_geometric.data import InMemoryDataset
-from torch_geometric.transforms import FaceToEdge
+from datasets.base_dataset import DataModule, DataModuleConfig
+from datasets.transforms import CenterTransform, DspritesTransform
 
-from datasets.transforms import CenterTransform, SkeletonGraph
-from datasets.base_dataset import DataModule
-from datasets.transforms import DspritesTransform, EctTransform
-from datasets.config import DataModuleConfig
 
 from dataclasses import dataclass
+
+from datasets.transforms import FixedLength
 
 
 @dataclass
 class DspritesDataModuleConfig(DataModuleConfig):
-    root: str = "./data"
+    root: str = "./data/dsprites"
     module: str = "datasets.dsprites"
 
 
 class DspritesDataModule(DataModule):
     def __init__(self, config):
         self.config = config
-        # self.transform = transforms.Compose(
-        #     [MnistTransform(), CenterTransform(), EctTransform()]
-        # )
-        self.transform = transforms.Compose([DspritesTransform()])
+        self.transform = transforms.Compose(
+            [DspritesTransform(), FixedLength(), CenterTransform()]
+        )
         super().__init__(
             config.root, config.batch_size, config.num_workers, config.pin_memory
         )
 
-    def setup(self):
+    def prepare_data(self):
+        DspritesDataset(root=self.config.root, pre_transform=self.transform)
+
+    def setup(self, **kwargs):
         self.entire_ds = DspritesDataset(
             root=self.config.root, pre_transform=self.transform
         )
-        self.train_ds, self.val_ds = random_split(
+        self.train_ds, val_ds = random_split(
             self.entire_ds,
             [
-                int(0.9 * len(self.entire_ds)),
-                len(self.entire_ds) - int(0.9 * len(self.entire_ds)),
+                int(0.1 * len(self.entire_ds)),
+                len(self.entire_ds) - int(0.1 * len(self.entire_ds)),
             ],
         )  # type: ignore
 
-        self.test_ds = DspritesDataset(
-            root=self.config.root, pre_transform=self.transform
-        )
+        self.val_ds, _ = random_split(
+            val_ds,
+            [
+                int(0.1 * len(val_ds)),
+                len(val_ds) - int(0.1 * len(val_ds)),
+            ],
+        )  # type: ignore
+
+        # self.test_ds = DspritesDataset(
+        #     root=self.config.root, pre_transform=self.transform
+        # )
 
 
 class DspritesDataset(InMemoryDataset):

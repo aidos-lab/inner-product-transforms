@@ -1,6 +1,7 @@
 # from disentanglement_datasets import DSprites
 import matplotlib.pyplot as plt
 
+import torch
 
 # dataset = DSprites(root="./data", download=True)
 # data = dataset[0]
@@ -8,13 +9,21 @@ import matplotlib.pyplot as plt
 # plt.show()
 
 from datasets.dsprites import DspritesDataModule, DspritesDataModuleConfig
+import numpy as np
+
+dm = DspritesDataModule(DspritesDataModuleConfig())
+
+for batch in dm.train_dataloader():
+    break
+
+from torch_geometric.data import Data
 
 
-dataset = DspritesDataModule(DspritesDataModuleConfig)
+pts = batch[0].x
+for idx in range(20):
+    print(batch[idx].x.shape)
 
-
-data = dataset.entire_ds[0]
-plt.scatter(data.x[:, 0], data.x[:, 1])
+plt.scatter(pts[:, 0], pts[:, 1])
 plt.xlim([-1, 1])
 plt.ylim([-1, 1])
 plt.show()

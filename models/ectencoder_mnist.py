@@ -50,7 +50,7 @@ class BaseModel(L.LightningModule):
         return x
 
     def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
-        batch_len = len(batch.y)
+        batch_len = batch.batch.max() + 1
         _batch = batch.clone()
 
         ect = self.layer(batch, batch.batch)
@@ -63,7 +63,23 @@ class BaseModel(L.LightningModule):
 
         ect_hat = self.layer(_batch, _batch.batch)
 
-        loss = self.loss_fn(ect_hat, ect)
+        # loss = self.loss_fn(ect_hat, ect)
+        loss = chamfer_distance(
+            torch.cat(
+                [
+                    batch.x.view(batch_len, 128, self.num_dims),
+                    torch.zeros(size=(batch_len, 128, 1), device=self.device),
+                ],
+                dim=-1,
+            ),
+            torch.cat(
+                [
+                    _batch.x.view(-1, self.num_pts, self.num_dims),
+                    torch.zeros(size=(batch_len, 128, 1), device=self.device),
+                ],
+                dim=-1,
+            ),
+        ).mean()
         self.log(
             f"{step}_loss",
             loss,
