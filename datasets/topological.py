@@ -294,28 +294,28 @@ class TopologicalDataset(InMemoryDataset):
     def download(self) -> None:
         spheres = torch.stack(
             [
-                sample_from_sphere(self.config.n_samples, noise=0.05)
+                sample_from_sphere(self.config.n_samples, noise=None)
                 for i in range(self.config.n_manifolds)
             ]
         )
 
         cubes = torch.stack(
             [
-                sample_from_unit_cube(self.config.n_samples, noise=0.05)
+                sample_from_unit_cube(self.config.n_samples, noise=None)
                 for i in range(self.config.n_manifolds)
             ]
         )
 
         tori = torch.stack(
             [
-                sample_from_torus(self.config.n_samples, noise=0.05)
+                sample_from_torus(self.config.n_samples, noise=None)
                 for i in range(self.config.n_manifolds)
             ]
         )
 
         mobius = torch.stack(
             [
-                sample_from_mobius(self.config.n_samples, noise=0.05)
+                sample_from_mobius(self.config.n_samples, noise=None)
                 for i in range(self.config.n_manifolds)
             ]
         )

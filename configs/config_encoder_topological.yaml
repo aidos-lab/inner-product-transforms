@@ -2,7 +2,7 @@ data:
   samplepoints: 1024
 
 encodermodel:
-  hidden_size: 2048
+  hidden_size: 4096
   num_pts: 1024
   num_dims: 3
   learning_rate: 0.0005
@@ -13,7 +13,7 @@ layer:
 
 trainer:
   accelerator: auto
-  max_epochs: 100
+  max_epochs: 500
   log_every_n_steps: 1
 
 loggers: 

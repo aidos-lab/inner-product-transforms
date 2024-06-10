@@ -42,7 +42,7 @@ class BaseModel(L.LightningModule):
     def general_step(
         self, batch, batch_idx, step: Literal["train", "test", "validation"]
     ):
-        batch_len = len(batch.y)
+        batch_len = batch.batch.max() + 1
         ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
         decoded, _, z_mean, z_log_var = self(ect)
         # Squeeze x_hat to match the shape of y
@@ -111,8 +111,8 @@ class BaseModel(L.LightningModule):
     def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
 
-    def validation_step(self, batch, batch_idx):
-        return self.general_step(batch, batch_idx, "validation")
+    # def validation_step(self, batch, batch_idx):
+    #     return self.general_step(batch, batch_idx, "validation")
 
     def training_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "train")

@@ -1,0 +1,23 @@
+
+model:
+  in_channels: 1
+  latent_dim: 64
+  save_name: "vae_topological.ckpt"
+
+trainer:
+  accelerator: auto
+  max_epochs: 100
+  log_every_n_steps: 1
+litmodel:
+  learning_rate: 0.001
+
+data:
+  samplepoints: 1024
+
+loggers: 
+  project: "toporecon-dev"
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+
+layer: 
+  ect_size: 96

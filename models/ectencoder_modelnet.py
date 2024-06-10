@@ -107,8 +107,8 @@ class BaseModel(L.LightningModule):
     def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
 
-    def validation_step(self, batch, batch_idx):
-        return self.general_step(batch, batch_idx, "validation")
+    # def validation_step(self, batch, batch_idx):
+    #     return self.general_step(batch, batch_idx, "validation")
 
     def training_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "train")
