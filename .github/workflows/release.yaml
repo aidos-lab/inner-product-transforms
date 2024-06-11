@@ -17,7 +17,7 @@ jobs:
         with:
           body_path: ${{ github.workspace }}-CHANGELOG.txt
           draft: true
-          generate_release_notes: true
+          # generate_release_notes: true
           # repository: my_gh_org/my_gh_repo
           # note you'll typically need to create a personal access token
           # with permissions to create releases in the other repo
