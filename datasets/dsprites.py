@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 from disentanglement_datasets import DSprites
 from torch_geometric.data import Data, InMemoryDataset
 
-from datasets.base_dataset import DataModule, DataModuleConfig
+from datasets.base_dataset import BaseConfig, BaseModule
 from datasets.transforms import CenterTransform, DspritesTransform
 
 
@@ -15,12 +15,12 @@ from datasets.transforms import FixedLength
 
 
 @dataclass
-class DspritesDataModuleConfig(DataModuleConfig):
+class DataModuleConfig(BaseConfig):
     root: str = "./data/dsprites"
     module: str = "datasets.dsprites"
 
 
-class DspritesDataModule(DataModule):
+class DataModule(BaseModule):
     def __init__(self, config):
         self.config = config
         self.transform = transforms.Compose(
@@ -62,9 +62,7 @@ class DspritesDataModule(DataModule):
 
 
 class DspritesDataset(InMemoryDataset):
-    def __init__(
-        self, root, transform=None, pre_transform=None, pre_filter=None
-    ):
+    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
         self.root = root
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])

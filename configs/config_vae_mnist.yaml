@@ -4,8 +4,18 @@ model:
   latent_dim: 64
   save_name: "vae_mnist.ckpt"
 
+data: 
+  module: datasets.mnist
+  root: "./data/mnistpointcloud"
+  num_workers: 0
+  batch_size: 64
+  pin_memory: True
+  drop_last: False
+
+
 layer: 
   ect_size: 64
+  dim: 2
 
 trainer:
   accelerator: auto

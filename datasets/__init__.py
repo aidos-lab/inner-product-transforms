@@ -1,3 +1,11 @@
+import importlib
+
+
+def load_datamodule(config: dict):
+    module = importlib.import_module(config.module)
+    return module.DataModule(config)
+
+
 # import os, sys
 # from pydoc import locate
 

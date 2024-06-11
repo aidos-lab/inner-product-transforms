@@ -4,17 +4,7 @@ from torch.utils.data import random_split
 from dataclasses import dataclass
 
 from datasets.transforms import CenterTransform, ClassFilter, ModelNetTransform
-from datasets.base_dataset import DataModule
-
-
-@dataclass
-class DataModuleConfig:
-    module: str
-    root: str = "./data"
-    num_workers: int = 0
-    batch_size: int = 64
-    pin_memory: bool = True
-    drop_last: bool = False
+from datasets.base_dataset import BaseModule, BaseConfig
 
 
 class CenterTransformNew(object):
@@ -25,14 +15,14 @@ class CenterTransformNew(object):
 
 
 @dataclass
-class ModelNetDataModuleConfig(DataModuleConfig):
+class DataModuleConfig(BaseConfig):
     root: str = "./data/modelnet"
     name: str = "40"
     module: str = "datasets.modelnet"
     samplepoints: int = 100
 
 
-class ModelNetDataModule(DataModule):
+class DataModule(BaseModule):
     def __init__(self, config):
         self.config = config
         self.pre_transform = transforms.Compose(
