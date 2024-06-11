@@ -3,7 +3,10 @@ from omegaconf import OmegaConf
 
 torch.set_float32_matmul_precision("medium")
 
-from datasets.topological import TopolocigalDataModule, TopologicalDataModuleConfig
+from datasets.topological import (
+    TopolocigalDataModule,
+    TopologicalDataModuleConfig,
+)
 
 from models.vae_mnist import VanillaVAE, BaseModel
 from metrics.metrics import get_mse_metrics

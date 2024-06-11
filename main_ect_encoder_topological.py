@@ -2,7 +2,10 @@ import torch
 import lightning as L
 from omegaconf import OmegaConf
 
-from datasets.topological import TopolocigalDataModule, TopologicalDataModuleConfig
+from datasets.topological import (
+    TopolocigalDataModule,
+    TopologicalDataModuleConfig,
+)
 from models.ectencoder_modelnet import BaseModel
 from layers.ect import EctLayer, EctConfig
 

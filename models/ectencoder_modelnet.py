@@ -15,7 +15,9 @@ Tensor: TypeAlias = torch.Tensor
 
 
 class BaseModel(L.LightningModule):
-    def __init__(self, layer, ect_size, hidden_size, num_pts, learning_rate, num_dims):
+    def __init__(
+        self, layer, ect_size, hidden_size, num_pts, learning_rate, num_dims
+    ):
         super().__init__()
 
         self.learning_rate = learning_rate
@@ -40,14 +42,18 @@ class BaseModel(L.LightningModule):
         )
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.learning_rate
+        )
         return optimizer
 
     def forward(self, batch):
         x = self.model(batch)
         return x
 
-    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
+    def general_step(
+        self, batch, _, step: Literal["train", "test", "validation"]
+    ):
         batch_len = len(batch.y)
         _batch = batch.clone()
 

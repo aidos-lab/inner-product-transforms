@@ -25,15 +25,19 @@ from layers.ect import EctLayer
 
 class EctTransform:
     def __init__(self, normalized=True):
-        self.layer = EctLayer(EctConfig(bump_steps=64,num_thetas=64,num_features=3),fixed=False)
+        self.layer = EctLayer(
+            EctConfig(bump_steps=64, num_thetas=64, num_features=3), fixed=False
+        )
         self.normalized = True
-    def __call__(self,data):
+
+    def __call__(self, data):
         batch = Batch.from_data_list([data])
         ect = self.layer(batch)
         if self.normalized:
-            return Data(x=ect/ect.max(),pts=data.x)
-        else: 
-            return Data(x=ect,pts=data.x)
+            return Data(x=ect / ect.max(), pts=data.x)
+        else:
+            return Data(x=ect, pts=data.x)
+
 
 class CenterTransform(object):
     def __call__(self, data):
@@ -62,10 +66,17 @@ class ManifoldPointsDataModule(DataModule):
     def __init__(self, config):
         self.config = config
         self.transform = transforms.Compose(
-            [FaceToEdge(remove_faces=False), SamplePoints(num=500), CenterTransform()]
+            [
+                FaceToEdge(remove_faces=False),
+                SamplePoints(num=500),
+                CenterTransform(),
+            ]
         )
         super().__init__(
-            config.root, config.batch_size, config.num_workers, config.pin_memory
+            config.root,
+            config.batch_size,
+            config.num_workers,
+            config.pin_memory,
         )
 
     def setup(self):
@@ -83,7 +94,6 @@ class ManifoldPointsDataModule(DataModule):
         )
 
 
-
 class ManifoldDataModule(DataModule):
     def __init__(self, config):
         self.config = config
@@ -91,7 +101,10 @@ class ManifoldDataModule(DataModule):
             [FaceToEdge(remove_faces=False), CenterTransform()]
         )
         super().__init__(
-            config.root, config.batch_size, config.num_workers, config.pin_memory
+            config.root,
+            config.batch_size,
+            config.num_workers,
+            config.pin_memory,
         )
 
     def setup(self):
@@ -152,7 +165,7 @@ class ManifoldDataset(Dataset):
         return len(self.file_frame)
 
     def create_spheres(self, noise=None):
-        noise=.1
+        noise = 0.1
 
         for i in range(self.config.num_samples):
             base_mesh = o3d.geometry.TriangleMesh.create_sphere()
@@ -160,9 +173,7 @@ class ManifoldDataset(Dataset):
             vertices += np.random.uniform(0, noise, size=vertices.shape)
             base_mesh.vertices = o3d.utility.Vector3dVector(vertices)
             base_mesh.compute_vertex_normals()
-            f_name = (
-                f"{self.config.root}/manifold/{self.split}/sphere_{self.split}_{i}.ply"
-            )
+            f_name = f"{self.config.root}/manifold/{self.split}/sphere_{self.split}_{i}.ply"
             o3d.io.write_triangle_mesh(f_name, base_mesh)
             self.files.append([f_name, int(0)])
 
@@ -174,9 +185,7 @@ class ManifoldDataset(Dataset):
             vertices += np.random.uniform(0, noise, size=vertices.shape)
             base_mesh.vertices = o3d.utility.Vector3dVector(vertices)
             base_mesh.compute_vertex_normals()
-            f_name = (
-                f"{self.config.root}/manifold/{self.split}/mobius_{self.split}_{i}.ply"
-            )
+            f_name = f"{self.config.root}/manifold/{self.split}/mobius_{self.split}_{i}.ply"
             o3d.io.write_triangle_mesh(f_name, base_mesh)
             self.files.append([f_name, int(1)])
 
@@ -189,9 +198,6 @@ class ManifoldDataset(Dataset):
             vertices += np.random.uniform(0, noise, size=vertices.shape)
             base_mesh.vertices = o3d.utility.Vector3dVector(vertices)
             base_mesh.compute_vertex_normals()
-            f_name = (
-                f"{self.config.root}/manifold/{self.split}/torus_{self.split}_{i}.ply"
-            )
+            f_name = f"{self.config.root}/manifold/{self.split}/torus_{self.split}_{i}.ply"
             o3d.io.write_triangle_mesh(f_name, base_mesh)
             self.files.append([f_name, int(2)])
-

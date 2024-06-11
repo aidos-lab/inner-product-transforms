@@ -32,7 +32,10 @@ class EctMnistDataModule(DataModule):
             [SkeletonGraph(), CenterTransform(), EctTransform()]
         )
         super().__init__(
-            config.root, config.batch_size, config.num_workers, config.pin_memory
+            config.root,
+            config.batch_size,
+            config.num_workers,
+            config.pin_memory,
         )
 
     def setup(self):
@@ -59,11 +62,16 @@ class MnistDataModule(DataModule):
             [MnistTransform(), FixedLength(), CenterTransform()]
         )
         super().__init__(
-            config.root, config.batch_size, config.num_workers, config.pin_memory
+            config.root,
+            config.batch_size,
+            config.num_workers,
+            config.pin_memory,
         )
 
     def prepare_data(self):
-        MnistDataset(root=self.config.root, pre_transform=self.transform, train=True)
+        MnistDataset(
+            root=self.config.root, pre_transform=self.transform, train=True
+        )
 
     def setup(self, **kwargs):
         self.entire_ds = MnistDataset(
@@ -84,7 +92,12 @@ class MnistDataModule(DataModule):
 
 class MnistDataset(InMemoryDataset):
     def __init__(
-        self, root, transform=None, pre_transform=None, train=True, pre_filter=None
+        self,
+        root,
+        transform=None,
+        pre_transform=None,
+        train=True,
+        pre_filter=None,
     ):
         self.train = train
         self.root = root

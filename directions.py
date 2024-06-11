@@ -10,8 +10,12 @@ def generate_3d_directions(num_thetas, device):
 
     V1 = torch.vstack(
         [
-            torch.sin(torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)),
-            torch.cos(torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)),
+            torch.sin(
+                torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
+            ),
+            torch.cos(
+                torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
+            ),
             torch.zeros_like(
                 torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
             ),
@@ -20,11 +24,15 @@ def generate_3d_directions(num_thetas, device):
 
     V2 = torch.vstack(
         [
-            torch.sin(torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)),
+            torch.sin(
+                torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
+            ),
             torch.zeros_like(
                 torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
             ),
-            torch.cos(torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)),
+            torch.cos(
+                torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
+            ),
         ]
     )
 
@@ -33,8 +41,12 @@ def generate_3d_directions(num_thetas, device):
             torch.zeros_like(
                 torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
             ),
-            torch.sin(torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)),
-            torch.cos(torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)),
+            torch.sin(
+                torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
+            ),
+            torch.cos(
+                torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
+            ),
         ]
     )
 
@@ -45,7 +57,11 @@ def generate_2d_directions(num_thetas, device):
 
     return torch.vstack(
         [
-            torch.sin(torch.linspace(0, 2 * torch.pi, num_thetas, device=device)),
-            torch.cos(torch.linspace(0, 2 * torch.pi, num_thetas, device=device)),
+            torch.sin(
+                torch.linspace(0, 2 * torch.pi, num_thetas, device=device)
+            ),
+            torch.cos(
+                torch.linspace(0, 2 * torch.pi, num_thetas, device=device)
+            ),
         ]
     )

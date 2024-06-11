@@ -154,7 +154,10 @@ class SkeletonGraph:
         skeleton = skeletonize(self.tr(image).squeeze().numpy())
         coordinates = np.where(skeleton > 0.5)
         x_hat = torch.vstack(
-            [self.lin[coordinates[0]].squeeze(), self.lin[coordinates[1]].squeeze()]
+            [
+                self.lin[coordinates[0]].squeeze(),
+                self.lin[coordinates[1]].squeeze(),
+            ]
         ).T
 
         data = Data(pos=x_hat, y=y)
@@ -233,7 +236,9 @@ class FixedLength:
     def __call__(self, data):
         res = data.clone()
         if data.x.shape[0] < self.length:
-            idx = torch.tensor(np.random.choice(len(data.x), self.length, replace=True))
+            idx = torch.tensor(
+                np.random.choice(len(data.x), self.length, replace=True)
+            )
         else:
             idx = torch.tensor(
                 np.random.choice(len(data.x), self.length, replace=False)

@@ -44,7 +44,10 @@ class ModelNetDataModule(DataModule):
         )
         self.pre_filter = ClassFilter()
         super().__init__(
-            config.root, config.batch_size, config.num_workers, config.pin_memory
+            config.root,
+            config.batch_size,
+            config.num_workers,
+            config.pin_memory,
         )
 
     def prepare_data(self):

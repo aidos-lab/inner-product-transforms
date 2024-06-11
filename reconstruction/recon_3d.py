@@ -162,7 +162,9 @@ if __name__ == "__main__":
 
     # Generate data
     v = generate_thetas()
-    x = torch.tensor(np.random.uniform(-0.7, 0.7, size=(NUM_PTS, 3)), dtype=torch.float)
+    x = torch.tensor(
+        np.random.uniform(-0.7, 0.7, size=(NUM_PTS, 3)), dtype=torch.float
+    )
     x[:, 2] *= 0
     x = center_points(x)
 

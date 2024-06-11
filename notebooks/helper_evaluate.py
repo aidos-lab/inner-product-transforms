@@ -15,33 +15,33 @@ def compute_accuracy(model, data_loader, device):
             _, predicted_labels = torch.max(logits, 1)
             num_examples += targets.size(0)
             correct_pred += (predicted_labels == targets).sum()
-    return correct_pred.float()/num_examples * 100
+    return correct_pred.float() / num_examples * 100
 
 
 def compute_epoch_loss_classifier(model, data_loader, loss_fn, device):
     model.eval()
-    curr_loss, num_examples = 0., 0
+    curr_loss, num_examples = 0.0, 0
     with torch.no_grad():
         for features, targets in data_loader:
             features = features.to(device)
             targets = targets.to(device)
             logits = model(features)
-            loss = loss_fn(logits, targets, reduction='sum')
+            loss = loss_fn(logits, targets, reduction="sum")
             num_examples += targets.size(0)
             curr_loss += loss
 
         curr_loss = curr_loss / num_examples
         return curr_loss
-    
+
 
 def compute_epoch_loss_autoencoder(model, data_loader, loss_fn, device):
     model.eval()
-    curr_loss, num_examples = 0., 0
+    curr_loss, num_examples = 0.0, 0
     with torch.no_grad():
         for features, _ in data_loader:
             features = features.to(device)
             logits = model(features)
-            loss = loss_fn(logits, features, reduction='sum')
+            loss = loss_fn(logits, features, reduction="sum")
             num_examples += features.size(0)
             curr_loss += loss
 

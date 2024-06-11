@@ -104,13 +104,17 @@ if __name__ == "__main__":
     DEVICE = "cuda:0"
     V = torch.vstack(
         [
-            torch.sin(torch.linspace(0, 2 * torch.pi, NUM_THETAS, device=DEVICE)),
-            torch.cos(torch.linspace(0, 2 * torch.pi, NUM_THETAS, device=DEVICE)),
+            torch.sin(
+                torch.linspace(0, 2 * torch.pi, NUM_THETAS, device=DEVICE)
+            ),
+            torch.cos(
+                torch.linspace(0, 2 * torch.pi, NUM_THETAS, device=DEVICE)
+            ),
         ]
     )
-    layer = EctLayer(EctConfig(num_thetas=NUM_THETAS, bump_steps=NUM_THETAS), v=V).to(
-        DEVICE
-    )
+    layer = EctLayer(
+        EctConfig(num_thetas=NUM_THETAS, bump_steps=NUM_THETAS), v=V
+    ).to(DEVICE)
 
     data = Data(x=torch.rand(size=(4, 2))).to(DEVICE)
     index = torch.tensor([0, 0, 1, 1]).to(DEVICE)

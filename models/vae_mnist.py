@@ -32,7 +32,9 @@ class BaseModel(L.LightningModule):
         self.layer = layer
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.learning_rate
+        )
         return optimizer
 
     def forward(self, batch):
@@ -198,7 +200,9 @@ class VanillaVAE(nn.Module):
             ),
             nn.BatchNorm2d(hidden_dims[-1]),
             nn.LeakyReLU(),
-            nn.Conv2d(hidden_dims[-1], out_channels=1, kernel_size=3, padding=1),
+            nn.Conv2d(
+                hidden_dims[-1], out_channels=1, kernel_size=3, padding=1
+            ),
             nn.Tanh(),
         )
 

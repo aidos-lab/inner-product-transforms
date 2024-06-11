@@ -48,7 +48,10 @@ def get_node_coordinates(reconstruction_fbp):
     coordinates = peak_local_max(im, min_distance=20, threshold_rel=0.1)
     lin = torch.linspace(-1.3, 1.3, NUM_STEPS).view(-1, 1, 1)
     x_hat = torch.vstack(
-        [lin[512 - coordinates[:, 0]].squeeze(), lin[coordinates[:, 1]].squeeze()]
+        [
+            lin[512 - coordinates[:, 0]].squeeze(),
+            lin[coordinates[:, 1]].squeeze(),
+        ]
     ).T
     return x_hat
 
@@ -65,7 +68,8 @@ def get_edge_indices(reconstruction_fbp, x_hat, v):
         for j in range(len(x_hat)):
             ect = compute_ect((x_hat[i] + x_hat[j]) / 2, v)
             rec = torch.tensor(
-                iradon(ect.numpy(), theta=theta, filter_name="ramp"), dtype=torch.float
+                iradon(ect.numpy(), theta=theta, filter_name="ramp"),
+                dtype=torch.float,
             )
 
             adj[i, j] = -1 * (rec * reconstruction_fbp).sum()

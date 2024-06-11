@@ -112,7 +112,9 @@ def plot_generated_images(
             if unnormalizer is not None:
                 curr_img = unnormalizer(curr_img)
 
-            ax[i].imshow(curr_img.view((image_height, image_width)), cmap="binary")
+            ax[i].imshow(
+                curr_img.view((image_height, image_width)), cmap="binary"
+            )
 
 
 def plot_generated_images_orig(
@@ -141,7 +143,9 @@ def plot_generated_images_orig(
             if modeltype == "autoencoder":
                 decoded_images = model(features)[:n_images]
             elif modeltype == "VAE":
-                encoded, z_mean, z_log_var, decoded_images = model(features)[:n_images]
+                encoded, z_mean, z_log_var, decoded_images = model(features)[
+                    :n_images
+                ]
             else:
                 raise ValueError("`modeltype` not supported")
 
@@ -158,10 +162,14 @@ def plot_generated_images_orig(
                 curr_img = np.transpose(curr_img, (1, 2, 0))
                 ax[i].imshow(curr_img)
             else:
-                ax[i].imshow(curr_img.view((image_height, image_width)), cmap="binary")
+                ax[i].imshow(
+                    curr_img.view((image_height, image_width)), cmap="binary"
+                )
 
 
-def plot_latent_space_with_labels(num_classes, data_loader, encoding_fn, device):
+def plot_latent_space_with_labels(
+    num_classes, data_loader, encoding_fn, device
+):
     d = {i: [] for i in range(num_classes)}
 
     with torch.no_grad():
@@ -180,7 +188,9 @@ def plot_latent_space_with_labels(num_classes, data_loader, encoding_fn, device)
     colors = list(mcolors.TABLEAU_COLORS.items())
     for i in range(num_classes):
         d[i] = np.concatenate(d[i])
-        plt.scatter(d[i][:, 0], d[i][:, 1], color=colors[i][1], label=f"{i}", alpha=0.5)
+        plt.scatter(
+            d[i][:, 0], d[i][:, 1], color=colors[i][1], label=f"{i}", alpha=0.5
+        )
 
     plt.legend()
 
@@ -221,7 +231,9 @@ def plot_images_sampled_from_vae_orig(
                 curr_img = np.transpose(curr_img, (1, 2, 0))
                 ax.imshow(curr_img)
             else:
-                ax.imshow(curr_img.view((image_height, image_width)), cmap="binary")
+                ax.imshow(
+                    curr_img.view((image_height, image_width)), cmap="binary"
+                )
 
 
 def plot_images_sampled_from_vae(
@@ -260,7 +272,9 @@ def plot_images_sampled_from_vae(
                 curr_img = np.transpose(curr_img, (1, 2, 0))
                 ax.imshow(curr_img)
             else:
-                ax.imshow(curr_img.view((image_height, image_width)), cmap="binary")
+                ax.imshow(
+                    curr_img.view((image_height, image_width)), cmap="binary"
+                )
 
 
 def plot_modified_faces(
@@ -273,7 +287,11 @@ def plot_modified_faces(
 ):
 
     fig, axes = plt.subplots(
-        nrows=2, ncols=len(diff_coefficients), sharex=True, sharey=True, figsize=figsize
+        nrows=2,
+        ncols=len(diff_coefficients),
+        sharex=True,
+        sharey=True,
+        figsize=figsize,
     )
 
     for i, alpha in enumerate(diff_coefficients):

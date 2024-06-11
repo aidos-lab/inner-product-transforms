@@ -9,8 +9,8 @@ def set_deterministic():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
     torch.set_deterministic(True)
-    
-    
+
+
 def set_all_seeds(seed):
     os.environ["PL_GLOBAL_SEED"] = str(seed)
     random.seed(seed)
