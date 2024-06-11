@@ -2,10 +2,12 @@
 Trains a VAE on the ECT's of the mnist dataset.
 """
 
+from dataclasses import dataclass
 import argparse
+from typing import Any
 import torch
+import yaml
 import lightning as L
-from omegaconf import OmegaConf
 from layers.ect import EctLayer, EctConfig
 from layers.directions import generate_directions
 from loggers import get_wandb_logger
@@ -22,7 +24,24 @@ torch.set_float32_matmul_precision("medium")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def train(config: dict):
+@dataclass
+class Config:
+    """
+    Interface for the configurations in the yaml file.
+    """
+
+    layer: Any
+    data: Any
+    model: Any
+    litmodel: Any
+    loggers: Any
+    trainer: Any
+
+
+def train(config: Config):
+    """
+    Method to train variational autoencoders.
+    """
 
     layer = EctLayer(
         EctConfig(
@@ -69,5 +88,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     args = parser.parse_args()
-    config = OmegaConf.load(args.INPUT)
-    train(config)
+    parsed_config = yaml.safe_load(args.INPUT)
+    train(parsed_config)

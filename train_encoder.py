@@ -1,7 +1,14 @@
+"""
+Trains an encoder that takes an ECT and reconstructs a pointcloud for various 
+datasets.
+"""
+
 import argparse
+from dataclasses import dataclass
+from typing import Any
 import torch
 import lightning as L
-from omegaconf import OmegaConf
+import yaml
 
 from datasets import load_datamodule
 from models.encoder import BaseModel
@@ -16,8 +23,24 @@ torch.set_float32_matmul_precision("medium")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def train(config: dict):
+@dataclass
+class Config:
+    """
+    Interface for the configurations in the yaml file.
+    """
 
+    layer: Any
+    data: Any
+    model: Any
+    litmodel: Any
+    loggers: Any
+    trainer: Any
+
+
+def train(config: Config):
+    """
+    Method to train variational autoencoders.
+    """
     dm = load_datamodule(config.data)
 
     layer = EctLayer(
@@ -57,5 +80,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     args = parser.parse_args()
-    config = OmegaConf.load(args.INPUT)
-    train(config)
+    parsed_config = yaml.safe_load(args.INPUT)
+    train(parsed_config)

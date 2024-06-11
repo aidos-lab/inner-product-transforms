@@ -1,17 +1,22 @@
-import torch
-import torch.nn as nn
-import geotorch
-from torch_geometric.data import Data, Batch
+"""
+Ect layer implementation
+"""
 
-from typing import Protocol
 from dataclasses import dataclass
+import torch
+from torch import nn
+from torch_geometric.data import Data
 
 
 @dataclass(frozen=True)
 class EctConfig:
+    """
+    Config for initializing an ect layer.
+    """
+
     num_thetas: int = 32
     bump_steps: int = 32
-    R: float = 1.1
+    r: float = 1.1
     ect_type: str = "points"
     device: str = "cuda:0"
     num_features: int = 3
@@ -19,6 +24,10 @@ class EctConfig:
 
 
 def compute_ecc_derivative(nh, index, lin, out):
+    """
+    Computes the ECC with the derivative of the sigmoid instead of the
+    sigmoid.
+    """
     ecc = torch.nn.functional.sigmoid(50 * torch.sub(lin, nh)) * (
         1 - torch.nn.functional.sigmoid(50 * torch.sub(lin, nh))
     )
@@ -26,21 +35,27 @@ def compute_ecc_derivative(nh, index, lin, out):
 
 
 def compute_ecc(nh, index, lin, out):
+    """
+    Computes the ECC of a set of points given the node heights.
+    """
     ecc = torch.nn.functional.sigmoid(500 * torch.sub(lin, nh))
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
 def compute_ect_points_derivative(data, index, v, lin, out):
+    """Compute the derivative of the ECT of a set of points."""
     nh = data.x @ v
     return compute_ecc_derivative(nh, index, lin, out)
 
 
 def compute_ect_points(data, index, v, lin, out):
+    """Compute the ECT of a set of points."""
     nh = data.x @ v
     return compute_ecc(nh, index, lin, out)
 
 
 def compute_ect_edges(data, index, v, lin, out):
+    """Compute the ECT of a graph"""
     nh = data.x @ v
     eh, _ = nh[data.edge_index].max(dim=0)
     return compute_ecc(nh, index, lin, out) - compute_ecc(
@@ -49,6 +64,7 @@ def compute_ect_edges(data, index, v, lin, out):
 
 
 def compute_ect_faces(data, index, v, lin, out):
+    """Compute the ECT of a mesh"""
     nh = data.x @ v
     eh, _ = nh[data.edge_index].max(dim=0)
     fh, _ = nh[data.face].max(dim=0)
@@ -60,13 +76,13 @@ def compute_ect_faces(data, index, v, lin, out):
 
 
 class EctLayer(nn.Module):
-    """docstring for EctLayer."""
+    """Docstring for EctLayer."""
 
     def __init__(self, config: EctConfig, v=None):
         super().__init__()
         self.config = config
         self.lin = (
-            torch.linspace(-config.R, config.R, config.bump_steps)
+            torch.linspace(-config.r, config.r, config.bump_steps)
             .view(-1, 1, 1)
             .to(config.device)
         )
@@ -83,7 +99,8 @@ class EctLayer(nn.Module):
         elif config.ect_type == "points_derivative":
             self.compute_ect = compute_ect_points_derivative
 
-    def forward(self, data, index):
+    def forward(self, data: Data, index):
+        """Forward method"""
         out = torch.zeros(
             size=(
                 self.config.bump_steps,
@@ -95,28 +112,4 @@ class EctLayer(nn.Module):
         ect = self.compute_ect(data, index, self.v, self.lin, out)
         if self.config.normalized:
             return ect / torch.amax(ect, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
-        else:
-            return ect
-
-
-if __name__ == "__main__":
-    NUM_THETAS = 64
-    DEVICE = "cuda:0"
-    V = torch.vstack(
-        [
-            torch.sin(
-                torch.linspace(0, 2 * torch.pi, NUM_THETAS, device=DEVICE)
-            ),
-            torch.cos(
-                torch.linspace(0, 2 * torch.pi, NUM_THETAS, device=DEVICE)
-            ),
-        ]
-    )
-    layer = EctLayer(
-        EctConfig(num_thetas=NUM_THETAS, bump_steps=NUM_THETAS), v=V
-    ).to(DEVICE)
-
-    data = Data(x=torch.rand(size=(4, 2))).to(DEVICE)
-    index = torch.tensor([0, 0, 1, 1]).to(DEVICE)
-
-    layer(data, index)
+        return ect
