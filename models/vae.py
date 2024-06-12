@@ -1,15 +1,16 @@
+from typing import List, Literal, TypeAlias
+
 import torch
 from torch import nn
 import lightning as L
 
-from typing import List, Any, Literal, TypeAlias
-
-from torchmetrics.regression import MeanSquaredError
 
 Tensor: TypeAlias = torch.Tensor
 
 
 class BaseModel(L.LightningModule):
+    """ "Base model for VAE models"""
+
     def __init__(
         self,
         model,
@@ -32,18 +33,14 @@ class BaseModel(L.LightningModule):
         self.layer = layer
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=self.learning_rate
-        )
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         return optimizer
 
-    def forward(self, batch):
+    def forward(self, batch):  # pylint: disable=arguments-differ
         x = self.model(batch)
         return x
 
-    def general_step(
-        self, batch, batch_idx, step: Literal["train", "test", "validation"]
-    ):
+    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
         batch_len = batch.batch.max() + 1
         ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
         decoded, _, z_mean, z_log_var = self(ect)
@@ -110,13 +107,13 @@ class BaseModel(L.LightningModule):
                     batch_size=batch_len,
                 )
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
     # def validation_step(self, batch, batch_idx):
     #     return self.general_step(batch, batch_idx, "validation")
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
 
 
@@ -130,7 +127,7 @@ class VanillaVAE(nn.Module):
         hidden_dims: List | None = None,
         **kwargs,
     ) -> None:
-        super(VanillaVAE, self).__init__()
+        super().__init__()
 
         self.latent_dim = latent_dim
 
@@ -200,20 +197,18 @@ class VanillaVAE(nn.Module):
             ),
             nn.BatchNorm2d(hidden_dims[-1]),
             nn.LeakyReLU(),
-            nn.Conv2d(
-                hidden_dims[-1], out_channels=1, kernel_size=3, padding=1
-            ),
+            nn.Conv2d(hidden_dims[-1], out_channels=1, kernel_size=3, padding=1),
             nn.Tanh(),
         )
 
-    def encode(self, input: Tensor) -> List[Tensor]:
+    def encode(self, input_tensor: Tensor) -> List[Tensor]:
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        result = self.encoder(input)
+        result = self.encoder(input_tensor)
         result = torch.flatten(result, start_dim=1)
 
         # Split the result into mu and var components
@@ -248,12 +243,12 @@ class VanillaVAE(nn.Module):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
-        mu, log_var = self.encode(input)
+    def forward(self, input_tensor: Tensor) -> List[Tensor]:
+        mu, log_var = self.encode(input_tensor)
         z = self.reparameterize(mu, log_var)
-        return [self.decode(z), input, mu, log_var]
+        return [self.decode(z), input_tensor, mu, log_var]
 
-    def sample(self, num_samples: int, device: str, **kwargs) -> Tensor:
+    def sample(self, num_samples: int, device: str) -> Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -266,7 +261,7 @@ class VanillaVAE(nn.Module):
         samples = self.decode(z)
         return samples
 
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
+    def generate(self, x: Tensor) -> Tensor:
         """
         Given an input image x, returns the reconstructed image
         :param x: (Tensor) [B x C x H x W]

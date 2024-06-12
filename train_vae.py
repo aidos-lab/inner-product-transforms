@@ -5,6 +5,7 @@ Trains a VAE on the ECT's of the mnist dataset.
 from dataclasses import dataclass
 import argparse
 from typing import Any
+from omegaconf import OmegaConf
 import torch
 import yaml
 import lightning as L
@@ -88,5 +89,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     args = parser.parse_args()
-    parsed_config = yaml.safe_load(args.INPUT)
-    train(parsed_config)
+    config = OmegaConf.load(args.INPUT)
+    train(config)

@@ -65,7 +65,9 @@ class MnistDataModule(BaseModule):
         )
 
     def prepare_data(self):
-        MnistDataset(root=self.config.root, pre_transform=self.transform, train=True)
+        MnistDataset(
+            root=self.config.root, pre_transform=self.transform, train=True
+        )
 
     def setup(self, **kwargs):
         self.entire_ds = MnistDataset(
@@ -98,7 +100,9 @@ class DataModule(BaseModule):
         )
 
     def prepare_data(self):
-        MnistDataset(root=self.config.root, pre_transform=self.transform, train=True)
+        MnistDataset(
+            root=self.config.root, pre_transform=self.transform, train=True
+        )
 
     def setup(self, **kwargs):
         self.entire_ds = MnistDataset(

@@ -21,7 +21,9 @@ class BaseModule(LightningDataModule):
     val_ds: Dataset
     entire_ds: Dataset
 
-    def __init__(self, root, batch_size, num_workers, pin_memory=True, drop_last=True):
+    def __init__(
+        self, root, batch_size, num_workers, pin_memory=True, drop_last=True
+    ):
         super().__init__()
         self.data_dir = root
         self.batch_size = batch_size

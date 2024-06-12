@@ -10,6 +10,8 @@ import torch
 import lightning as L
 import yaml
 
+from omegaconf import OmegaConf
+
 from datasets import load_datamodule
 from models.encoder import BaseModel
 from layers.ect import EctLayer, EctConfig
@@ -32,9 +34,49 @@ class Config:
     layer: Any
     data: Any
     model: Any
-    litmodel: Any
     loggers: Any
     trainer: Any
+
+
+# @dataclass
+# class ModelConfig:
+#     """
+#     Interface for the configurations in the yaml file.
+#     """
+
+#     layer: Any
+#     data: Any
+#     model: Any
+#     litmodel: Any
+#     loggers: Any
+#     trainer: Any
+
+# @dataclass
+# class DataConfig:
+#     """
+#     Interface for the configurations in the yaml file.
+#     """
+
+#     layer: Any
+#     data: Any
+#     model: Any
+#     litmodel: Any
+#     loggers: Any
+#     trainer: Any
+
+
+# @dataclass
+# class ModelConfig:
+#     """
+#     Interface for the configurations in the yaml file.
+#     """
+
+#     layer: Any
+#     data: Any
+#     model: Any
+#     litmodel: Any
+#     loggers: Any
+#     trainer: Any
 
 
 def train(config: Config):
@@ -77,8 +119,9 @@ def train(config: Config):
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     args = parser.parse_args()
-    parsed_config = yaml.safe_load(args.INPUT)
-    train(parsed_config)
+    config = OmegaConf.load(args.INPUT)
+    train(config)

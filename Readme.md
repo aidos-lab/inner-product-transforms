@@ -6,17 +6,72 @@ We propose a machine learning based approach for the inversion of ECT's of shape
 
 By training a Variational Autoencoder to reconstruct the Euler Characteristic transform to a $64$ dimensional latent space. This construction allows us to compress a pointcloud of $1024$ points in 3D to a $64$ dimensional latent vector and reconstruct the original point cloud from it. In the top row of the ECT's we find the original ECT's and below it the reconstructed ECT's using our VAE.
 
-![Reconstructed-Pointcloud-ECT](figures/reconstructed_modelnet/reconstructed_ect.png)
+<!-- ![Reconstructed-Pointcloud-ECT](figures/reconstructed_modelnet/reconstructed_ect.png) -->
 
 We then pass each ECT through our decoder model obtain the following reconstructed point clouds.
 
-![Reconstructed-Pointcloud](figures/reconstructed_modelnet/orbit_cloud.gif)
+<!-- ![Reconstructed-Pointcloud](figures/reconstructed_modelnet/orbit_cloud.gif) -->
 
 Moreover, we are able to _sample_ from this latent space to obtain novel _generated_ Euler Characteristic transforms which in turn can be decoded using our trained decoding model.
 
-![Reconstructed-Pointcloud-ECT](figures/generated_modelnet/generated_ect.png)
+<!-- ![Reconstructed-Pointcloud-ECT](figures/generated_modelnet/generated_ect.png) -->
 
-![Reconstructed-Pointcloud](figures/generated_modelnet/orbit_cloud.gif)
+<!-- ![Reconstructed-Pointcloud](figures/generated_modelnet/orbit_cloud.gif) -->
+
+
+# MNIST
+
+## Reconstruction results
+Results for the MNIST dataset. 
+![Reconstructed-Pointcloud](figures/img/mnist/reconstructed_all.png)
+![Reconstructed-Pointcloud](figures/img/mnist/reconstructed_ect_vae.png)
+![Reconstructed-Pointcloud](figures/img/mnist/reconstructed_pointcloud_vae.png)
+![Reconstructed-Pointcloud](figures/img/mnist/generated_samples_vae.png)
+
+## Emperical stability
+### Noisy pointclouds
+We check how stable the encoder model is with respect to adding normally distributed
+noise to the point cloud. In the top left we find the original ground truth with 
+the corresponding ect in the bottom row. In the middle row we have the reconstruction 
+result for the computed ect. 
+
+
+
+
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_0.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_1.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_2.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_3.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_4.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_5.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_6.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_7.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_8.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ambient_noise_9.png)
+
+
+### Noisy ECT
+In this experiment we test how stable the ect is with respect to normally distributed 
+noise in the ect domain.
+From left to right we repeatedly add normally distributed noise with std of .05.
+Then we pass the noisy ect through our decoder plot both the ect and the 
+predicted point clouds. 
+The top row are the reconstructed pointcloud corresponding to the bottom noisy 
+ect. The left most ect has no noise. 
+
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_0.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_1.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_2.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_3.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_4.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_5.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_6.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_7.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_8.png)
+![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_9.png)
+
+
+
 
 # Reproducibility
 

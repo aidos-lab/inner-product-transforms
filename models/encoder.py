@@ -1,15 +1,13 @@
+from typing import TypeAlias, Literal
+
 import torch
 from torch import nn
 import lightning as L
-from typing import Literal, TypeAlias
 
-from typing import TypeAlias
+from kaolin.metrics.pointcloud import chamfer_distance
 
 from torchmetrics.regression import MeanSquaredError
 
-from layers.ect import EctConfig, EctLayer
-
-from kaolin.metrics.pointcloud import chamfer_distance
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -36,6 +34,8 @@ class BaseModel(L.LightningModule):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
             nn.Linear(hidden_size, num_dims * num_pts),
         )
 
@@ -43,7 +43,7 @@ class BaseModel(L.LightningModule):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         return optimizer
 
-    def forward(self, batch):
+    def forward(self, batch):  # pylint: disable=arguments-differ
         x = self.model(batch)
         return x
 
@@ -85,7 +85,7 @@ class BaseModel(L.LightningModule):
                 _batch.x.view(-1, self.num_pts, self.num_dims),
             ).mean()
 
-        loss = loss_ch  # + self.loss_fn(ect_hat, ect)
+        loss = loss_ch
         self.log(
             f"{step}_loss",
             loss,
@@ -123,11 +123,11 @@ class BaseModel(L.LightningModule):
             batch_size=batch_len,
         )
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
-    # def validation_step(self, batch, batch_idx):
+    # def validation_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
     #     return self.general_step(batch, batch_idx, "validation")
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")

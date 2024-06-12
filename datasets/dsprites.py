@@ -62,7 +62,9 @@ class DataModule(BaseModule):
 
 
 class DspritesDataset(InMemoryDataset):
-    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
+    def __init__(
+        self, root, transform=None, pre_transform=None, pre_filter=None
+    ):
         self.root = root
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])
