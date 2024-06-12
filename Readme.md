@@ -23,9 +23,33 @@ Moreover, we are able to _sample_ from this latent space to obtain novel _genera
 
 ## Reconstruction results
 Results for the MNIST dataset. 
+
+First we reconstruct the numbers 0-9 from the ect to a point cloud. 
+The top row is the reconstruction and the bottom row the input ect. 
+
 ![Reconstructed-Pointcloud](figures/img/mnist/reconstructed_all.png)
+
+Next we test how well the Variational Auto Encoder is able to reconstruct the 
+ECT. The top row represents the original ECT (same as bottom row above) and the 
+bottom row is the reconstructed ECT.
+
 ![Reconstructed-Pointcloud](figures/img/mnist/reconstructed_ect_vae.png)
+
+Once we are confident in the VAE's ability to faithfully reconstruct ect's, we 
+need to verify that the reconstructed ect also provides good input for the model 
+prediction since they got trained separately. 
+The top row is the original data, the second row the reconstruction from the 
+encoder model and third row the reconstruction of the point with the ect passed 
+through vae first. 
+The blurring, native to VAE's, causes for instance the 0 and 2 to be confused. 
+
 ![Reconstructed-Pointcloud](figures/img/mnist/reconstructed_pointcloud_vae.png)
+
+The VAE also allow us to sample from the 64 dimensional latent space and obtain 
+generated ECT's. These generated ect's then get passed through our decoder model 
+to finally obtain plausable reconstructions of point clouds. 
+
+
 ![Reconstructed-Pointcloud](figures/img/mnist/generated_samples_vae.png)
 
 ## Emperical stability
@@ -75,4 +99,5 @@ ect. The left most ect has no noise.
 
 # Reproducibility
 
-The models used to generate the results and tables in the our work are released as pytorch lightning models in the release section of the repository.
+The models used to generate the results and tables in the our work are released 
+as pytorch lightning models in the release section of the repository.
