@@ -1,6 +1,6 @@
 model:
-  hidden_size: 4096
-  num_pts: 1024
+  hidden_size: 2048
+  num_pts: 2048
   num_dims: 3
   learning_rate: 0.0005
   save_name: "ectencoder_modelnet.ckpt" 
@@ -11,7 +11,7 @@ layer:
 
 data: 
   module: datasets.modelnet
-  name: "10"
+  name: "40"
   root: ./data/modelnet
   num_workers: 0
   batch_size: 64
@@ -21,7 +21,7 @@ data:
 
 trainer:
   accelerator: auto
-  max_epochs: 1000
+  max_epochs: 100
   log_every_n_steps: 1
 
 loggers: 

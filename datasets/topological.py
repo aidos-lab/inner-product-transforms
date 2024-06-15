@@ -16,7 +16,7 @@ import numpy as np
 
 
 @dataclass
-class TopologicalDataModuleConfig(BaseConfig):
+class DataModuleConfig(BaseConfig):
     module: str = "datasets.topological"
     n_samples: int = 1024
     n_manifolds: int = 1000
@@ -79,9 +79,7 @@ def sample_from_sphere(n=100, r=1, noise=None, seed=None):
     return torch.as_tensor(data, dtype=torch.float)
 
 
-def sample_from_torus(
-    n, d=3, r=1.0, R=2.0, noise: float | None = None, seed=None
-):
+def sample_from_torus(n, d=3, r=1.0, R=2.0, noise: float | None = None, seed=None):
     """Sample points uniformly from torus and embed it in `d` dimensions.
 
     Parameters
@@ -233,9 +231,7 @@ class RandomRotate(BaseTransform):
         return data
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
-        )
+        return f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
 
 
 class DataModule(BaseModule):
@@ -257,15 +253,9 @@ class DataModule(BaseModule):
         )
 
     def prepare_data(self) -> None:
-        TopologicalDataset(
-            self.config, split="train", pre_transform=self.transform
-        )
-        TopologicalDataset(
-            self.config, split="test", pre_transform=self.transform
-        )
-        TopologicalDataset(
-            self.config, split="val", pre_transform=self.transform
-        )
+        TopologicalDataset(self.config, split="train", pre_transform=self.transform)
+        TopologicalDataset(self.config, split="test", pre_transform=self.transform)
+        TopologicalDataset(self.config, split="val", pre_transform=self.transform)
 
     def setup(self, **kwargs):
         self.train_ds = TopologicalDataset(
@@ -289,9 +279,7 @@ class TopologicalDataset(InMemoryDataset):
         configuration: Configuration dictionary.
     """
 
-    def __init__(
-        self, config: TopologicalDataModuleConfig, split, pre_transform
-    ):
+    def __init__(self, config: DataModuleConfig, split, pre_transform):
         self.config = config
         self.split = split
         root = config.root + "/topological"

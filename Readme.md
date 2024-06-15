@@ -95,6 +95,10 @@ ect. The left most ect has no noise.
 ![Reconstructed-Pointcloud](figures/img/mnist/stability_ect_noise_9.png)
 
 
+## Modelnet
+![Reconstructed-Pointcloud](figures/img/modelnet/orbit_cloud.gif)
+
+![Reconstructed-Pointcloud](figures/img/modelnet/reconstructed_pointcloud.png)
 
 
 # Reproducibility

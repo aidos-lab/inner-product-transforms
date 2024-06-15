@@ -9,6 +9,7 @@ from layers.ect import EctLayer, EctConfig
 from torch_geometric.data import Batch, Data
 from skimage.morphology import skeletonize
 import numpy as np
+from typing import List
 
 
 def plot_batch(data):
@@ -60,9 +61,12 @@ class EctTransform:
 
 
 class ClassFilter:
+    def __init__(self, classes: List):
+        self.classes = classes
+
     def __call__(self, data: Data) -> bool:
         # Return classes
-        if data.y.item() in [2, 5, 7, 8, 9]:
+        if data.y.item() in self.classes:
             return True
         else:
             return False
@@ -236,9 +240,7 @@ class FixedLength:
     def __call__(self, data):
         res = data.clone()
         if data.x.shape[0] < self.length:
-            idx = torch.tensor(
-                np.random.choice(len(data.x), self.length, replace=True)
-            )
+            idx = torch.tensor(np.random.choice(len(data.x), self.length, replace=True))
         else:
             idx = torch.tensor(
                 np.random.choice(len(data.x), self.length, replace=False)
