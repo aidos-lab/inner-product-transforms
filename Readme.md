@@ -113,6 +113,22 @@ ect. The left most ect has no noise.
 ![Reconstructed-Pointcloud](figures/img/modelnet/generated_pointcloud.gif)
 
 
+
+## DSprites
+
+### Reconstructed Dsprites
+![Reconstructed-Pointcloud](figures/img/dsprites/reconstructed_all.png)
+
+
+### Reconstructed VAE
+
+![Reconstructed-Pointcloud](figures/img/dsprites/reconstructed_ect_vae.png)
+![Reconstructed-Pointcloud](figures/img/dsprites/reconstructed_pointcloud_vae.png)
+
+### Reconstructed Dsprites
+![Reconstructed-Pointcloud](figures/img/dsprites/generated_samples_vae.png)
+
+
 # Reproducibility
 
 The models used to generate the results and tables in the our work are released 
