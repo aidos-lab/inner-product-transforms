@@ -66,12 +66,14 @@ class DataModule(BaseModule):
             pre_filter=self.pre_filter,
             name=self.config.name,
         )
+        generator = torch.Generator().manual_seed(42)
         self.train_ds, self.val_ds = random_split(
             self.entire_ds,
             [
                 int(0.8 * len(self.entire_ds)),
                 len(self.entire_ds) - int(0.8 * len(self.entire_ds)),
             ],
+            generator=generator,
         )  # type: ignore
         self.test_ds = self.val_ds
 
@@ -158,7 +160,7 @@ class ModelNet(InMemoryDataset):
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
         pre_filter: Optional[Callable] = None,
-        force_reload: bool = True,
+        force_reload: bool = False,
     ) -> None:
         assert name in ["10", "40"]
         self.name = name

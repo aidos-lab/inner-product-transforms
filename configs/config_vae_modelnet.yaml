@@ -14,7 +14,7 @@ litmodel:
 
 data: 
   module: datasets.modelnet
-  name: "10"
+  name: "40"
   root: ./data/modelnet
   num_workers: 0
   batch_size: 64

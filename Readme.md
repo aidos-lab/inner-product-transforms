@@ -96,9 +96,21 @@ ect. The left most ect has no noise.
 
 
 ## Modelnet
+### Reconstructed modelnet
 ![Reconstructed-Pointcloud](figures/img/modelnet/orbit_cloud.gif)
 
 ![Reconstructed-Pointcloud](figures/img/modelnet/reconstructed_pointcloud.png)
+
+### Reconstructed vae modelnet
+![Reconstructed-Pointcloud](figures/img/modelnet/reconstructed_ect.png)
+
+![Reconstructed-Pointcloud](figures/img/modelnet/reconstructed_vae_pointcloud.png)
+
+
+### Generated vae modelnet
+![Reconstructed-Pointcloud](figures/img/modelnet/generated_ect.png)
+![Reconstructed-Pointcloud](figures/img/modelnet/generated_pointcloud.png)
+![Reconstructed-Pointcloud](figures/img/modelnet/generated_pointcloud.gif)
 
 
 # Reproducibility

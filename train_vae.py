@@ -7,7 +7,6 @@ import argparse
 from typing import Any
 from omegaconf import OmegaConf
 import torch
-import yaml
 import lightning as L
 from layers.ect import EctLayer, EctConfig
 from layers.directions import generate_directions
