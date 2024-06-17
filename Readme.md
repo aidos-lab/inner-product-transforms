@@ -129,6 +129,14 @@ ect. The left most ect has no noise.
 ![Reconstructed-Pointcloud](figures/img/dsprites/generated_samples_vae.png)
 
 
+
+## Topological 
+![Reconstructed-Pointcloud](figures/img/topological/reconstructed_pointcloud.gif)
+
+
+
+
+
 # Reproducibility
 
 The models used to generate the results and tables in the our work are released 

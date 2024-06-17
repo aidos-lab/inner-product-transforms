@@ -31,8 +31,8 @@ class BaseModel(L.LightningModule):
             nn.Linear(ect_size**2, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
+            # nn.ReLU(),                            # For tori remove one layer
+            # nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
