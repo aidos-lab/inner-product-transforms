@@ -21,8 +21,6 @@ trainer:
 litmodel:
   learning_rate: 0.001
 
-data:
-  samplepoints: 1024
 
 loggers: 
   project: "toporecon-dev"

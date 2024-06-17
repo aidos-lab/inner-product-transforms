@@ -131,9 +131,15 @@ ect. The left most ect has no noise.
 
 
 ## Topological 
+### Reconstructed pointclouds
 ![Reconstructed-Pointcloud](figures/img/topological/reconstructed_pointcloud.gif)
 
+### Reconstructed VAE Pointcloud
+![Reconstructed-Pointcloud](figures/img/topological/reconstructed_vae_pointcloud.png)
 
+### Generated ECT & Pointcloud
+![Reconstructed-Pointcloud](figures/img/topological/generated_ect.png)
+![Reconstructed-Pointcloud](figures/img/topological/generated_pointcloud.png)
 
 
 
