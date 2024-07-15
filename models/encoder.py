@@ -13,7 +13,9 @@ Tensor: TypeAlias = torch.Tensor
 
 
 class BaseModel(L.LightningModule):
-    def __init__(self, layer, ect_size, hidden_size, num_pts, learning_rate, num_dims):
+    def __init__(
+        self, layer, ect_size, hidden_size, num_pts, learning_rate, num_dims
+    ):
         super().__init__()
 
         self.learning_rate = learning_rate
@@ -40,14 +42,18 @@ class BaseModel(L.LightningModule):
         )
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.learning_rate
+        )
         return optimizer
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         x = self.model(batch)
         return x
 
-    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
+    def general_step(
+        self, batch, _, step: Literal["train", "test", "validation"]
+    ):
         batch_len = len(batch.y)
         _batch = batch.clone()
 
@@ -67,14 +73,18 @@ class BaseModel(L.LightningModule):
                 torch.cat(
                     [
                         batch.x.view(batch_len, 128, self.num_dims),
-                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
+                        torch.zeros(
+                            size=(batch_len, 128, 1), device=self.device
+                        ),
                     ],
                     dim=-1,
                 ),
                 torch.cat(
                     [
                         _batch.x.view(-1, self.num_pts, self.num_dims),
-                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
+                        torch.zeros(
+                            size=(batch_len, 128, 1), device=self.device
+                        ),
                     ],
                     dim=-1,
                 ),
@@ -129,5 +139,7 @@ class BaseModel(L.LightningModule):
     # def validation_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
     #     return self.general_step(batch, batch_idx, "validation")
 
-    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def training_step(
+        self, batch, batch_idx
+    ):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
