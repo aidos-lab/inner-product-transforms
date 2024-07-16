@@ -5,7 +5,8 @@ from torch.utils.data import random_split
 from torch_geometric import transforms
 from torch_geometric.transforms import OneHotDegree
 
-from datasets.base_dataset import DataModule, DataModuleConfig
+from datasets.base_dataset import BaseConfig as DataModuleConfig
+from datasets.base_dataset import BaseModule as DataModule
 from datasets.transforms import (
     CenterTransform,
     FixedLength,
@@ -221,7 +222,9 @@ class TUDataModule(DataModule):
 
     def prepare_data(self):
         TUDataset(
-            pre_transform=transforms.Compose(transforms_dict[self.config.name]),
+            pre_transform=transforms.Compose(
+                transforms_dict[self.config.name]
+            ),
             name=self.config.name,
             root=self.config.root,
             cleaned=self.config.cleaned,
@@ -231,7 +234,9 @@ class TUDataModule(DataModule):
     def setup(self, **kwargs):
         generator1 = torch.Generator().manual_seed(42)
         self.entire_ds = TUDataset(
-            pre_transform=transforms.Compose(transforms_dict[self.config.name]),
+            pre_transform=transforms.Compose(
+                transforms_dict[self.config.name]
+            ),
             name=self.config.name,
             root=self.config.root,
             cleaned=self.config.cleaned,

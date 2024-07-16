@@ -7,9 +7,62 @@ from torch_geometric.data import InMemoryDataset
 from datasets.transforms import CenterTransform, FixedLength, SkeletonGraph
 from datasets.base_dataset import BaseModule, BaseConfig
 from datasets.transforms import MnistTransform, EctTransform
-
+from torch_geometric.data import Batch, Data, InMemoryDataset, makedirs
+from torch_geometric.transforms import BaseTransform, LinearTransformation
+from typing import List, Tuple, Union
+import math
+import random
 
 from dataclasses import dataclass
+
+
+class RandomRotate(BaseTransform):
+    r"""Rotates node positions around a specific axis by a randomly sampled
+    factor within a given interval (functional name: :obj:`random_rotate`).
+
+    Args:
+        degrees (tuple or float): Rotation interval from which the rotation
+            angle is sampled. If :obj:`degrees` is a number instead of a
+            tuple, the interval is given by :math:`[-\mathrm{degrees},
+            \mathrm{degrees}]`.
+        axis (int, optional): The rotation axis. (default: :obj:`0`)
+    """
+
+    def __init__(
+        self,
+        degrees: Union[Tuple[float, float], float],
+        axis: int = 0,
+    ) -> None:
+        if isinstance(degrees, (int, float)):
+            degrees = (-abs(degrees), abs(degrees))
+        assert isinstance(degrees, (tuple, list)) and len(degrees) == 2
+        self.degrees = degrees
+        self.axis = axis
+
+    def forward(self, data: Data) -> Data:
+        data.pos = data.x
+        degree = math.pi * random.uniform(*self.degrees) / 180.0
+        sin, cos = math.sin(degree), math.cos(degree)
+
+        if data.x.size(-1) == 2:
+            matrix = [[cos, sin], [-sin, cos]]
+        else:
+            if self.axis == 0:
+                matrix = [[1, 0, 0], [0, cos, sin], [0, -sin, cos]]
+            elif self.axis == 1:
+                matrix = [[cos, 0, -sin], [0, 1, 0], [sin, 0, cos]]
+            else:
+                matrix = [[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]]
+
+        data = LinearTransformation(torch.tensor(matrix))(data)
+        data.x = data.pos
+        data.pos = None
+        return data
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+        )
 
 
 @dataclass
@@ -101,12 +154,17 @@ class DataModule(BaseModule):
 
     def prepare_data(self):
         MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
+            root=self.config.root,
+            pre_transform=self.transform,
+            train=True,
         )
 
     def setup(self, **kwargs):
         self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
+            root=self.config.root,
+            pre_transform=self.transform,
+            transform=RandomRotate(degrees=90),
+            train=True,
         )
         self.train_ds, self.val_ds = random_split(
             self.entire_ds,
