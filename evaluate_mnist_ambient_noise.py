@@ -156,13 +156,26 @@ for _ in range(10):
 
 ch_list = [el.detach().numpy() for el in ch_list]
 
-columns = [f"digit{i}" for i in range(10)]
+columns = [
+    "DigitZero",
+    "DigitOne",
+    "DigitTwo",
+    "DigitThree",
+    "DigitFour",
+    "DigitFive",
+    "DigitSix",
+    "DigitSeven",
+    "DigitEight",
+    "DigitNine",
+]
 
 df = pd.DataFrame(np.vstack(ch_list), columns=columns)
 df1 = pd.concat([df, df.apply(["mean", "std"], axis=0)])
 df2 = pd.concat([df1, df1.apply(["mean", "std"], axis=1)], axis=1)
 
-df2.to_csv(f"./results/noise_ambient.csv")
+df2.to_csv(
+    f"./results/noise_ambient.csv", float_format="%.4f", index=True, index_label="Index"
+)
 
 torch.save(vis_x, f"./results/noise_ambient_vis_x.pt")
 torch.save(vis_ect, f"./results/noise_ambient_vis_ect.pt")
