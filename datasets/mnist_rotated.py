@@ -113,7 +113,7 @@ class DataModule(BaseModule):
         self.entire_ds = MnistDataset(
             root=self.config.root,
             pre_transform=self.transform,
-            transform=RandomRotate(degrees=90),
+            transform=RandomRotate(degrees=180),
             train=True,
         )
         self.train_ds, self.val_ds = random_split(
