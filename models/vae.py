@@ -135,12 +135,13 @@ class VanillaVAE(nn.Module):
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
 
+        in_channels_next = in_channels
         # Build Encoder
         for h_dim in hidden_dims:
             modules.append(
                 nn.Sequential(
                     nn.Conv2d(
-                        in_channels,
+                        in_channels_next,
                         out_channels=h_dim,
                         kernel_size=3,
                         stride=2,
@@ -150,11 +151,11 @@ class VanillaVAE(nn.Module):
                     nn.LeakyReLU(),
                 )
             )
-            in_channels = h_dim
+            in_channels_next = h_dim
 
         self.encoder = nn.Sequential(*modules)
         with torch.no_grad():
-            out = self.encoder(torch.zeros(2, 1, img_size, img_size))
+            out = self.encoder(torch.zeros(2, in_channels, img_size, img_size))
         self.conv_out_shape = torch.tensor(out.shape[1:])
         self.conv_out_size = int(torch.prod(self.conv_out_shape))
 
@@ -197,7 +198,9 @@ class VanillaVAE(nn.Module):
             ),
             nn.BatchNorm2d(hidden_dims[-1]),
             nn.LeakyReLU(),
-            nn.Conv2d(hidden_dims[-1], out_channels=1, kernel_size=3, padding=1),
+            nn.Conv2d(
+                hidden_dims[-1], out_channels=in_channels, kernel_size=3, padding=1
+            ),
             nn.Tanh(),
         )
 

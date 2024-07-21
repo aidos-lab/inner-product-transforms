@@ -1,0 +1,31 @@
+
+model:
+  in_channels: 3
+  latent_dim: 64
+  save_name: "vae_topological_3d.ckpt"
+
+data:
+  root: ./data
+  module: datasets.topological
+  num_workers: 0
+  batch_size: 32
+  pin_memory: True
+  drop_last: False
+  n_samples: 1024
+  n_manifolds: 3000
+
+trainer:
+  accelerator: auto
+  max_epochs: 100
+  log_every_n_steps: 1
+litmodel:
+  learning_rate: 0.001
+
+
+loggers: 
+  project: "toporecon-dev"
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+
+layer: 
+  ect_size: 96

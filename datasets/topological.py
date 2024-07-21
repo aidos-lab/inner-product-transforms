@@ -240,9 +240,9 @@ class DataModule(BaseModule):
         self.transform = transforms.Compose(
             [
                 CenterTransform(),
-                RandomRotate(degrees=90, axis=0),
-                RandomRotate(degrees=90, axis=1),
-                RandomRotate(degrees=90, axis=2),
+                RandomRotate(degrees=180, axis=0),
+                RandomRotate(degrees=180, axis=1),
+                RandomRotate(degrees=180, axis=2),
             ]
         )
         super().__init__(
