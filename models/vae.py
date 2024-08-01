@@ -247,9 +247,9 @@ class VanillaVAE(nn.Module):
         return eps * std + mu
 
     def forward(self, input_tensor: Tensor) -> List[Tensor]:
-        mu, log_var = self.encode(input_tensor)
+        mu, log_var = self.encode(input_tensor.squeeze(1))
         z = self.reparameterize(mu, log_var)
-        return [self.decode(z), input_tensor, mu, log_var]
+        return [self.decode(z).unsqueeze(1), input_tensor, mu, log_var]
 
     def sample(self, num_samples: int, device: str) -> Tensor:
         """

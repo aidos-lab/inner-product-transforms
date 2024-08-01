@@ -19,7 +19,7 @@ layer:
 
 trainer:
   accelerator: auto
-  max_epochs: 100
+  max_epochs: 1
   log_every_n_steps: 1
 
 litmodel:

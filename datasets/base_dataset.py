@@ -1,8 +1,13 @@
-from lightning import LightningDataModule
-from abc import ABC, abstractmethod
-from torch_geometric.loader import DataLoader, ImbalancedSampler
-from torch_geometric.data import Dataset
+"""
+Base dataset.
+"""
+
+from abc import abstractmethod
 from dataclasses import dataclass
+
+from lightning import LightningDataModule
+from torch_geometric.loader import DataLoader
+from torch_geometric.data import Dataset
 
 
 @dataclass
@@ -21,9 +26,7 @@ class BaseModule(LightningDataModule):
     val_ds: Dataset
     entire_ds: Dataset
 
-    def __init__(
-        self, root, batch_size, num_workers, pin_memory=True, drop_last=True
-    ):
+    def __init__(self, root, batch_size, num_workers, pin_memory=True, drop_last=True):
         super().__init__()
         self.data_dir = root
         self.batch_size = batch_size
@@ -33,7 +36,7 @@ class BaseModule(LightningDataModule):
         self.setup()
 
     @abstractmethod
-    def setup(self):
+    def setup(self, stage):
         raise NotImplementedError()
 
     @abstractmethod
@@ -45,10 +48,8 @@ class BaseModule(LightningDataModule):
             self.train_ds,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            # sampler=ImbalancedSampler(self.train_ds),
             shuffle=True,
             pin_memory=self.pin_memory,
-            # drop_last=self.drop_last,
         )
 
     def val_dataloader(self):
@@ -56,10 +57,8 @@ class BaseModule(LightningDataModule):
             self.val_ds,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            # sampler=ImbalancedSampler(self.val_ds),
             shuffle=False,
             pin_memory=self.pin_memory,
-            # drop_last=self.drop_last,
         )
 
     def test_dataloader(self):
@@ -67,8 +66,6 @@ class BaseModule(LightningDataModule):
             self.test_ds,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            # sampler=ImbalancedSampler(self.test_ds),
             shuffle=False,
             pin_memory=self.pin_memory,
-            # drop_last=self.drop_last,
         )

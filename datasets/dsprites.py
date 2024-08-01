@@ -1,17 +1,18 @@
+"""
+Dsprites dataset.
+"""
+
+from dataclasses import dataclass
+
 import torch
 from torch.utils.data import random_split
 
 import torchvision.transforms as transforms
-from disentanglement_datasets import DSprites
 from torch_geometric.data import Data, InMemoryDataset
+from disentanglement_datasets import DSprites
 
 from datasets.base_dataset import BaseConfig, BaseModule
-from datasets.transforms import CenterTransform, DspritesTransform
-
-
-from dataclasses import dataclass
-
-from datasets.transforms import FixedLength
+from datasets.transforms import CenterTransform, DspritesTransform, FixedLength
 
 
 @dataclass
@@ -36,7 +37,7 @@ class DataModule(BaseModule):
     def prepare_data(self):
         DspritesDataset(root=self.config.root, pre_transform=self.transform)
 
-    def setup(self, **kwargs):
+    def setup(self, stage):
         self.entire_ds = DspritesDataset(
             root=self.config.root, pre_transform=self.transform
         )
@@ -62,9 +63,7 @@ class DataModule(BaseModule):
 
 
 class DspritesDataset(InMemoryDataset):
-    def __init__(
-        self, root, transform=None, pre_transform=None, pre_filter=None
-    ):
+    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
         self.root = root
         super().__init__(root, transform, pre_transform, pre_filter)
         self.data, self.slices = torch.load(self.processed_paths[0])
