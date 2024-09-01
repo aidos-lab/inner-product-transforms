@@ -1,46 +1,20 @@
-import torch
-from torch_geometric.utils import degree
-from torch_geometric.data import Data
-import matplotlib.pyplot as plt
-import torchvision
-import vedo
-from torch_geometric.transforms import KNNGraph, RandomJitter
-from layers.ect import EctLayer, EctConfig
-from torch_geometric.data import Batch, Data
-from skimage.morphology import skeletonize
-import numpy as np
-from typing import List
-from torch_geometric.transforms import BaseTransform, LinearTransformation
+"""
+All transforms for the datasets.
+"""
 from typing import List, Tuple, Union
 import math
 import random
+import torch
+import torchvision
+import numpy as np
 
+from torch_geometric.utils import degree
+from torch_geometric.data import Batch, Data
+from torch_geometric.transforms import KNNGraph, RandomJitter, BaseTransform, LinearTransformation
 
-def plot_batch(data):
-    coords = data.x.cpu().numpy()
+from skimage.morphology import skeletonize
 
-    fig = plt.figure(figsize=(12, 12))
-    ax = fig.add_subplot(projection="3d")
-
-    sequence_containing_x_vals = coords[:, 0]
-    sequence_containing_y_vals = coords[:, 1]
-    sequence_containing_z_vals = coords[:, 2]
-
-    ax.scatter(
-        sequence_containing_x_vals,
-        sequence_containing_y_vals,
-        sequence_containing_z_vals,
-    )
-    ax.set_xlim([-1, 1])
-    ax.set_ylim([-1, 1])
-    ax.set_zlim([-1, 1])
-    plt.show()
-
-
-class To3D:
-    def __call__(self, data):
-        data.x = data.x[:, :3]
-        return data
+from layers.ect import EctLayer, EctConfig
 
 
 class EctTransform:
@@ -60,8 +34,7 @@ class EctTransform:
         ect = self.layer(batch)
         if self.normalized:
             return Data(x=ect.unsqueeze(0) / ect.max(), pts=data.x)
-        else:
-            return Data(x=ect.unsqueeze(0), pts=data.x)
+        return Data(x=ect.unsqueeze(0), pts=data.x)
 
 
 class ClassFilter:
@@ -187,8 +160,6 @@ class MnistTransform:
         img, y = data
         img = self.tr(img)
         idx = torch.nonzero(img.squeeze(), as_tuple=True)
-        # gp = torch.vstack([self.X[idx], self.Y[idx]]).T
-        # dly = vedo.delaunay2d(gp, mode="xy", alpha=0.4).c("w").lc("o").lw(1)
 
         return Data(
             x=torch.vstack([self.X[idx], self.Y[idx]]).T,
@@ -206,34 +177,11 @@ class DspritesTransform:
 
     def __call__(self, data) -> Data:
         idx = torch.nonzero(data.x, as_tuple=True)
-        # gp = torch.vstack([self.X[idx], self.Y[idx]]).T
-        # dly = vedo.delaunay2d(gp, mode="xy", alpha=0.4).c("w").lc("o").lw(1)
 
         return Data(
             x=torch.vstack([self.X[idx], self.Y[idx]]).T,
             # face=torch.tensor(dly.cells(), dtype=torch.long).T,
             latent=data.latent,
-        )
-
-
-class Mnist3DTransform:
-    def __init__(self):
-        xcoords = torch.linspace(-0.5, 0.5, 28)
-        ycoords = torch.linspace(-0.5, 0.5, 28)
-        self.X, self.Y = torch.meshgrid(xcoords, ycoords)
-        self.tr = torchvision.transforms.ToTensor()
-
-    def __call__(self, data: tuple) -> Data:
-        img, y = data
-        img = self.tr(img)
-        idx = torch.nonzero(img.squeeze(), as_tuple=True)
-        gp = torch.vstack([self.X[idx], self.Y[idx]]).T
-        dly = vedo.delaunay2d(gp, mode="xy", alpha=0.03).c("w").lc("o").lw(1)
-        print(dly.faces())
-        return Data(
-            x=torch.tensor(dly.points()),
-            face=torch.tensor(dly.faces(), dtype=torch.long).T,
-            y=torch.tensor(y, dtype=torch.long),
         )
 
 

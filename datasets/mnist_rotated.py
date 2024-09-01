@@ -1,20 +1,21 @@
+"""
+Rotated example for mnist.
+"""
+
+from dataclasses import dataclass
 import torch
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST
-import torchvision.transforms as transforms
+from torchvision import transforms
 from torch_geometric.data import InMemoryDataset
 
 from datasets.transforms import (
     CenterTransform,
     FixedLength,
     RandomRotate,
-    SkeletonGraph,
 )
 from datasets.base_dataset import BaseModule, BaseConfig
-from datasets.transforms import MnistTransform, EctTransform
-
-
-from dataclasses import dataclass
+from datasets.transforms import MnistTransform
 
 
 @dataclass
@@ -23,84 +24,13 @@ class DataModuleConfig(BaseConfig):
     module: str = "datasets.mnist"
 
 
-class EctMnistDataModule(BaseModule):
-    def __init__(self, config):
-        self.config = config
-        # self.transform = transforms.Compose(
-        #     [MnistTransform(), CenterTransform(), EctTransform()]
-        # )
-        self.transform = transforms.Compose(
-            [SkeletonGraph(), CenterTransform(), EctTransform()]
-        )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
-
-    def setup(self):
-        self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
-        self.train_ds, self.val_ds = random_split(
-            self.entire_ds,
-            [
-                int(0.9 * len(self.entire_ds)),
-                len(self.entire_ds) - int(0.9 * len(self.entire_ds)),
-            ],
-        )  # type: ignore
-
-        self.test_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=False
-        )
-
-
-class MnistDataModule(BaseModule):
-    def __init__(self, config):
-        self.config = config
-        self.transform = transforms.Compose(
-            [MnistTransform(), FixedLength(), CenterTransform()]
-        )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
-
-    def prepare_data(self):
-        MnistDataset(root=self.config.root, pre_transform=self.transform, train=True)
-
-    def setup(self, **kwargs):
-        self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
-        self.train_ds, self.val_ds = random_split(
-            self.entire_ds,
-            [
-                int(0.9 * len(self.entire_ds)),
-                len(self.entire_ds) - int(0.9 * len(self.entire_ds)),
-            ],
-        )  # type: ignore
-
-        self.test_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=False
-        )
-
-
 class DataModule(BaseModule):
     def __init__(self, config):
         self.config = config
         self.transform = transforms.Compose(
             [MnistTransform(), FixedLength(), CenterTransform()]
         )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
+        super().__init__()
 
     def prepare_data(self):
         MnistDataset(
@@ -109,7 +39,7 @@ class DataModule(BaseModule):
             train=True,
         )
 
-    def setup(self, **kwargs):
+    def setup(self, *args, **kwargs):
         self.entire_ds = MnistDataset(
             root=self.config.root,
             pre_transform=self.transform,
@@ -163,6 +93,9 @@ class MnistDataset(InMemoryDataset):
     def process(self):
         train_ds = MNIST(f"{self.root}/raw/", train=True, download=True)
         test_ds = MNIST(f"{self.root}/raw/", train=False, download=True)
+
+        train_data_list = []
+        test_data_list = []
 
         if self.pre_transform is not None:
             train_data_list = [self.pre_transform(data) for data in train_ds]

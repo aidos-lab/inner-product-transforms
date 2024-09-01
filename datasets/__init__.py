@@ -1,7 +1,7 @@
 import importlib
 
 
-def load_datamodule(config: dict):
+def load_datamodule(config):
     module = importlib.import_module(config.module)
     return module.DataModule(config)
 

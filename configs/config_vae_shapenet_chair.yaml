@@ -1,0 +1,31 @@
+
+model:
+  in_channels: 1
+  latent_dim: 256
+  save_name: "vae_shapenet_chair.ckpt"
+
+trainer:
+  accelerator: auto
+  max_epochs: 1000
+  log_every_n_steps: 1
+litmodel:
+  learning_rate: 0.0005
+
+data: 
+  module: datasets.shapenet
+  root: ./data/shapenet
+  categories: 
+    - chair
+  num_workers: 0
+  batch_size: 32
+  pin_memory: True
+  drop_last: False
+
+loggers: 
+  project: "toporecon-dev"
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+
+layer: 
+  ect_size: 96
+  dim: 3

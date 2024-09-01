@@ -27,12 +27,7 @@ class EctMnistDataModule(BaseModule):
         self.transform = transforms.Compose(
             [SkeletonGraph(), CenterTransform(), EctTransform()]
         )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
+        super().__init__()
 
     def setup(self):
         self.entire_ds = MnistDataset(
@@ -92,12 +87,7 @@ class DataModule(BaseModule):
         self.transform = transforms.Compose(
             [MnistTransform(), FixedLength(), CenterTransform()]
         )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
+        super().__init__()
 
     def prepare_data(self):
         MnistDataset(

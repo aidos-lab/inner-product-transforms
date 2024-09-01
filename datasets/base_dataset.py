@@ -1,8 +1,14 @@
-from lightning import LightningDataModule
-from abc import ABC, abstractmethod
-from torch_geometric.loader import DataLoader, ImbalancedSampler
-from torch_geometric.data import Dataset
+"""
+Base module for the dataset.
+"""
+
+from abc import abstractmethod
 from dataclasses import dataclass
+
+from lightning import LightningDataModule
+from torch_geometric.loader import DataLoader
+from torch_geometric.data import Dataset
+
 
 
 @dataclass

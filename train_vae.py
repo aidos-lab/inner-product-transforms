@@ -20,7 +20,6 @@ from datasets import load_datamodule
 
 torch.set_float32_matmul_precision("medium")
 
-
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
@@ -47,8 +46,9 @@ def train(config: Config):
         EctConfig(
             num_thetas=config.layer.ect_size,
             bump_steps=config.layer.ect_size,
-            normalized=True,
             device=DEVICE,
+            ect_type="points",
+            normalized=True
         ),
         v=generate_directions(config.layer.ect_size, config.layer.dim, DEVICE),
     )
@@ -60,6 +60,20 @@ def train(config: Config):
         latent_dim=config.model.latent_dim,
         img_size=config.layer.ect_size,
     )
+    print(config)
+    # metrics = get_mse_metrics()
+    # litmodel = BaseModel.load_from_checkpoint(
+    #     f"./trained_models/vae_shapenet_{config.data.categories[0]}.ckpt",
+    #     model=model,
+    #     training_accuracy=metrics[0],
+    #     test_accuracy=metrics[1],
+    #     validation_accuracy=metrics[2],
+    #     accuracies_fn=compute_mse_accuracies,
+    #     loss_fn=compute_mse_kld_loss_fn,
+    #     learning_rate=config.litmodel.learning_rate,
+    #     layer=layer,
+    #     num_epochs=config.trainer.max_epochs,
+    # ).to(DEVICE)
 
     litmodel = BaseModel(
         model,
@@ -68,6 +82,7 @@ def train(config: Config):
         loss_fn=compute_mse_kld_loss_fn,
         learning_rate=config.litmodel.learning_rate,
         layer=layer,
+        num_epochs=config.trainer.max_epochs,
     )
 
     logger = get_wandb_logger(config.loggers)

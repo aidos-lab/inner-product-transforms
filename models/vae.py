@@ -21,6 +21,7 @@ class BaseModel(L.LightningModule):
         loss_fn,
         learning_rate,
         layer,
+        num_epochs,
     ):
         super().__init__()
         self.training_accuracy = training_accuracy
@@ -31,6 +32,7 @@ class BaseModel(L.LightningModule):
         self.model = model
         self.learning_rate = learning_rate
         self.layer = layer
+        self.num_epochs = num_epochs 
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -42,11 +44,14 @@ class BaseModel(L.LightningModule):
 
     def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
         batch_len = batch.batch.max() + 1
+        noise = .02 * torch.rand_like(batch.x,device="cuda")
         ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
-        decoded, _, z_mean, z_log_var = self(ect)
+        batch.x = batch.x + noise  
+        ect_noisy = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
+        decoded, _, z_mean, z_log_var = self(ect_noisy)
         # Squeeze x_hat to match the shape of y
 
-        loss = self.loss_fn(decoded, z_mean, z_log_var, ect)
+        loss = self.loss_fn(decoded, z_mean, z_log_var, ect, beta=(self.current_epoch / self.num_epochs))
         self.log(
             f"{step}_loss",
             loss,

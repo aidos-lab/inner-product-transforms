@@ -89,16 +89,18 @@ cate_to_synsetid = {v: k for k, v in synsetid_to_cate.items()}
 
 @dataclass
 class DataModuleConfig(BaseConfig):
+    categories: list = field(default_factory=lambda: ["airplane"])
     root: str = "./data/shapenet"
     module: str = "datasets.shapenet"
     samplepoints: int = 2048
 
 
 class DataModule(BaseModule):
-    def __init__(self, config):
+    def __init__(self, config: DataModuleConfig):
         self.config = config
-        self.pre_transform = transforms.Compose([CenterTransform()])
-        self.categories = ["airplane"]
+        # self.pre_transform = transforms.Compose([CenterTransform()])
+        self.pre_transform = None
+        self.categories = config.categories
         super().__init__()
 
     def prepare_data(self):
@@ -137,12 +139,12 @@ class ShapeNetCore(InMemoryDataset):
     def __init__(
         self,
         root: str,
-        categories: list | None = None,
+        categories: list = field(default_factory=lambda: ["airplane"]),
         split: Literal["train", "test", "val"] = "train",
         transform: Optional[Callable] | None = None,
         pre_transform: Optional[Callable] | None = None,
         pre_filter: Optional[Callable] | None = None,
-        force_reload: bool = False,
+        force_reload: bool = True,
     ) -> None:
         self.split = split
 

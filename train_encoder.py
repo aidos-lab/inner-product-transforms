@@ -10,8 +10,6 @@ import torch
 import lightning as L
 import yaml
 
-from omegaconf import OmegaConf
-
 from datasets import load_datamodule
 from models.encoder import BaseModel
 from layers.ect import EctLayer, EctConfig
@@ -21,7 +19,6 @@ from loggers import get_wandb_logger
 
 
 # Settings
-torch.set_float32_matmul_precision("medium")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
@@ -38,48 +35,8 @@ class Config:
     trainer: Any
 
 
-# @dataclass
-# class ModelConfig:
-#     """
-#     Interface for the configurations in the yaml file.
-#     """
 
-#     layer: Any
-#     data: Any
-#     model: Any
-#     litmodel: Any
-#     loggers: Any
-#     trainer: Any
-
-# @dataclass
-# class DataConfig:
-#     """
-#     Interface for the configurations in the yaml file.
-#     """
-
-#     layer: Any
-#     data: Any
-#     model: Any
-#     litmodel: Any
-#     loggers: Any
-#     trainer: Any
-
-
-# @dataclass
-# class ModelConfig:
-#     """
-#     Interface for the configurations in the yaml file.
-#     """
-
-#     layer: Any
-#     data: Any
-#     model: Any
-#     litmodel: Any
-#     loggers: Any
-#     trainer: Any
-
-
-def train(config: Config):
+def train(config: Config,resume=True):
     """
     Method to train variational autoencoders.
     """
@@ -89,20 +46,31 @@ def train(config: Config):
         EctConfig(
             num_thetas=config.layer.ect_size,
             bump_steps=config.layer.ect_size,
+            r=config.layer.r,
             normalized=True,
             device=DEVICE,
         ),
         v=generate_directions(config.layer.ect_size, config.layer.dim, DEVICE),
     )
-
-    model = BaseModel(
-        layer=layer,
-        ect_size=config.layer.ect_size,
-        hidden_size=config.model.hidden_size,
-        num_pts=config.model.num_pts,
-        num_dims=config.model.num_dims,
-        learning_rate=config.model.learning_rate,
-    )
+    if resume: 
+        model = BaseModel.load_from_checkpoint(
+            f"./trained_models/ectencoder_shapenet_airplane_scaled.ckpt",
+            layer=layer,
+            ect_size=config.layer.ect_size,
+            hidden_size=config.model.hidden_size,
+            num_pts=config.model.num_pts,
+            num_dims=config.model.num_dims,
+            learning_rate=config.model.learning_rate,
+        ).to(DEVICE)
+    else: 
+        model = BaseModel(
+            layer=layer,
+            ect_size=config.layer.ect_size,
+            hidden_size=config.model.hidden_size,
+            num_pts=config.model.num_pts,
+            num_dims=config.model.num_dims,
+            learning_rate=config.model.learning_rate,
+        )
 
     logger = get_wandb_logger(config.loggers)
 
@@ -123,5 +91,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     args = parser.parse_args()
-    config = OmegaConf.load(args.INPUT)
-    train(config)
+
+    with open(args.INPUT,encoding="utf-8") as stream:
+        run_config = yaml.safe_load(stream)
+
+    train(run_config)
+
+

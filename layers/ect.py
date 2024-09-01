@@ -28,8 +28,8 @@ def compute_ecc_derivative(nh, index, lin, out):
     Computes the ECC with the derivative of the sigmoid instead of the
     sigmoid.
     """
-    ecc = torch.nn.functional.sigmoid(50 * torch.sub(lin, nh)) * (
-        1 - torch.nn.functional.sigmoid(50 * torch.sub(lin, nh))
+    ecc = torch.nn.functional.sigmoid(200 * torch.sub(lin, nh)) * (
+        1 - torch.nn.functional.sigmoid(200 * torch.sub(lin, nh))
     )
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 

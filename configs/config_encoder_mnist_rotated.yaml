@@ -5,6 +5,10 @@ model:
   learning_rate: 0.001
   save_name: "ectencoder_mnist_rotated.ckpt" 
 
+layer: 
+  ect_size: 64
+  dim: 2
+
 data: 
   module: datasets.mnist_rotated
   root: "./data/mnistpointcloud"
@@ -13,9 +17,6 @@ data:
   pin_memory: True
   drop_last: False
 
-layer: 
-  ect_size: 64
-  dim: 2
 
 trainer:
   accelerator: auto

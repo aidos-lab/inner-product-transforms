@@ -1,10 +1,14 @@
-from datasets.shapenet import DataModule, DataModuleConfig
-from datasets.shapenet import ShapeNetCore
 import torch
+from omegaconf import OmegaConf
+
+from datasets.shapenetcore import DataModule, DataModuleConfig 
 
 import numpy as np
 
+dm = DataModule(DataModuleConfig(cates=["airplane"]))
 
-# if __name__ == "__main__":
-#     dm = DataModule(DataModuleConfig())
-#     data = dm.train_ds[0]
+
+
+for batch in dm.train_dataloader():
+    print(len(batch))
+
