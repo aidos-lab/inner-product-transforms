@@ -1,28 +1,49 @@
-model:
+modelconfig:
   hidden_size: 2048
   num_pts: 2048
   num_dims: 3
   learning_rate: 0.0005
-  save_name: "ectencoder_shapenet_car.ckpt" 
 
-layer: 
-  ect_size: 96
+ectconfig: 
   dim: 3
+  num_thetas: 96
+  bump_steps: 96
+  r: 4.5
+  ect_type: "points"
+  device: "cuda:0"
+  num_features: 3
+  normalized: True
+
+
+ectlossconfig: 
+  dim: 3
+  num_thetas: 64
+  bump_steps: 128
+  r: 4.5
+  ect_type: "points_derivative"
+  device: "cuda:0"
+  num_features: 3
+  normalized: False
+
 
 data: 
-  module: datasets.shapenet
+  module: datasets.shapenetcore
   root: ./data/shapenet
-  categories: 
+  cates: 
     - car
   num_workers: 0
-  batch_size: 32
+  batch_size: 16
   pin_memory: True
   drop_last: False
 
 trainer:
   accelerator: auto
-  max_epochs: 200
+  max_epochs: 1000
   log_every_n_steps: 1
+  save_dir: "trained_models" 
+  save_name: "ectencoder_shapenet_car" 
+  experimentname: "encoder_shapenet_car"
+
 
 loggers: 
   project: "toporecon-dev"

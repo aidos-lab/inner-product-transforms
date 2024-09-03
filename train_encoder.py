@@ -3,98 +3,74 @@ Trains an encoder that takes an ECT and reconstructs a pointcloud for various
 datasets.
 """
 
+import json
 import argparse
-from dataclasses import dataclass
-from typing import Any
+from types import SimpleNamespace
+import yaml
+from lightning.pytorch.loggers import TensorBoardLogger
 import torch
 import lightning as L
-import yaml
-
 from datasets import load_datamodule
 from models.encoder import BaseModel
-from layers.ect import EctLayer, EctConfig
-
-from layers.directions import generate_directions
-from loggers import get_wandb_logger
-
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
+def load_object(dct):
+    return SimpleNamespace(**dct)
 
-@dataclass
-class Config:
-    """
-    Interface for the configurations in the yaml file.
-    """
-
-    layer: Any
-    data: Any
-    model: Any
-    loggers: Any
-    trainer: Any
-
-
-
-def train(config: Config,resume=True):
+def train(config: SimpleNamespace, resume, dev):
     """
     Method to train variational autoencoders.
     """
     dm = load_datamodule(config.data)
 
-    layer = EctLayer(
-        EctConfig(
-            num_thetas=config.layer.ect_size,
-            bump_steps=config.layer.ect_size,
-            r=config.layer.r,
-            normalized=True,
-            device=DEVICE,
-        ),
-        v=generate_directions(config.layer.ect_size, config.layer.dim, DEVICE),
-    )
-    if resume: 
-        model = BaseModel.load_from_checkpoint(
-            f"./trained_models/ectencoder_shapenet_airplane_scaled.ckpt",
-            layer=layer,
-            ect_size=config.layer.ect_size,
-            hidden_size=config.model.hidden_size,
-            num_pts=config.model.num_pts,
-            num_dims=config.model.num_dims,
-            learning_rate=config.model.learning_rate,
-        ).to(DEVICE)
-    else: 
+    if resume:
+        model = BaseModel.load_from_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt").to(DEVICE)
+    else:
         model = BaseModel(
-            layer=layer,
-            ect_size=config.layer.ect_size,
-            hidden_size=config.model.hidden_size,
-            num_pts=config.model.num_pts,
-            num_dims=config.model.num_dims,
-            learning_rate=config.model.learning_rate,
+            ectconfig=config.ectconfig,
+            ectlossconfig=config.ectlossconfig,
+            modelconfig=config.modelconfig,
         )
 
-    logger = get_wandb_logger(config.loggers)
+    # logger = get_wandb_logger(config.loggers)
+
+    # Set up debug percentages
+    limit_train_batches = None
+
+    if dev:
+        limit_train_batches = 0.1 
+        config.trainer.max_epochs = 1
+
+
+
 
     trainer = L.Trainer(
-        logger=logger,
+        logger=TensorBoardLogger("my_logs", name=f"{config.trainer.experimentname}"),
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
-        fast_dev_run=False,
+        limit_train_batches=limit_train_batches,
     )
 
     trainer.fit(model, dm)
-    trainer.save_checkpoint(f"./trained_models/{config.model.save_name}")
-
+    trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt")
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
+    parser.add_argument(
+        "--dev", default=False, action="store_true", help="Run a test batch"
+    )
+    parser.add_argument(
+        "--resume", default=False, action="store_true", help="Resume training"
+    )
     args = parser.parse_args()
 
-    with open(args.INPUT,encoding="utf-8") as stream:
-        run_config = yaml.safe_load(stream)
 
-    train(run_config)
+    with open(args.INPUT, encoding="utf-8") as stream:
+        run_dict = yaml.safe_load(stream)
+        run_config = json.loads(json.dumps(run_dict), object_hook=load_object)
 
-
+    train(run_config,resume=args.resume, dev=args.dev)

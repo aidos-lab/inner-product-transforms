@@ -1,32 +1,42 @@
 
-model:
+vaeconfig:
   in_channels: 1
   latent_dim: 256
+  img_size: 96
   save_name: "vae_shapenet_airplane.ckpt"
 
 
 trainer:
   accelerator: auto
-  max_epochs: 1000
+  max_epochs: 700
   log_every_n_steps: 1
-litmodel:
-  learning_rate: 0.0005
+  learning_rate: 0.0001
+  save_dir: ./trained_models 
+  save_name: vae_shapenet_airplane
+  experimentname: vae_airplane
 
 data: 
-  module: datasets.shapenet
+  module: datasets.shapenetcore
   root: ./data/shapenet
-  categories: 
+  cates: 
     - airplane
-  num_workers: 0
+  num_workers: 8
   batch_size: 32
-  pin_memory: True
+  pin_memory: False
   drop_last: False
+
 
 loggers: 
   project: "toporecon-dev"
   entity: aidos-labs
   save_dir: ./lightning_logs
 
-layer: 
-  ect_size: 96
-  dim: 3
+ectconfig: 
+  num_dims: 3
+  num_thetas: 96
+  bump_steps: 96
+  r: 7 
+  ect_type: "points"
+  device: "cuda:0"
+  num_features: 3
+  normalized: True

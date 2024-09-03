@@ -3,142 +3,30 @@ from typing import List, Literal, TypeAlias
 import torch
 from torch import nn
 import lightning as L
+from torchmetrics.regression import MeanSquaredError
+import matplotlib.pyplot as plt
 
 
-Tensor: TypeAlias = torch.Tensor
-
-
-class BaseModel(L.LightningModule):
-    """ "Base model for VAE models"""
-
-    def __init__(
-        self,
-        model,
-        training_accuracy,
-        test_accuracy,
-        validation_accuracy,
-        accuracies_fn,
-        loss_fn,
-        learning_rate,
-        layer,
-        num_epochs,
-    ):
-        super().__init__()
-        self.training_accuracy = training_accuracy
-        self.validation_accuracy = validation_accuracy
-        self.test_accuracy = test_accuracy
-        self.loss_fn = loss_fn
-        self.accuracies_fn = accuracies_fn
-        self.model = model
-        self.learning_rate = learning_rate
-        self.layer = layer
-        self.num_epochs = num_epochs 
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        return optimizer
-
-    def forward(self, batch):  # pylint: disable=arguments-differ
-        x = self.model(batch)
-        return x
-
-    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
-        batch_len = batch.batch.max() + 1
-        noise = .02 * torch.rand_like(batch.x,device="cuda")
-        ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
-        batch.x = batch.x + noise  
-        ect_noisy = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
-        decoded, _, z_mean, z_log_var = self(ect_noisy)
-        # Squeeze x_hat to match the shape of y
-
-        loss = self.loss_fn(decoded, z_mean, z_log_var, ect, beta=(self.current_epoch / self.num_epochs))
-        self.log(
-            f"{step}_loss",
-            loss,
-            prog_bar=True,
-            batch_size=batch_len,
-            on_step=False,
-            on_epoch=True,
-        )
-        self.log_accuracies(decoded, ect, batch_len, step)
-        return loss
-
-    def log_accuracies(
-        self, x_hat, y, batch_len, step: Literal["train", "test", "validation"]
-    ):
-        if step == "train":
-            accuracies = self.accuracies_fn(
-                self.training_accuracy,
-                x_hat.reshape(batch_len, -1),
-                y.reshape(batch_len, -1),
-                "train_accuracy",
-            )
-            for accuracy in accuracies:
-                self.log(
-                    **accuracy,
-                    prog_bar=True,
-                    on_step=False,
-                    on_epoch=True,
-                    batch_size=batch_len,
-                )
-        elif step == "test":
-            accuracies = self.accuracies_fn(
-                self.test_accuracy,
-                x_hat.reshape(batch_len, -1),
-                y.reshape(batch_len, -1),
-                "test_accuracy",
-            )
-            for accuracy in accuracies:
-                self.log(
-                    **accuracy,
-                    prog_bar=True,
-                    on_step=False,
-                    on_epoch=True,
-                    batch_size=batch_len,
-                )
-        elif step == "validation":
-            accuracies = self.accuracies_fn(
-                self.validation_accuracy,
-                x_hat.reshape(batch_len, -1),
-                y.reshape(batch_len, -1),
-                "validation_accuracy",
-            )
-            for accuracy in accuracies:
-                self.log(
-                    **accuracy,
-                    prog_bar=True,
-                    on_step=False,
-                    on_epoch=True,
-                    batch_size=batch_len,
-                )
-
-    def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
-        return self.general_step(batch, batch_idx, "test")
-
-    # def validation_step(self, batch, batch_idx):
-    #     return self.general_step(batch, batch_idx, "validation")
-
-    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
-        return self.general_step(batch, batch_idx, "train")
+from layers.ect import EctLayer
+from layers.directions import generate_directions
+from metrics.loss import compute_mse_kld_loss_fn
 
 
 class VanillaVAE(nn.Module):
 
     def __init__(
         self,
-        in_channels: int,
-        img_size: int,
-        latent_dim: int,
-        hidden_dims: List | None = None,
-        **kwargs,
+        vaeconfig,
     ) -> None:
         super().__init__()
+        in_channels = vaeconfig.in_channels
+        img_size = vaeconfig.img_size
+        latent_dim = vaeconfig.latent_dim
+        hidden_dims = [32, 64, 128, 256, 512]
 
         self.latent_dim = latent_dim
 
         modules = []
-        if hidden_dims is None:
-            hidden_dims = [32, 64, 128, 256, 512]
 
         # Build Encoder
         for h_dim in hidden_dims:
@@ -206,7 +94,7 @@ class VanillaVAE(nn.Module):
             nn.Tanh(),
         )
 
-    def encode(self, input_tensor: Tensor) -> List[Tensor]:
+    def encode(self, input_tensor):
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
@@ -223,7 +111,7 @@ class VanillaVAE(nn.Module):
 
         return [mu, log_var]
 
-    def decode(self, z: Tensor) -> Tensor:
+    def decode(self, z):
         """
         Maps the given latent codes
         onto the image space.
@@ -236,7 +124,7 @@ class VanillaVAE(nn.Module):
         result = self.final_layer(result)
         return result
 
-    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+    def reparameterize(self, mu, logvar):
         """
         Reparameterization trick to sample from N(mu, var) from
         N(0,1).
@@ -248,12 +136,12 @@ class VanillaVAE(nn.Module):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input_tensor: Tensor) -> List[Tensor]:
+    def forward(self, input_tensor):
         mu, log_var = self.encode(input_tensor)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input_tensor, mu, log_var]
 
-    def sample(self, num_samples: int, device: str) -> Tensor:
+    def sample(self, num_samples: int, device: str):
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -266,7 +154,7 @@ class VanillaVAE(nn.Module):
         samples = self.decode(z)
         return samples
 
-    def generate(self, x: Tensor) -> Tensor:
+    def generate(self, x):
         """
         Given an input image x, returns the reconstructed image
         :param x: (Tensor) [B x C x H x W]
@@ -274,3 +162,104 @@ class VanillaVAE(nn.Module):
         """
 
         return self.forward(x)[0]
+
+
+class BaseModel(L.LightningModule):
+    """ "Base model for VAE models"""
+
+    def __init__(self, vaeconfig, ectconfig, max_epochs, learning_rate):
+        super().__init__()
+        self.training_accuracy = MeanSquaredError()
+        self.validation_accuracy = MeanSquaredError()
+        self.test_accuracy = MeanSquaredError()
+        self.learning_rate = learning_rate
+        self.max_epochs = max_epochs
+
+        self.layer = EctLayer(
+            ectconfig,
+            v=generate_directions(ectconfig.num_thetas, ectconfig.num_dims).cuda(),
+        )
+
+        self.model = VanillaVAE(vaeconfig=vaeconfig)
+
+        self.visualization = []
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        return optimizer
+
+    def forward(self, batch):  # pylint: disable=arguments-differ
+        x = self.model(batch)
+        return x
+
+    def general_step(
+        self, batch, batch_idx, step: Literal["train", "test", "validation"]
+    ):
+        ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
+        decoded, _, z_mean, z_log_var = self(ect)
+
+
+        loss, kld_loss, mse_loss, beta = compute_mse_kld_loss_fn(
+            decoded, z_mean, z_log_var, ect, beta=self.current_epoch / self.max_epochs
+        )
+        self.log_dict(
+            {
+                f"{step}_loss": loss,
+                f"{step}_kld_loss": kld_loss,
+                f"{step}_mse_loss": mse_loss,
+                f"{step}_beta": beta,
+            },
+            prog_bar=True,
+            batch_size=len(batch),
+            on_step=False,
+            on_epoch=True,
+        )
+        if batch_idx == 0:
+            self.visualization = [(ect, decoded)]
+
+        return loss
+
+    def on_train_epoch_end(self) -> None:
+        tensorboard_logger = self.logger.experiment
+        ect, decoded = self.visualization[0]
+        fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(16, 4))
+        fig.tight_layout()
+        for axis, orig, pred in zip(axes.T, ect.squeeze(), decoded.squeeze()):
+            ax = axis[0]
+            ax.imshow(orig.detach().cpu().numpy())
+            ax.axis("off")
+            ax = axis[1]
+            ax.imshow(pred.detach().cpu().numpy())
+            ax.axis("off")
+
+        # Adding plot to tensorboard
+        tensorboard_logger.add_figure(
+            "reconstruction", plt.gcf(), global_step=self.global_step
+        )
+        
+        samples = self.model.sample(8,"cuda:0")
+        fig, axes = plt.subplots(nrows=1, ncols=8, figsize=(16, 2))
+        fig.tight_layout()
+        for ax, s in zip(axes, samples.squeeze()):
+            ax.imshow(s.detach().cpu().numpy())
+            ax.axis("off")
+
+        # Adding plot to tensorboard
+        tensorboard_logger.add_figure(
+            "samples", plt.gcf(), global_step=self.global_step
+        )
+
+
+
+        self.visualization.clear()
+
+        return super().on_train_epoch_end()
+
+    def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+        return self.general_step(batch, batch_idx, "test")
+
+    # def validation_step(self, batch, batch_idx):
+    #     return self.general_step(batch, batch_idx, "validation")
+
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+        return self.general_step(batch, batch_idx, "train")

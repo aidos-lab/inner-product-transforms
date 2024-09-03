@@ -18,7 +18,12 @@ metrics/PyTorchEMD
 figures/
 
 
+my_logs/
+shapenet/
+metrics_base/
+metrics_pointflow/
 
+trained_models_bu/
 
 
 # Byte-compiled / optimized / DLL files
