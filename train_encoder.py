@@ -6,6 +6,7 @@ datasets.
 import argparse
 from dataclasses import dataclass
 from typing import Any
+from omegaconf import OmegaConf
 import torch
 import lightning as L
 import yaml
@@ -35,8 +36,7 @@ class Config:
     trainer: Any
 
 
-
-def train(config: Config,resume=True):
+def train(config, resume=True):
     """
     Method to train variational autoencoders.
     """
@@ -52,7 +52,7 @@ def train(config: Config,resume=True):
         ),
         v=generate_directions(config.layer.ect_size, config.layer.dim, DEVICE),
     )
-    if resume: 
+    if resume:
         model = BaseModel.load_from_checkpoint(
             f"./trained_models/ectencoder_shapenet_airplane_scaled.ckpt",
             layer=layer,
@@ -62,7 +62,7 @@ def train(config: Config,resume=True):
             num_dims=config.model.num_dims,
             learning_rate=config.model.learning_rate,
         ).to(DEVICE)
-    else: 
+    else:
         model = BaseModel(
             layer=layer,
             ect_size=config.layer.ect_size,
@@ -87,14 +87,8 @@ def train(config: Config,resume=True):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     args = parser.parse_args()
-
-    with open(args.INPUT,encoding="utf-8") as stream:
-        run_config = yaml.safe_load(stream)
-
-    train(run_config)
-
-
+    config = OmegaConf.load(args.INPUT)
+    train(config)
