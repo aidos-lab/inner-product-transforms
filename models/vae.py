@@ -183,6 +183,8 @@ class BaseModel(L.LightningModule):
         self.model = VanillaVAE(vaeconfig=vaeconfig)
 
         self.visualization = []
+        
+        self.save_hyperparameters()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)

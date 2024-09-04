@@ -27,12 +27,11 @@ def compute_mse_loss_fn(ect_hat, ect):
     return pixelwise
 
 
-def compute_mse_kld_loss_fn(decoded, mu, logvar, ect):
+def compute_mse_kld_loss_fn(decoded, mu, log_var, ect, beta):
 
-    KLD = torch.mean(
-        -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1), dim=0
-    )
+    kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
 
-    pixelwise = F.mse_loss(decoded, ect, reduction="mean")
+    reconstruction_loss = F.mse_loss(decoded, ect)
 
-    return pixelwise + 0.1 * KLD
+    loss = reconstruction_loss + 0.00025 * kld_loss
+    return loss, kld_loss, reconstruction_loss, beta
