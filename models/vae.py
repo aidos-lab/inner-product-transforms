@@ -200,9 +200,10 @@ class BaseModel(L.LightningModule):
         ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
         decoded, _, z_mean, z_log_var = self(ect)
 
+        beta = 0.00025 if self.current_epoch < 200 else 0.00001
 
-        loss, kld_loss, mse_loss, beta = compute_mse_kld_loss_fn(
-            decoded, z_mean, z_log_var, ect, beta=self.current_epoch / self.max_epochs
+        loss, kld_loss, mse_loss, _ = compute_mse_kld_loss_fn(
+            decoded, z_mean, z_log_var, ect, beta=beta
         )
         self.log_dict(
             {
@@ -216,52 +217,51 @@ class BaseModel(L.LightningModule):
             on_step=False,
             on_epoch=True,
         )
-        if batch_idx == 0:
+        if batch_idx == 0 and step=="validation":
             self.visualization = [(ect, decoded)]
+        
 
         return loss
 
-    def on_train_epoch_end(self) -> None:
-        tensorboard_logger = self.logger.experiment
-        ect, decoded = self.visualization[0]
-        fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(16, 4))
-        fig.tight_layout()
-        for axis, orig, pred in zip(axes.T, ect.squeeze(), decoded.squeeze()):
-            ax = axis[0]
-            ax.imshow(orig.detach().cpu().numpy())
-            ax.axis("off")
-            ax = axis[1]
-            ax.imshow(pred.detach().cpu().numpy())
-            ax.axis("off")
-
-        # Adding plot to tensorboard
-        tensorboard_logger.add_figure(
-            "reconstruction", plt.gcf(), global_step=self.global_step
-        )
-        
-        samples = self.model.sample(8,"cuda:0")
-        fig, axes = plt.subplots(nrows=1, ncols=8, figsize=(16, 2))
-        fig.tight_layout()
-        for ax, s in zip(axes, samples.squeeze()):
-            ax.imshow(s.detach().cpu().numpy())
-            ax.axis("off")
-
-        # Adding plot to tensorboard
-        tensorboard_logger.add_figure(
-            "samples", plt.gcf(), global_step=self.global_step
-        )
-
-
-
-        self.visualization.clear()
-
-        return super().on_train_epoch_end()
 
     def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
-    # def validation_step(self, batch, batch_idx):
-    #     return self.general_step(batch, batch_idx, "validation")
+    def validation_step(self, batch, batch_idx):
+        loss = self.general_step(batch, batch_idx, "validation")
+        if self.current_epoch % 10 ==0 and self.visualization:
+            tensorboard_logger = self.logger.experiment
+            ect, decoded = self.visualization[0]
+            fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(16, 4))
+            fig.tight_layout()
+            for axis, orig, pred in zip(axes.T, ect.squeeze(), decoded.squeeze()):
+                ax = axis[0]
+                ax.imshow(orig.detach().cpu().numpy())
+                ax.axis("off")
+                ax = axis[1]
+                ax.imshow(pred.detach().cpu().numpy())
+                ax.axis("off")
+
+            # Adding plot to tensorboard
+            tensorboard_logger.add_figure(
+                "reconstruction", plt.gcf(), global_step=self.global_step
+            )
+            
+            samples = self.model.sample(8,"cuda:0")
+            fig, axes = plt.subplots(nrows=1, ncols=8, figsize=(16, 2))
+            fig.tight_layout()
+            for ax, s in zip(axes, samples.squeeze()):
+                ax.imshow(s.detach().cpu().numpy())
+                ax.axis("off")
+
+            # Adding plot to tensorboard
+            tensorboard_logger.add_figure(
+                "samples", plt.gcf(), global_step=self.global_step
+            )
+
+        self.visualization.clear()
+
+        return loss
 
     def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")

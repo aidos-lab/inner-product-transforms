@@ -33,5 +33,5 @@ def compute_mse_kld_loss_fn(decoded, mu, log_var, ect, beta):
 
     reconstruction_loss = F.mse_loss(decoded, ect)
 
-    loss = reconstruction_loss + 0.00025 * kld_loss
+    loss = reconstruction_loss + beta * kld_loss
     return loss, kld_loss, reconstruction_loss, beta

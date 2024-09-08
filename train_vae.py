@@ -20,6 +20,7 @@ torch.set_float32_matmul_precision("medium")
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
+
 def load_object(dct):
     return SimpleNamespace(**dct)
 
@@ -38,7 +39,7 @@ class Config:
     trainer: Any
 
 
-def train(config: Config,resume, dev):
+def train(config: Config, resume, dev):
     """
     Method to train variational autoencoders.
     """
@@ -46,19 +47,28 @@ def train(config: Config,resume, dev):
     dm = load_datamodule(config.data)
 
     if resume:
-        litmodel = BaseModel.load_from_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt")
+        # def __init__(self, vaeconfig, ectconfig, max_epochs, learning_rate):
+        litmodel = BaseModel.load_from_checkpoint(
+            f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt",
+            vaeconfig=config.vaeconfig,
+            ectconfig=config.ectconfig,
+            max_epochs=config.trainer.max_epochs,
+            learning_rate=config.trainer.learning_rate,
+        )
     else:
         litmodel = BaseModel(
-        config.vaeconfig, config.ectconfig, config.trainer.max_epochs, config.trainer.learning_rate
-    )
+            config.vaeconfig,
+            config.ectconfig,
+            config.trainer.max_epochs,
+            config.trainer.learning_rate,
+        )
 
     # Set up debug percentages
     limit_train_batches = None
 
     if dev:
-        limit_train_batches = 0.1 
+        limit_train_batches = 0.1
         config.trainer.max_epochs = 1
-
 
     trainer = L.Trainer(
         logger=TensorBoardLogger("my_logs", name=f"{config.trainer.experimentname}"),
@@ -66,11 +76,14 @@ def train(config: Config,resume, dev):
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
         limit_train_batches=limit_train_batches,
+        # check_val_every_n_epoch=10,
         fast_dev_run=False,
     )
 
     trainer.fit(litmodel, dm)
-    trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt")
+    trainer.save_checkpoint(
+        f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt"
+    )
 
 
 if __name__ == "__main__":
@@ -85,10 +98,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-
     with open(args.INPUT, encoding="utf-8") as stream:
         run_dict = yaml.safe_load(stream)
         run_config = json.loads(json.dumps(run_dict), object_hook=load_object)
 
-    train(run_config,resume=args.resume, dev=args.dev)
-
+    train(run_config, resume=args.resume, dev=args.dev)

@@ -127,6 +127,9 @@ class DataModule(BaseModule):
         self.test_ds = ShapeNetDataset(
             root=self.config.root, cates=self.config.cates, split="val"
         )
+        self.val_ds = ShapeNetDataset(
+            root=self.config.root, cates=self.config.cates, split="val"
+        )
 
 
 class ShapeNetDataset(InMemoryDataset):

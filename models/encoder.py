@@ -145,11 +145,9 @@ class BaseModel(L.LightningModule):
 
         self.visualization.clear()
 
-        self.loss_layer.v = (
-            generate_uniform_directions(
+        self.loss_layer.v = generate_uniform_directions(
                 num_thetas=self.ectlossconfig.num_thetas
-            ).cuda(),
-        )
+            ).cuda()
         return super().on_train_epoch_end()
 
     def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
