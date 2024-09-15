@@ -23,7 +23,7 @@ class EctConfig:
     normalized: bool = False
 
 
-def compute_ecc_derivative(nh, index, lin, out, scale=200):
+def compute_ecc_derivative(nh, index, lin, out, scale):
     """
     Computes the ECC with the derivative of the sigmoid instead of the
     sigmoid.
@@ -34,45 +34,24 @@ def compute_ecc_derivative(nh, index, lin, out, scale=200):
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
-def compute_ecc(nh, index, lin, out, scale=200):
+def compute_ecc(nh, index, lin, out, scale):
     """
     Computes the ECC of a set of points given the node heights.
     """
-    ecc = torch.nn.functional.sigmoid(500 * torch.sub(lin, nh))
+    ecc = torch.nn.functional.sigmoid(scale * torch.sub(lin, nh))
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
-def compute_ect_points_derivative(data, index, v, lin, out, scale=200):
+def compute_ect_points_derivative(data, index, v, lin, out, scale):
     """Compute the derivative of the ECT of a set of points."""
     nh = data.x @ v
     return compute_ecc_derivative(nh, index, lin, out, scale)
 
 
-def compute_ect_points(data, index, v, lin, out, scale=200):
+def compute_ect_points(data, index, v, lin, out, scale):
     """Compute the ECT of a set of points."""
     nh = data.x @ v
-    return compute_ecc(nh, index, lin, out)
-
-
-def compute_ect_edges(data, index, v, lin, out):
-    """Compute the ECT of a graph"""
-    nh = data.x @ v
-    eh, _ = nh[data.edge_index].max(dim=0)
-    return compute_ecc(nh, index, lin, out) - compute_ecc(
-        eh, index[data.edge_index[0]], lin, out
-    )
-
-
-def compute_ect_faces(data, index, v, lin, out):
-    """Compute the ECT of a mesh"""
-    nh = data.x @ v
-    eh, _ = nh[data.edge_index].max(dim=0)
-    fh, _ = nh[data.face].max(dim=0)
-    return (
-        compute_ecc(nh, index, lin, out)
-        - compute_ecc(eh, index[data.edge_index[0]], lin, out)
-        + compute_ecc(fh, index[data.face[0]], lin, out)
-    )
+    return compute_ecc(nh, index, lin, out, scale)
 
 
 class EctLayer(nn.Module):
@@ -92,14 +71,10 @@ class EctLayer(nn.Module):
 
         if config.ect_type == "points":
             self.compute_ect = compute_ect_points
-        elif config.ect_type == "edges":
-            self.compute_ect = compute_ect_edges
-        elif config.ect_type == "faces":
-            self.compute_ect = compute_ect_faces
         elif config.ect_type == "points_derivative":
             self.compute_ect = compute_ect_points_derivative
 
-    def forward(self, data: Data, index, scale=None):
+    def forward(self, data: Data, index, scale=200):
         """Forward method"""
         out = torch.zeros(
             size=(

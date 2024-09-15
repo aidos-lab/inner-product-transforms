@@ -10,6 +10,7 @@ import os
 import torch
 from torch_geometric.data import InMemoryDataset, Data
 from datasets.base_dataset import BaseModule, BaseConfig
+from datasets.transforms import RandomRotate,RandomScale
 
 from dataclasses import dataclass
 
@@ -113,7 +114,7 @@ class DataModuleConfig(BaseConfig):
 class DataModule(BaseModule):
     def __init__(self, config):
         self.config = config
-        self.transform = None
+        
         super().__init__()
 
     def prepare_data(self):
@@ -122,7 +123,7 @@ class DataModule(BaseModule):
 
     def setup(self, **kwargs):
         self.train_ds = ShapeNetDataset(
-            root=self.config.root, cates=self.config.cates, split="train"
+            root=self.config.root, transform=RandomRotate(360/32,axis=1), cates=self.config.cates, split="train"
         )
         self.test_ds = ShapeNetDataset(
             root=self.config.root, cates=self.config.cates, split="val"

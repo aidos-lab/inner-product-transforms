@@ -9,7 +9,6 @@ from datasets.base_dataset import BaseConfig, BaseModule
 
 import torch
 
-from layers.ect import EctLayer, EctConfig
 from datasets.transforms import CenterTransform, EctTransform
 from dataclasses import dataclass
 import numpy as np
@@ -245,12 +244,7 @@ class DataModule(BaseModule):
                 RandomRotate(degrees=90, axis=2),
             ]
         )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
+        super().__init__()
 
     def prepare_data(self) -> None:
         TopologicalDataset(self.config, split="train", pre_transform=self.transform)

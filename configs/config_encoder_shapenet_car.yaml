@@ -2,7 +2,7 @@ modelconfig:
   hidden_size: 2048
   num_pts: 2048
   num_dims: 3
-  learning_rate: 0.0005
+  learning_rate: 0.0001
 
 ectconfig: 
   dim: 3
@@ -17,8 +17,8 @@ ectconfig:
 
 ectlossconfig: 
   dim: 3
-  num_thetas: 64
-  bump_steps: 128
+  num_thetas: 8
+  bump_steps: 256
   r: 4.5
   ect_type: "points_derivative"
   device: "cuda:0"
@@ -31,9 +31,9 @@ data:
   root: ./data/shapenet
   cates: 
     - car
-  num_workers: 0
-  batch_size: 16
-  pin_memory: True
+  num_workers: 4
+  batch_size: 32
+  pin_memory: False
   drop_last: False
 
 trainer:

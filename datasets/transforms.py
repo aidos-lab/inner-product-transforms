@@ -1,6 +1,7 @@
 """
 All transforms for the datasets.
 """
+
 from typing import List, Tuple, Union
 import math
 import random
@@ -10,11 +11,37 @@ import numpy as np
 
 from torch_geometric.utils import degree
 from torch_geometric.data import Batch, Data
-from torch_geometric.transforms import KNNGraph, RandomJitter, BaseTransform, LinearTransformation
+from torch_geometric.transforms import (
+    KNNGraph,
+    RandomJitter,
+    BaseTransform,
+    LinearTransformation,
+)
 
 from skimage.morphology import skeletonize
 
 from layers.ect import EctLayer, EctConfig
+
+
+class RandomScale:
+    def __init__(self, scales: Tuple[float, float]) -> None:
+        assert isinstance(scales, (tuple, list)) and len(scales) == 2
+        self.scales = scales
+
+    def __call__(self, data: Data) -> Data:
+        assert data.x is not None
+
+        scale = random.uniform(*self.scales)
+
+        m = data.x.mean(dim=-2)
+        x = data.x - m
+        n = x.norm(dim=-1, keepdim=True)
+        x /= n
+        data.x = (x * scale) * n + m
+        return data
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.scales})"
 
 
 class EctTransform:

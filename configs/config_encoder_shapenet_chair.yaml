@@ -1,14 +1,14 @@
 modelconfig:
-  hidden_size: 2048
+  hidden_size: 2048 
   num_pts: 2048
   num_dims: 3
-  learning_rate: 0.0005
+  learning_rate: 0.001
 
 ectconfig: 
   dim: 3
   num_thetas: 96
   bump_steps: 96
-  r: 5 
+  r: 5
   ect_type: "points"
   device: "cuda:0"
   num_features: 3
@@ -18,7 +18,7 @@ ectconfig:
 ectlossconfig: 
   dim: 3
   num_thetas: 64
-  bump_steps: 128
+  bump_steps: 64
   r: 5
   ect_type: "points_derivative"
   device: "cuda:0"
@@ -32,13 +32,13 @@ data:
   cates: 
     - chair
   num_workers: 0
-  batch_size: 16
+  batch_size: 32
   pin_memory: True
   drop_last: False
 
 trainer:
   accelerator: auto
-  max_epochs: 1000
+  max_epochs: 50
   log_every_n_steps: 1
   save_dir: "trained_models" 
   save_name: "ectencoder_shapenet_chair" 

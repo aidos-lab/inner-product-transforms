@@ -1,4 +1,4 @@
-model:
+modelconfig:
   hidden_size: 4096
   num_pts: 1024
   num_dims: 3
@@ -15,16 +15,38 @@ data:
   n_samples: 1024
   n_manifolds: 1000
 
-layer: 
-  ect_size: 96
+
+ectlossconfig: 
   dim: 3
+  num_thetas: 96
+  bump_steps: 96  
+  r: 1.1
+  ect_type: "points_derivative"
+  device: "cuda:0"
+  num_features: 3
+  normalized: True
+
+
+ectconfig: 
+  dim: 3
+  num_thetas: 96
+  bump_steps: 96  
+  r: 1.1
+  ect_type: "points"
+  device: "cuda:0"
+  num_features: 3
+  normalized: True
+
+
+loggers: 
+  project: toporecon-dev
+  entity: aidos-labs
+  save_dir: ./lightning_logs
 
 trainer:
   accelerator: auto
-  max_epochs: 500
+  max_epochs: 30
   log_every_n_steps: 1
-
-loggers: 
-  project: "toporecon-dev"
-  entity: aidos-labs
-  save_dir: ./lightning_logs
+  save_dir: "trained_models" 
+  save_name: "ectencoder_topological" 
+  experimentname: "ectencoder_topological"

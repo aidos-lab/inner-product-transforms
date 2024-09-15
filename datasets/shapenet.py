@@ -21,7 +21,7 @@ from torch_geometric.data import (
     InMemoryDataset,
 )
 
-from datasets.transforms import CenterTransform
+from datasets.transforms import CenterTransform, RandomRotate
 from datasets.base_dataset import BaseModule, BaseConfig
 
 
@@ -98,8 +98,7 @@ class DataModuleConfig(BaseConfig):
 class DataModule(BaseModule):
     def __init__(self, config: DataModuleConfig):
         self.config = config
-        # self.pre_transform = transforms.Compose([CenterTransform()])
-        self.pre_transform = None
+        self.pre_transform = transforms.Compose([CenterTransform()])
         self.categories = config.categories
         super().__init__()
 
@@ -110,6 +109,7 @@ class DataModule(BaseModule):
         self.entire_ds = ShapeNetCore(
             root=self.config.root,
             pre_transform=self.pre_transform,
+            transform=RandomRotate(degrees=360/32,axis=1),
             categories=self.categories,
             split="train",
         )
@@ -144,7 +144,7 @@ class ShapeNetCore(InMemoryDataset):
         transform: Optional[Callable] | None = None,
         pre_transform: Optional[Callable] | None = None,
         pre_filter: Optional[Callable] | None = None,
-        force_reload: bool = True,
+        force_reload: bool = False,
     ) -> None:
         self.split = split
 
@@ -162,7 +162,7 @@ class ShapeNetCore(InMemoryDataset):
     @property
     def processed_file_names(self) -> List[str]:
         return [
-            f"{self.split}.pt",
+            f"{self.categories[0]}_{self.split}.pt",
         ]
 
     def process(self) -> None:
@@ -172,7 +172,7 @@ class ShapeNetCore(InMemoryDataset):
         categories_ids = [cate_to_synsetid[cat] for cat in self.categories]
         data_list = []
         for target, category in enumerate(categories_ids):
-            folder = osp.join(self.raw_dir, category)
+            folder = osp.join(self.raw_dir, "ShapeNetCore.v2.PC15k", category)
             paths = glob.glob(f"{folder}/{self.split}/*.npy")
 
             for path in paths:

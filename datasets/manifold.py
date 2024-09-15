@@ -1,24 +1,20 @@
-from datasets.base_dataset import DataModule
-from datasets.config import DataModuleConfig
-import torch
-import numpy as np
-import open3d as o3d
-import torch
-import pandas as pd
-import torch_geometric
 import os
-import torch
-from torch_geometric.data import Dataset, Data
-from torch_geometric.transforms import FaceToEdge, SamplePoints
 import shutil
-import torchvision.transforms as transforms
+import numpy as np
+import pandas as pd
 from dataclasses import dataclass
+
+import open3d as o3d
 import trimesh
 
-from torch_geometric.data import Batch, Data
+import torch
+import torchvision.transforms as transforms
+from torch_geometric.data import Dataset, Data
+from torch_geometric.transforms import FaceToEdge, SamplePoints
 
 from torch_geometric.transforms import FaceToEdge
-from datasets.transforms import CenterTransform, ModelNetTransform
+
+from datasets.base_dataset import BaseConfig, BaseModule
 from layers.config import EctConfig
 from layers.ect import EctLayer
 
@@ -49,7 +45,7 @@ class CenterTransform(object):
 
 
 @dataclass
-class ManifoldDataModuleConfig(DataModuleConfig):
+class DataModuleConfig(BaseConfig):
     module: str = "datasets.manifold"
     num_samples: int = 100
 
@@ -62,7 +58,7 @@ def read_ply(path):
     return Data(pos=pos, edge_index=edge, face=face)
 
 
-class ManifoldPointsDataModule(DataModule):
+class DataModule(BaseModule):
     def __init__(self, config):
         self.config = config
         self.transform = transforms.Compose(
@@ -72,12 +68,7 @@ class ManifoldPointsDataModule(DataModule):
                 CenterTransform(),
             ]
         )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
+        super().__init__()
 
     def setup(self):
         self.train_ds = ManifoldDataset(
@@ -100,12 +91,7 @@ class ManifoldDataModule(DataModule):
         self.transform = transforms.Compose(
             [FaceToEdge(remove_faces=False), CenterTransform()]
         )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
+        super().__init__()
 
     def setup(self):
         self.train_ds = ManifoldDataset(
@@ -130,13 +116,8 @@ class ManifoldDataset(Dataset):
     """
 
     def __init__(self, config, split, pre_transform):
-        super().__init__(
-            root=config.root,
-            transform=pre_transform,
-            pre_transform=pre_transform,
-            pre_filter=None,
-        )
         self.config = config
+        super().__init__()
         self.split = split
         self.clean()
         self.files = []
@@ -173,7 +154,9 @@ class ManifoldDataset(Dataset):
             vertices += np.random.uniform(0, noise, size=vertices.shape)
             base_mesh.vertices = o3d.utility.Vector3dVector(vertices)
             base_mesh.compute_vertex_normals()
-            f_name = f"{self.config.root}/manifold/{self.split}/sphere_{self.split}_{i}.ply"
+            f_name = (
+                f"{self.config.root}/manifold/{self.split}/sphere_{self.split}_{i}.ply"
+            )
             o3d.io.write_triangle_mesh(f_name, base_mesh)
             self.files.append([f_name, int(0)])
 
@@ -185,7 +168,9 @@ class ManifoldDataset(Dataset):
             vertices += np.random.uniform(0, noise, size=vertices.shape)
             base_mesh.vertices = o3d.utility.Vector3dVector(vertices)
             base_mesh.compute_vertex_normals()
-            f_name = f"{self.config.root}/manifold/{self.split}/mobius_{self.split}_{i}.ply"
+            f_name = (
+                f"{self.config.root}/manifold/{self.split}/mobius_{self.split}_{i}.ply"
+            )
             o3d.io.write_triangle_mesh(f_name, base_mesh)
             self.files.append([f_name, int(1)])
 
@@ -198,6 +183,8 @@ class ManifoldDataset(Dataset):
             vertices += np.random.uniform(0, noise, size=vertices.shape)
             base_mesh.vertices = o3d.utility.Vector3dVector(vertices)
             base_mesh.compute_vertex_normals()
-            f_name = f"{self.config.root}/manifold/{self.split}/torus_{self.split}_{i}.ply"
+            f_name = (
+                f"{self.config.root}/manifold/{self.split}/torus_{self.split}_{i}.ply"
+            )
             o3d.io.write_triangle_mesh(f_name, base_mesh)
             self.files.append([f_name, int(2)])
