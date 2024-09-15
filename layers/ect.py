@@ -23,18 +23,18 @@ class EctConfig:
     normalized: bool = False
 
 
-def compute_ecc_derivative(nh, index, lin, out):
+def compute_ecc_derivative(nh, index, lin, out, scale=200):
     """
     Computes the ECC with the derivative of the sigmoid instead of the
     sigmoid.
     """
-    ecc = torch.nn.functional.sigmoid(200 * torch.sub(lin, nh)) * (
-        1 - torch.nn.functional.sigmoid(200 * torch.sub(lin, nh))
+    ecc = torch.nn.functional.sigmoid(scale * torch.sub(lin, nh)) * (
+        1 - torch.nn.functional.sigmoid(scale * torch.sub(lin, nh))
     )
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
-def compute_ecc(nh, index, lin, out):
+def compute_ecc(nh, index, lin, out, scale=200):
     """
     Computes the ECC of a set of points given the node heights.
     """
@@ -42,13 +42,13 @@ def compute_ecc(nh, index, lin, out):
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
-def compute_ect_points_derivative(data, index, v, lin, out):
+def compute_ect_points_derivative(data, index, v, lin, out, scale=200):
     """Compute the derivative of the ECT of a set of points."""
     nh = data.x @ v
-    return compute_ecc_derivative(nh, index, lin, out)
+    return compute_ecc_derivative(nh, index, lin, out, scale)
 
 
-def compute_ect_points(data, index, v, lin, out):
+def compute_ect_points(data, index, v, lin, out, scale=200):
     """Compute the ECT of a set of points."""
     nh = data.x @ v
     return compute_ecc(nh, index, lin, out)
@@ -99,7 +99,7 @@ class EctLayer(nn.Module):
         elif config.ect_type == "points_derivative":
             self.compute_ect = compute_ect_points_derivative
 
-    def forward(self, data: Data, index):
+    def forward(self, data: Data, index, scale=None):
         """Forward method"""
         out = torch.zeros(
             size=(
@@ -109,7 +109,7 @@ class EctLayer(nn.Module):
             ),
             device=self.config.device,
         )
-        ect = self.compute_ect(data, index, self.v, self.lin, out)
+        ect = self.compute_ect(data, index, self.v, self.lin, out, scale)
         if self.config.normalized:
             return ect / torch.amax(ect, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
         return ect
