@@ -1,7 +1,8 @@
 
-model:
+vaeconfig:
   in_channels: 1
   latent_dim: 64
+  img_size: 64
   save_name: "vae_mnist.ckpt"
 
 data: 
@@ -13,17 +14,25 @@ data:
   drop_last: False
 
 
-layer: 
-  ect_size: 64
-  dim: 2
+ectconfig: 
+  num_dims: 2
+  num_thetas: 64
+  bump_steps: 64
+  r: 1.1
+  ect_type: "points"
+  device: "cuda:0"
+  num_features: 2
+  normalized: True
 
 trainer:
   accelerator: auto
   max_epochs: 100
   log_every_n_steps: 1
-
-litmodel:
   learning_rate: 0.001
+  save_dir: ./trained_models 
+  save_name: vae_mnist
+  experimentname: vae_mnist
+
 
 loggers: 
   project: "toporecon-dev"
