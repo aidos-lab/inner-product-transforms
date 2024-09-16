@@ -28,10 +28,10 @@ class BaseModel(L.LightningModule):
             v=generate_directions(ectconfig.num_thetas, modelconfig.num_dims).cuda(),
         )
 
-        # self.loss_layer = EctLayer(
-        #     ectlossconfig,
-        #     v=generate_uniform_directions(num_thetas=ectlossconfig.num_thetas).cuda(),
-        # )
+        self.loss_layer = EctLayer(
+            ectlossconfig,
+            v=generate_uniform_directions(num_thetas=ectlossconfig.num_thetas).cuda(),
+        )
 
         self.model = nn.Sequential(
             nn.Flatten(),
@@ -96,13 +96,13 @@ class BaseModel(L.LightningModule):
 
         # ect_pred = self.loss_layer(_batch, _batch.batch)
         # ect_target = self.loss_layer(batch, batch.batch)
-        #
+
         # eps = 10e-5
         # ect_pred /= ect_pred.sum(axis=1, keepdim=True)
         # ect_target /= ect_target.sum(axis=1, keepdim=True)
         # ect_pred += eps
         # ect_target += eps
-        #
+
         # ect_kld_loss = (
         #     F.kl_div(ect_pred.log(), ect_target, None, None, reduction="none")
         #     .sum(dim=-1)
@@ -110,9 +110,9 @@ class BaseModel(L.LightningModule):
         #     / self.modelconfig.num_pts
         # ).mean()
 
-        loss = loss_cd  # + ect_kld_loss
-
+        loss = loss_cd
         ect_kld_loss = 0
+
         self.log_dict(
             {
                 f"{step}_loss": loss,

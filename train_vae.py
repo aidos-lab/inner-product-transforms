@@ -76,6 +76,7 @@ def train(config: Config, resume, dev):
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
         limit_train_batches=limit_train_batches,
+        limit_val_batches=0.1,
         # check_val_every_n_epoch=10,
         fast_dev_run=False,
     )

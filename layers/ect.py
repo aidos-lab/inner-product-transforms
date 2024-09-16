@@ -74,7 +74,7 @@ class EctLayer(nn.Module):
         elif config.ect_type == "points_derivative":
             self.compute_ect = compute_ect_points_derivative
 
-    def forward(self, data: Data, index, scale=200):
+    def forward(self, data: Data, index, scale=500):
         """Forward method"""
         out = torch.zeros(
             size=(
