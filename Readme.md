@@ -1,3 +1,8 @@
+
+'''{note}
+This is a note
+'''
+
 # Topological Reconstruction and Interpolation of Graphs and Point Clouds
 
 The Euler Characteristic Transform is an expressive and fast to compute.
