@@ -21,6 +21,12 @@ from torchmetrics.regression import KLDivergence
 #     "KLD": -kld_loss.detach(),
 # }
 
+# loss_emd = EMD(
+#     batch.x.view(batch_len, -1, self.num_dims),
+#     _batch.x.view(-1, self.num_pts, self.num_dims),
+#     transpose=False
+# ).mean()
+
 
 def compute_mse_loss_fn(ect_hat, ect):
     pixelwise = F.mse_loss(ect_hat, ect)

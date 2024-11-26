@@ -4,7 +4,8 @@ Helper function to generate a structured set of directions in 2 or 3 dimensions.
 
 import torch
 
-def generate_uniform_directions(num_thetas: int = 64, d: int = 3):
+
+def generate_uniform_directions(num_thetas: int = 64, d: int = 3, seed=None):
     """
     Generate randomly sampled directions from a sphere in d dimensions.
 
@@ -23,6 +24,7 @@ def generate_uniform_directions(num_thetas: int = 64, d: int = 3):
     v = torch.randn(size=(d, num_thetas))
     v /= v.pow(2).sum(axis=0).sqrt().unsqueeze(1).T
     return v
+
 
 def generate_directions(num_thetas: int = 64, d: int = 3, device: str = "cpu"):
     """

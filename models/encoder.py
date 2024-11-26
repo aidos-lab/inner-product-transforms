@@ -2,10 +2,8 @@
 
 from typing import Literal
 import torch
-from torch import dtype, nn
-import torch.nn.functional as F
+from torch import nn
 import lightning as L
-import matplotlib.pyplot as plt
 from kaolin.metrics.pointcloud import chamfer_distance
 from layers.ect import EctLayer
 from layers.directions import generate_directions, generate_uniform_directions
@@ -25,18 +23,23 @@ class BaseModel(L.LightningModule):
 
         self.layer = EctLayer(
             ectconfig,
-            v=generate_directions(ectconfig.num_thetas, modelconfig.num_dims).cuda(),
+            v=generate_directions(
+                ectconfig.num_thetas, modelconfig.num_dims
+            ).cuda(),
         )
 
         self.loss_layer = EctLayer(
             ectlossconfig,
-            v=generate_uniform_directions(num_thetas=ectlossconfig.num_thetas).cuda(),
+            v=generate_uniform_directions(
+                num_thetas=ectlossconfig.num_thetas
+            ).cuda(),
         )
 
         self.model = nn.Sequential(
             nn.Flatten(),
             nn.Linear(
-                ectconfig.num_thetas * ectconfig.bump_steps, modelconfig.hidden_size
+                ectconfig.num_thetas * ectconfig.bump_steps,
+                modelconfig.hidden_size,
             ),
             nn.ReLU(),
             nn.Linear(modelconfig.hidden_size, modelconfig.hidden_size),
@@ -44,7 +47,8 @@ class BaseModel(L.LightningModule):
             nn.Linear(modelconfig.hidden_size, modelconfig.hidden_size),
             nn.ReLU(),
             nn.Linear(
-                modelconfig.hidden_size, modelconfig.num_dims * modelconfig.num_pts
+                modelconfig.hidden_size,
+                modelconfig.num_dims * modelconfig.num_pts,
             ),
         )
 
@@ -75,14 +79,18 @@ class BaseModel(L.LightningModule):
                 torch.cat(
                     [
                         batch.x.view(batch_len, 128, 2),
-                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
+                        torch.zeros(
+                            size=(batch_len, 128, 1), device=self.device
+                        ),
                     ],
                     dim=-1,
                 ),
                 torch.cat(
                     [
                         _batch.x.view(-1, 128, 2),
-                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
+                        torch.zeros(
+                            size=(batch_len, 128, 1), device=self.device
+                        ),
                     ],
                     dim=-1,
                 ),
@@ -90,7 +98,9 @@ class BaseModel(L.LightningModule):
         else:
             loss_cd = chamfer_distance(
                 batch.x.view(batch_len, -1, self.modelconfig.num_dims),
-                _batch.x.view(-1, self.modelconfig.num_pts, self.modelconfig.num_dims),
+                _batch.x.view(
+                    -1, self.modelconfig.num_pts, self.modelconfig.num_dims
+                ),
             ).mean()
         # CD Loss
 
@@ -155,10 +165,14 @@ class BaseModel(L.LightningModule):
     #         ).cuda()
     #     return super().on_train_epoch_end()
 
-    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def training_step(
+        self, batch, batch_idx
+    ):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
 
-    def validation_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def validation_step(
+        self, batch, batch_idx
+    ):  # pylint: disable=arguments-differ
         with torch.no_grad():
             loss = self.general_step(batch, batch_idx, "validation")
 

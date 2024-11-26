@@ -1,7 +1,6 @@
 import math
 import random
 from typing import List, Tuple, Union
-from cv2 import NONE_POLISHER
 import torchvision.transforms as transforms
 from torch_geometric.data import Batch, Data, InMemoryDataset, makedirs
 from torch_geometric.transforms import BaseTransform, LinearTransformation
@@ -78,7 +77,9 @@ def sample_from_sphere(n=100, r=1, noise=None, seed=None):
     return torch.as_tensor(data, dtype=torch.float)
 
 
-def sample_from_torus(n, d=3, r=1.0, R=2.0, noise: float | None = None, seed=None):
+def sample_from_torus(
+    n, d=3, r=1.0, R=2.0, noise: float | None = None, seed=None
+):
     """Sample points uniformly from torus and embed it in `d` dimensions.
 
     Parameters
@@ -230,7 +231,9 @@ class RandomRotate(BaseTransform):
         return data
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+        return (
+            f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+        )
 
 
 class DataModule(BaseModule):
@@ -247,9 +250,15 @@ class DataModule(BaseModule):
         super().__init__()
 
     def prepare_data(self) -> None:
-        TopologicalDataset(self.config, split="train", pre_transform=self.transform)
-        TopologicalDataset(self.config, split="test", pre_transform=self.transform)
-        TopologicalDataset(self.config, split="val", pre_transform=self.transform)
+        TopologicalDataset(
+            self.config, split="train", pre_transform=self.transform
+        )
+        TopologicalDataset(
+            self.config, split="test", pre_transform=self.transform
+        )
+        TopologicalDataset(
+            self.config, split="val", pre_transform=self.transform
+        )
 
     def setup(self, **kwargs):
         self.train_ds = TopologicalDataset(
