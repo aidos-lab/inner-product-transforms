@@ -15,16 +15,16 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 # torch.set_default_dtype(torch.float16)
 
 
-def train(config: SimpleNamespace, resume=False, dev=False, path=""):
+def train(config: SimpleNamespace, resume=False, dev=False):
     """
-    Method to train variational autoencoders.
+    Method to train models.
     """
     dm = load_datamodule(config.data)
 
     if resume:
         model = load_model(
             config.modelconfig,
-            f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt",
+            f"./{config.trainer.save_dir}/{config.trainer.save_name}",
         ).to(DEVICE)
     else:
         model = load_model(config.modelconfig).to(DEVICE)
@@ -64,4 +64,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_config = load_config(args.INPUT)
-    train(run_config, resume=args.resume, dev=args.dev, path=args.INPUT)
+    train(run_config, resume=args.resume, dev=args.dev)

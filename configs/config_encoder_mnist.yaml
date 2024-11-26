@@ -42,5 +42,5 @@ trainer:
   max_epochs: 100
   log_every_n_steps: 1
   save_dir: "trained_models" 
-  model_name: "encoder_mnist" 
+  model_name: "encoder_mnist.ckpt" 
   experiment_name: "encoder_mnist"
