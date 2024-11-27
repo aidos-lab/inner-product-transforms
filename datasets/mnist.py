@@ -11,11 +11,16 @@ from datasets.transforms import MnistTransform, EctTransform
 
 from dataclasses import dataclass
 
+from layers.ect import EctConfig
+
 
 @dataclass
 class DataModuleConfig(BaseConfig):
     root: str = "./data/MNIST"
     module: str = "datasets.mnist"
+    ectconfig: EctConfig = EctConfig(
+        num_features=2, num_thetas=64, bump_steps=64
+    )
 
 
 class EctMnistDataModule(BaseModule):
@@ -25,7 +30,11 @@ class EctMnistDataModule(BaseModule):
         #     [MnistTransform(), CenterTransform(), EctTransform()]
         # )
         self.transform = transforms.Compose(
-            [SkeletonGraph(), CenterTransform(), EctTransform()]
+            [
+                SkeletonGraph(),
+                CenterTransform(),
+                EctTransform(config.ectconfig),
+            ]
         )
         super().__init__()
 
@@ -82,21 +91,33 @@ class MnistDataModule(BaseModule):
 
 
 class DataModule(BaseModule):
-    def __init__(self, config):
+    def __init__(self, config, force_reload=False):
+        self.force_reload = force_reload
         self.config = config
         self.transform = transforms.Compose(
-            [MnistTransform(), FixedLength(), CenterTransform()]
+            [
+                MnistTransform(),
+                FixedLength(),
+                CenterTransform(),
+                EctTransform(self.config.ectconfig),
+            ]
         )
         super().__init__()
 
     def prepare_data(self):
         MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
+            root=self.config.root,
+            pre_transform=self.transform,
+            train=True,
+            force_reload=self.force_reload,
         )
 
     def setup(self, **kwargs):
         self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
+            root=self.config.root,
+            pre_transform=self.transform,
+            train=True,
+            force_reload=self.force_reload,
         )
         self.train_ds, self.val_ds = random_split(
             self.entire_ds,
@@ -107,7 +128,10 @@ class DataModule(BaseModule):
         )  # type: ignore
 
         self.test_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=False
+            root=self.config.root,
+            pre_transform=self.transform,
+            train=False,
+            force_reload=self.force_reload,
         )
 
 
@@ -119,10 +143,17 @@ class MnistDataset(InMemoryDataset):
         pre_transform=None,
         train=True,
         pre_filter=None,
+        force_reload=False,
     ):
         self.train = train
         self.root = root
-        super().__init__(root, transform, pre_transform, pre_filter)
+        super().__init__(
+            root,
+            transform,
+            pre_transform,
+            pre_filter,
+            force_reload=force_reload,
+        )
         if train:
             self.data, self.slices = torch.load(self.processed_paths[0])
         else:

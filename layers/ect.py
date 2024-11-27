@@ -60,10 +60,11 @@ class EctLayer(nn.Module):
     def __init__(self, config: EctConfig, v=None):
         super().__init__()
         self.config = config
-        self.lin = (
-            torch.linspace(-config.r, config.r, config.bump_steps)
-            .view(-1, 1, 1)
-            .to(config.device)
+        self.lin = torch.nn.Parameter(
+            torch.linspace(-config.r, config.r, config.bump_steps).view(
+                -1, 1, 1
+            ),
+            requires_grad=False,
         )
         if v is None:
             raise AttributeError("Please provide the directions")

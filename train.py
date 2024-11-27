@@ -12,7 +12,6 @@ from loaders import load_datamodule, load_model, load_config, load_logger
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-# torch.set_default_dtype(torch.float16)
 
 
 def train(config: SimpleNamespace, resume=False, dev=False):
@@ -48,15 +47,11 @@ def train(config: SimpleNamespace, resume=False, dev=False):
 
     trainer.fit(model, dm)
     trainer.save_checkpoint(
-        f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt"
+        f"./{config.trainer.save_dir}/{config.trainer.model_name}"
     )
 
 
-<<<<<<< HEAD
-def main():
-=======
 if __name__ == "__main__":
->>>>>>> 07a15a404b153199d5916bd22c7b6446209d0ae6
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     parser.add_argument(

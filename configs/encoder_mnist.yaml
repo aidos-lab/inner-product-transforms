@@ -7,6 +7,15 @@ data:
   batch_size: 64
   pin_memory: True
   drop_last: False
+  ectconfig: 
+    seed: 2024
+    num_thetas: 64
+    bump_steps: 64 
+    r: 1.1
+    ect_type: "points"
+    device: "cuda:0"
+    num_features: 2
+    normalized: True
 
 modelconfig:
   module: models.encoder
@@ -36,6 +45,7 @@ loggers:
   project: toporecon-dev
   entity: aidos-labs
   save_dir: ./lightning_logs
+  experiment_name: "encoder_mnist"
 
 trainer:
   accelerator: auto
@@ -43,4 +53,4 @@ trainer:
   log_every_n_steps: 1
   save_dir: "trained_models" 
   model_name: "encoder_mnist.ckpt" 
-  experiment_name: "encoder_mnist"
+  

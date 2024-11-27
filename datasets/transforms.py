@@ -48,7 +48,9 @@ class RandomScale:
 class EctTransform:
     def __init__(self, ectconfig, normalized=True):
         v = generate_uniform_directions(
-            num_thetas=ectconfig.num_thetas, d=ectconfig.num_features
+            num_thetas=ectconfig.num_thetas,
+            d=ectconfig.num_features,
+            seed=ectconfig.seed,
         ).cuda()
         self.layer = EctLayer(config=ectconfig, v=v).cuda()
         self.normalized = normalized
@@ -219,7 +221,9 @@ class FixedLength:
     def __call__(self, data):
         res = data.clone()
         if data.x.shape[0] < self.length:
-            idx = torch.tensor(np.random.choice(len(data.x), self.length, replace=True))
+            idx = torch.tensor(
+                np.random.choice(len(data.x), self.length, replace=True)
+            )
         else:
             idx = torch.tensor(
                 np.random.choice(len(data.x), self.length, replace=False)
@@ -312,4 +316,6 @@ class RandomRotate(BaseTransform):
         return data
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+        return (
+            f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+        )

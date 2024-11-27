@@ -57,7 +57,5 @@ def load_logger(config, logger_type="tensorboard"):
             save_dir=config.save_dir,
         )
     elif logger_type == "tensorboard":
-        logger = TensorBoardLogger(
-            "my_logs", name=f"{config.trainer.experimentname}"
-        )
+        logger = TensorBoardLogger("my_logs", name=f"{config.experiment_name}")
     return logger
