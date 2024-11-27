@@ -169,7 +169,7 @@ def sample_from_unit_cube(n, d=3, noise: float | None = None, seed=None):
     return torch.as_tensor(data, dtype=torch.float)
 
 
-def sample_from_mobius(n: int, noise: float | None = None, seed=NONE_POLISHER):
+def sample_from_mobius(n: int, noise: float | None = None, seed=None):
 
     a = np.random.uniform(0, 2.0 * np.pi, size=(n,))
     b = np.random.uniform(-0.5, 0.5, size=(n,))
@@ -277,7 +277,7 @@ class TopologicalDataset(InMemoryDataset):
         self.config = config
         self.split = split
         root = config.root + "/topological"
-        super().__init__(root, pre_transform, force_reload=False)
+        super().__init__(root, pre_transform, force_reload=True)
         self.load(self.processed_paths[0])
 
     @property

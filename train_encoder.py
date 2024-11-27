@@ -11,19 +11,18 @@ from lightning.pytorch.loggers import TensorBoardLogger
 import torch
 import lightning as L
 from datasets import load_datamodule
-from models.encoder import BaseModel
-# from load_model_scaled import load_encoder
+from models.encoder_sparse import BaseModel
 
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-# torch.set_default_dtype(torch.float16)
+
 
 def load_object(dct):
     return SimpleNamespace(**dct)
 
 
-def train(config: SimpleNamespace, resume=False, dev=False,path=""):
+def train(config: SimpleNamespace, resume=False, dev=False, path=""):
     """
     Method to train variational autoencoders.
     """
@@ -34,15 +33,12 @@ def train(config: SimpleNamespace, resume=False, dev=False,path=""):
         model = BaseModel.load_from_checkpoint(
             f"./{config.trainer.save_dir}/{config.trainer.save_name}.ckpt"
         ).to(DEVICE)
-        # model = torch.compile(model,mode="reduce-overhead")
     else:
         model = BaseModel(
             ectconfig=config.ectconfig,
             ectlossconfig=config.ectlossconfig,
             modelconfig=config.modelconfig,
         )
-
-    # logger = get_wandb_logger(config.loggers)
 
     # Set up debug percentages
     limit_train_batches = None
@@ -54,13 +50,12 @@ def train(config: SimpleNamespace, resume=False, dev=False,path=""):
     trainer = L.Trainer(
         logger=TensorBoardLogger("my_logs", name=f"{config.trainer.experimentname}"),
         accelerator=config.trainer.accelerator,
-        # precision="16-mixed",
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
         limit_train_batches=limit_train_batches,
-        limit_val_batches=0.1
+        limit_val_batches=0.1,
     )
-    
+
     print(config)
 
     trainer.fit(model, dm)
@@ -69,8 +64,7 @@ def train(config: SimpleNamespace, resume=False, dev=False,path=""):
     )
 
 
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     parser.add_argument(
@@ -85,4 +79,8 @@ if __name__ == "__main__":
         run_dict = yaml.safe_load(stream)
         run_config = json.loads(json.dumps(run_dict), object_hook=load_object)
 
-    train(run_config, resume=args.resume, dev=args.dev,path=args.INPUT)
+    train(run_config, resume=args.resume, dev=args.dev, path=args.INPUT)
+
+
+if __name__ == "__main__":
+    main()

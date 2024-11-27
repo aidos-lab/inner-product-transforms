@@ -10,9 +10,11 @@ import os
 import torch
 from torch_geometric.data import InMemoryDataset, Data
 from datasets.base_dataset import BaseModule, BaseConfig
-from datasets.transforms import RandomRotate,RandomScale
+from datasets.transforms import RandomRotate, RandomScale, EctTransform
 
 from dataclasses import dataclass
+
+from layers.ect import EctConfig
 
 # taken from https://github.com/optas/latent_3d_points/blob/8e8f29f8124ed5fc59439e8551ba7ef7567c9a37/src/in_out.py
 synsetid_to_cate = {
@@ -109,12 +111,14 @@ class DataModuleConfig(BaseConfig):
     cates: list = field(default_factory=lambda: ["airplane"])
     root: str = "./data/shapenet"
     module: str = "datasets.shapenetcore"
+    ectconfig: EctConfig = EctConfig()
+    force_reload: bool = False
 
 
 class DataModule(BaseModule):
-    def __init__(self, config):
+    def __init__(self, config: DataModuleConfig):
         self.config = config
-        
+
         super().__init__()
 
     def prepare_data(self):
@@ -123,13 +127,25 @@ class DataModule(BaseModule):
 
     def setup(self, **kwargs):
         self.train_ds = ShapeNetDataset(
-            root=self.config.root, transform=RandomRotate(360/32,axis=1), cates=self.config.cates, split="train"
+            root=self.config.root,
+            pre_transform=EctTransform(self.config.ectconfig),
+            cates=self.config.cates,
+            split="train",
+            force_reload=self.config.force_reload,
         )
         self.test_ds = ShapeNetDataset(
-            root=self.config.root, cates=self.config.cates, split="val"
+            root=self.config.root,
+            pre_transform=EctTransform(self.config.ectconfig),
+            cates=self.config.cates,
+            split="val",
+            force_reload=self.config.force_reload,
         )
         self.val_ds = ShapeNetDataset(
-            root=self.config.root, cates=self.config.cates, split="val"
+            root=self.config.root,
+            pre_transform=EctTransform(self.config.ectconfig),
+            cates=self.config.cates,
+            split="val",
+            force_reload=self.config.force_reload,
         )
 
 
