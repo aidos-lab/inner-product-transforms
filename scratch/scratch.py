@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-from torchmetrics.regression import KLDivergence
 
 # recons = args[0]
 # input = args[1]
@@ -27,12 +26,12 @@ def compute_mse_loss_fn(ect_hat, ect):
     return pixelwise
 
 
-# I am not sure if I used mean or sum here.
-def compute_mse_kld_loss_fn(decoded, mu, log_var, ect, beta=0):
-    kld_loss = torch.mean(
+def compute_mse_kld_loss_fn(decoded, mu, log_var, ect):
+    kld_loss = torch.sum(
         -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
     )
 
-    pixelwise = F.mse_loss(decoded, ect, reduction="mean")
+    pixelwise = F.mse_loss(decoded, ect,reduction="sum")
 
-    return pixelwise + beta * kld_loss
+    return pixelwise + 0.5 * kld_loss
+

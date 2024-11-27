@@ -11,11 +11,18 @@ from lightning.pytorch.loggers import TensorBoardLogger
 import torch
 import lightning as L
 from datasets import load_datamodule
+<<<<<<< HEAD
 from models.encoder_sparse import BaseModel
+=======
+from models.encoder import BaseModel
+
+# from load_model_scaled import load_encoder
+>>>>>>> 07a15a404b153199d5916bd22c7b6446209d0ae6
 
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 
 
 def load_object(dct):
@@ -48,7 +55,9 @@ def train(config: SimpleNamespace, resume=False, dev=False, path=""):
         config.trainer.max_epochs = 1
 
     trainer = L.Trainer(
-        logger=TensorBoardLogger("my_logs", name=f"{config.trainer.experimentname}"),
+        logger=TensorBoardLogger(
+            "my_logs", name=f"{config.trainer.experimentname}"
+        ),
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
@@ -64,7 +73,11 @@ def train(config: SimpleNamespace, resume=False, dev=False, path=""):
     )
 
 
+<<<<<<< HEAD
 def main():
+=======
+if __name__ == "__main__":
+>>>>>>> 07a15a404b153199d5916bd22c7b6446209d0ae6
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     parser.add_argument(
@@ -80,7 +93,10 @@ def main():
         run_config = json.loads(json.dumps(run_dict), object_hook=load_object)
 
     train(run_config, resume=args.resume, dev=args.dev, path=args.INPUT)
+<<<<<<< HEAD
 
 
 if __name__ == "__main__":
     main()
+=======
+>>>>>>> 07a15a404b153199d5916bd22c7b6446209d0ae6
