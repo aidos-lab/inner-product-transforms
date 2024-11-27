@@ -1,0 +1,49 @@
+
+modelconfig:
+  module: models.vae
+  in_channels: 1
+  latent_dim: 64
+  img_size: 64
+  learning_rate: 0.001
+  ectconfig: 
+    num_thetas: 64
+    bump_steps: 64
+    r: 1.1
+    ect_type: "points"
+    device: "cuda:0"
+    num_features: 2
+    normalized: True
+
+data: 
+  module: datasets.mnist
+  root: "./data/mnistpointcloud"
+  num_workers: 0
+  batch_size: 64
+  pin_memory: True
+  drop_last: False
+  ectconfig: 
+    seed: 2024
+    num_thetas: 64
+    bump_steps: 64 
+    r: 1.1
+    ect_type: "points"
+    device: "cuda:0"
+    num_features: 2
+    normalized: True
+
+trainer:
+  accelerator: auto
+  max_epochs: 100
+  log_every_n_steps: 1
+  save_dir: ./trained_models 
+  experimentname: vae_mnist
+  model_name: "vae_mnist.ckpt"
+
+
+
+loggers: 
+  project: toporecon-dev
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+  experiment_name: "encoder_mnist"
+

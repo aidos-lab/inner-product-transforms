@@ -5,7 +5,7 @@ import torch
 
 from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
-
+from metrics.evaluation import EMD_CD
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -15,8 +15,8 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 def evaluate_reconstruction(model, dm):
     all_sample = []
     all_ref = []
-    for i, batch in enumerate(dm.test_loader()):
-        out_pc = model.reconstruct(batch)
+    for i, batch in enumerate(dm.test_dataloader()):
+        out_pc = model.reconstruct(batch.to(DEVICE))
         pc_shape = batch[0].x.shape
 
         # m, s = data["mean"].float(), data["std"].float()
