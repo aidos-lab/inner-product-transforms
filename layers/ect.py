@@ -82,7 +82,7 @@ class EctLayer(nn.Module):
                 index.max().item() + 1,
                 self.config.num_thetas,
             ),
-            device=self.config.device,
+            device=data.x.device,
         )
         ect = self.compute_ect(data, index, self.v, self.lin, out, scale)
         if self.config.normalized:

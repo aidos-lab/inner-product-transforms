@@ -52,7 +52,11 @@ def train(config: SimpleNamespace, resume=False, dev=False):
     )
 
 
+<<<<<<< HEAD
+def main():
+=======
 if __name__ == "__main__":
+>>>>>>> 07a15a404b153199d5916bd22c7b6446209d0ae6
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     parser.add_argument(

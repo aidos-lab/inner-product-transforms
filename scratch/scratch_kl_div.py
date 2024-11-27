@@ -29,20 +29,19 @@ def generate_uniform_directions(num_thetas: int = 64, d: int = 3):
     return v
 
 
-m = torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([1.0]))
 
 batch_pred = Batch.from_data_list(
-    [Data(x=0.5 * torch.rand(size=(2048, 3))) for _ in range(64)]
-).cuda()
-
+    [Data(x=0.5 * torch.rand(size=(2048, 3),device="cuda:0")) for _ in range(32)]
+)
 
 batch_target = Batch.from_data_list(
-    [Data(x=0.6 * torch.rand(size=(2048, 3))) for _ in range(64)]
-).cuda()
+    [Data(x=0.6 * torch.rand(size=(2048, 3),device="cuda:0")) for _ in range(32)]
+)
+
+
 ECT_SIZE = 128
 
 v = generate_uniform_directions(num_thetas=ECT_SIZE).cuda()
-
 
 loss_layer = EctLayer(
     EctConfig(
@@ -55,14 +54,15 @@ loss_layer = EctLayer(
     v=v,
 )
 
-ect_pred = loss_layer(batch_pred, batch_pred.batch).cpu().detach().squeeze()
-ect_target = loss_layer(batch_target, batch_target.batch).cpu().detach().squeeze()
+loss_layer = torch.compile(loss_layer) 
 
 
-print(ect_pred.shape)
+ect_pred = loss_layer(batch_pred, batch_pred.batch).detach().squeeze()
+ect_target = loss_layer(batch_target, batch_target.batch).detach().squeeze()
 
 
-print(ect_pred.max())
+
+
 
 eps = 10e-5
 ect_pred /= ect_pred.sum(axis=1, keepdim=True)
@@ -76,7 +76,6 @@ d = (
     .sum(dim=-1)
     / 2048
 )
-print(d)
 
 
 # print(ect[0].min())

@@ -20,6 +20,7 @@ from torch_geometric.transforms import (
 
 from skimage.morphology import skeletonize
 
+from layers.directions import generate_uniform_directions
 from layers.ect import EctLayer, EctConfig
 
 
@@ -45,23 +46,22 @@ class RandomScale:
 
 
 class EctTransform:
-    def __init__(self, normalized=True):
-        config = EctConfig(num_thetas=64, bump_steps=64)
-        v = torch.vstack(
-            [
-                torch.sin(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
-                torch.cos(torch.linspace(0, 2 * torch.pi, config.num_thetas)),
-            ]
-        )
-        self.layer = EctLayer(config=config, v=v)
+    def __init__(self, ectconfig, normalized=True):
+        v = generate_uniform_directions(
+            num_thetas=ectconfig.num_thetas, d=ectconfig.num_features
+        ).cuda()
+        self.layer = EctLayer(config=ectconfig, v=v).cuda()
         self.normalized = normalized
 
     def __call__(self, data):
-        batch = Batch.from_data_list([data])
-        ect = self.layer(batch)
+        batch = Batch.from_data_list([data]).cuda()
+        ect = self.layer(batch, batch.batch)
         if self.normalized:
-            return Data(x=ect.unsqueeze(0) / ect.max(), pts=data.x)
-        return Data(x=ect.unsqueeze(0), pts=data.x)
+            data.ect = (ect / ect.max()).cpu()
+            return data
+
+        data.ect = ect.cpu()
+        return data
 
 
 class ClassFilter:

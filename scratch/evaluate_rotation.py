@@ -4,7 +4,7 @@ import torch
 from omegaconf import OmegaConf
 from torch_geometric.data import Batch, Data
 
-import numpy as np 
+import numpy as np
 
 from datasets import load_datamodule
 from load_models import load_encoder
@@ -45,7 +45,7 @@ def distChamfer(a, b):
     rx = xx[:, diag_ind, diag_ind].unsqueeze(1).expand_as(xx)
     ry = yy[:, diag_ind, diag_ind].unsqueeze(1).expand_as(yy)
     P = rx.transpose(2, 1) + ry - 2 * zz
-    return P.min(1)[0].mean(axis=1) +  P.min(2)[0].mean(axis=1)
+    return P.min(1)[0].mean(axis=1) + P.min(2)[0].mean(axis=1)
 
 
 def rotate(p, angle):
@@ -57,22 +57,25 @@ def rotate(p, angle):
 
 
 # Second index is the rotation.
-loss_dict = {i:torch.zeros(size=(64,)) for i in range(10)}
-class_counts = {i:0 for i in range(10)}
+loss_dict = {i: torch.zeros(size=(64,)) for i in range(10)}
+class_counts = {i: 0 for i in range(10)}
 
 
 def update_loss_dict(data, losses):
     label = data.y
     angles = torch.linspace(0, 2 * torch.pi, 64)
-    point_clouds = torch.stack([rotate(data.x, angle).view(128,2) for angle in angles]).cuda()
-    batch = Batch.from_data_list([Data(x=pc.view(-1,2)) for pc in point_clouds])
+    point_clouds = torch.stack(
+        [rotate(data.x, angle).view(128, 2) for angle in angles]
+    ).cuda()
+    batch = Batch.from_data_list([Data(x=pc.view(-1, 2)) for pc in point_clouds])
     with torch.no_grad():
-        rotated_ect = model.layer(
-            batch, batch.batch
-        ).unsqueeze(1)
+        rotated_ect = model.layer(batch, batch.batch).unsqueeze(1)
         recon_pc = model.model.forward(rotated_ect)
-    ch = distChamfer(point_clouds,recon_pc.view(-1,128,2))
-    return [torch.stack([torch.tensor(angle), label[0], ch.cpu()[angle]]) for angle in range(64) ]
+    ch = distChamfer(point_clouds, recon_pc.view(-1, 128, 2))
+    return [
+        torch.stack([torch.tensor(angle), label[0], ch.cpu()[angle]])
+        for angle in range(64)
+    ]
 
 
 res = []
@@ -80,6 +83,4 @@ for data in dm.test_ds:
     res.extend(update_loss_dict(data, loss_dict))
 
 res = torch.stack(res)
-torch.save(res, "./results/rotation.pt")
-
-
+torch.save(res, "./results/rotation_test.pt")

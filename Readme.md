@@ -1,7 +1,7 @@
 
-'''{note}
+```{note}
 This is a note
-'''
+```
 
 # Topological Reconstruction and Interpolation of Graphs and Point Clouds
 

@@ -3,6 +3,8 @@ Helper function to generate a structured set of directions in 2 or 3 dimensions.
 """
 
 import torch
+import numpy as np
+
 
 
 def generate_uniform_directions(num_thetas: int = 64, d: int = 3, seed=None):
@@ -21,7 +23,8 @@ def generate_uniform_directions(num_thetas: int = 64, d: int = 3, seed=None):
     d: int
         The dimension of the unit sphere. Default is 3 (hence R^3)
     """
-    v = torch.randn(size=(d, num_thetas))
+    rng = np.random.RandomState(2024)
+    v = torch.tensor(rng.normal(size=(d, num_thetas)), dtype=torch.float)
     v /= v.pow(2).sum(axis=0).sqrt().unsqueeze(1).T
     return v
 
@@ -44,19 +47,13 @@ def generate_directions(num_thetas: int = 64, d: int = 3, device: str = "cpu"):
         w1 = torch.vstack(
             [
                 torch.sin(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
                 torch.cos(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
                 torch.zeros_like(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
             ]
         )
@@ -64,19 +61,13 @@ def generate_directions(num_thetas: int = 64, d: int = 3, device: str = "cpu"):
         w2 = torch.vstack(
             [
                 torch.sin(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
                 torch.zeros_like(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
                 torch.cos(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
             ]
         )
@@ -84,19 +75,13 @@ def generate_directions(num_thetas: int = 64, d: int = 3, device: str = "cpu"):
         w3 = torch.vstack(
             [
                 torch.zeros_like(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
                 torch.sin(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
                 torch.cos(
-                    torch.linspace(
-                        0, 2 * torch.pi, num_thetas // 3, device=device
-                    )
+                    torch.linspace(0, 2 * torch.pi, num_thetas // 3, device=device)
                 ),
             ]
         )
@@ -104,12 +89,8 @@ def generate_directions(num_thetas: int = 64, d: int = 3, device: str = "cpu"):
     elif d == 2:
         v = torch.vstack(
             [
-                torch.sin(
-                    torch.linspace(0, 2 * torch.pi, num_thetas, device=device)
-                ),
-                torch.cos(
-                    torch.linspace(0, 2 * torch.pi, num_thetas, device=device)
-                ),
+                torch.sin(torch.linspace(0, 2 * torch.pi, num_thetas, device=device)),
+                torch.cos(torch.linspace(0, 2 * torch.pi, num_thetas, device=device)),
             ]
         )
     else:
