@@ -12,6 +12,7 @@ from metrics.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D import (
 from metrics.ChamferDistancePytorch.fscore import fscore
 from tqdm import tqdm
 
+# cham2D = chamfer_2DDist()
 cham3D = chamfer_3DDist()
 
 
@@ -48,7 +49,6 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True, accelerated_cd=None):
         fs = fscore(dl, dr)[0].cpu()
         fs_lst.append(fs)
         cd_lst.append(dl.mean(dim=1) + dr.mean(dim=1))
-
         emd_batch = EMD(sample_batch.cuda(), ref_batch.cuda(), transpose=False)
         emd_lst.append(emd_batch)
 
@@ -85,13 +85,9 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, accelerated_cd=True):
             sample_batch_exp = sample_batch_exp.contiguous()
 
             dl, dr, _, _ = cham3D(sample_batch_exp.cuda(), ref_batch.cuda())
-            cd_lst.append(
-                (dl.mean(dim=1) + dr.mean(dim=1)).view(1, -1).detach().cpu()
-            )
+            cd_lst.append((dl.mean(dim=1) + dr.mean(dim=1)).view(1, -1).detach().cpu())
 
-            emd_batch = EMD(
-                sample_batch_exp.cuda(), ref_batch.cuda(), transpose=False
-            )
+            emd_batch = EMD(sample_batch_exp.cuda(), ref_batch.cuda(), transpose=False)
             emd_lst.append(emd_batch.view(1, -1).detach().cpu())
 
         cd_lst = torch.cat(cd_lst, dim=1)
@@ -123,9 +119,7 @@ def knn(Mxx, Mxy, Myy, k, sqrt=False):
     count = torch.zeros(n0 + n1).to(Mxx)
     for i in range(0, k):
         count = count + label.index_select(0, idx[i])
-    pred = torch.ge(
-        count, (float(k) / 2) * torch.ones(n0 + n1).to(Mxx)
-    ).float()
+    pred = torch.ge(count, (float(k) / 2) * torch.ones(n0 + n1).to(Mxx)).float()
 
     s = {
         "tp": (pred * label).sum(),
@@ -221,18 +215,14 @@ def jsd_between_point_cloud_sets(sample_pcs, ref_pcs, resolution=28):
         resolution: (int) grid-resolution. Affects granularity of measurements.
     """
     in_unit_sphere = True
-    sample_grid_var = entropy_of_occupancy_grid(
-        sample_pcs, resolution, in_unit_sphere
-    )[1]
-    ref_grid_var = entropy_of_occupancy_grid(
-        ref_pcs, resolution, in_unit_sphere
-    )[1]
+    sample_grid_var = entropy_of_occupancy_grid(sample_pcs, resolution, in_unit_sphere)[
+        1
+    ]
+    ref_grid_var = entropy_of_occupancy_grid(ref_pcs, resolution, in_unit_sphere)[1]
     return jensen_shannon_divergence(sample_grid_var, ref_grid_var)
 
 
-def entropy_of_occupancy_grid(
-    pclouds, grid_resolution, in_sphere=False, verbose=False
-):
+def entropy_of_occupancy_grid(pclouds, grid_resolution, in_sphere=False, verbose=False):
     """Given a collection of point-clouds, estimate the entropy of the random variables
     corresponding to occupancy-grid activation patterns.
     Inputs:
@@ -249,9 +239,7 @@ def entropy_of_occupancy_grid(
         if verbose:
             warnings.warn("Point-clouds are not in unit sphere.")
 
-    grid_coordinates, _ = unit_cube_grid_point_cloud(
-        grid_resolution, in_sphere
-    )
+    grid_coordinates, _ = unit_cube_grid_point_cloud(grid_resolution, in_sphere)
     grid_coordinates = grid_coordinates.reshape(-1, 3)
     grid_counters = np.zeros(len(grid_coordinates))
     grid_bernoulli_rvars = np.zeros(len(grid_coordinates))

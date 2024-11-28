@@ -23,7 +23,7 @@ def train(config: SimpleNamespace, resume=False, dev=False):
     if resume:
         model = load_model(
             config.modelconfig,
-            f"./{config.trainer.save_dir}/{config.trainer.save_name}",
+            f"./{config.trainer.save_dir}/{config.trainer.model_name}",
         ).to(DEVICE)
     else:
         model = load_model(config.modelconfig).to(DEVICE)
@@ -46,9 +46,7 @@ def train(config: SimpleNamespace, resume=False, dev=False):
     )
 
     trainer.fit(model, dm)
-    trainer.save_checkpoint(
-        f"./{config.trainer.save_dir}/{config.trainer.model_name}"
-    )
+    trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.model_name}")
 
 
 if __name__ == "__main__":

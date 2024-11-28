@@ -19,9 +19,7 @@ class BaseModel(L.LightningModule):
 
         self.layer = EctLayer(
             config.ectconfig,
-            v=generate_directions(
-                config.ectconfig.num_thetas, config.num_dims
-            ).cuda(),
+            v=generate_directions(config.ectconfig.num_thetas, config.num_dims).cuda(),
         )
 
         self.loss_layer = EctLayer(
@@ -65,29 +63,25 @@ class BaseModel(L.LightningModule):
         batch_len = len(batch)
         _batch = batch.clone()
 
-        # Compute ECT
-        ect = self.layer(_batch, _batch.batch)
+        # # Compute ECT
+        # ect = self.layer(_batch, _batch.batch)
 
         # Reconstruct the batch
-        _batch.x = self(ect).view(-1, self.config.num_dims)
+        _batch.x = self(batch.ect).view(-1, self.config.num_dims)
 
         if self.config.num_dims == 2:
             loss_cd = chamfer_distance(
                 torch.cat(
                     [
                         batch.x.view(batch_len, 128, 2),
-                        torch.zeros(
-                            size=(batch_len, 128, 1), device=self.device
-                        ),
+                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
                     ],
                     dim=-1,
                 ),
                 torch.cat(
                     [
                         _batch.x.view(-1, 128, 2),
-                        torch.zeros(
-                            size=(batch_len, 128, 1), device=self.device
-                        ),
+                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
                     ],
                     dim=-1,
                 ),
@@ -120,14 +114,10 @@ class BaseModel(L.LightningModule):
 
         return loss
 
-    def training_step(
-        self, batch, batch_idx
-    ):  # pylint: disable=arguments-differ
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
 
-    def validation_step(
-        self, batch, batch_idx
-    ):  # pylint: disable=arguments-differ
+    def validation_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         with torch.no_grad():
             loss = self.general_step(batch, batch_idx, "validation")
 
