@@ -44,7 +44,7 @@ def train(config: SimpleNamespace, resume=False, dev=False):
         limit_train_batches=limit_train_batches,
         limit_val_batches=0.1,
     )
-
+    model.hparams.lr = 0.0001
     trainer.fit(model, dm)
     trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.model_name}")
 

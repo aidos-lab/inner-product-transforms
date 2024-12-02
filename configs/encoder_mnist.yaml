@@ -13,7 +13,6 @@ data:
     bump_steps: 64 
     r: 1.1
     ect_type: "points"
-    device: "cuda:0"
     num_features: 2
     normalized: True
 

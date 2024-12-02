@@ -57,6 +57,10 @@ def evaluate_reconstruction(model, dm):
         accelerated_cd=True,
     )
 
+    if pc_shape[1] == 2:
+        sample_pcs = sample_pcs[:, :, :2]
+        ref_pcs = ref_pcs[:, :, :2]
+
     results = {
         ("%s" % k): (v if isinstance(v, float) else v.item())
         for k, v in results.items()
@@ -105,6 +109,7 @@ if __name__ == "__main__":
         encoder_config.modelconfig,
         f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
     ).to(DEVICE)
+    encoder_model.model.eval()
 
     # Set model name for saving results in the results folder.
     model_name = encoder_config.trainer.model_name.split(".")[0]
@@ -154,10 +159,10 @@ if __name__ == "__main__":
         json.dump(results, f)
     torch.save(
         sample_pc,
-        f"./results/{model_name}/samples{suffix}.pt",
+        f"./results/{model_name}/reconstructions{suffix}.pt",
     )
     torch.save(
         ref_pc,
-        f"./results/{model_name}/reference{suffix}.pt",
+        f"./results/{model_name}/references{suffix}.pt",
     )
     pprint(results)

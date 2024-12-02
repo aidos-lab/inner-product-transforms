@@ -1,0 +1,56 @@
+data: 
+  module: datasets.shapenetcore
+  root: ./data/shapenet
+  cates: 
+    - chair
+  num_workers: 0
+  batch_size: 64
+  pin_memory: True
+  drop_last: False
+  force_reload: False
+  ectconfig: 
+    seed: 2024
+    num_thetas: 256
+    bump_steps: 256 
+    r: 5
+    ect_type: "points"
+    num_features: 3
+    normalized: True
+
+modelconfig:
+  module: models.encoder_sparse
+  hidden_size: 512
+  num_pts: 2048
+  num_dims: 3
+  learning_rate: 0.0002
+  ectlossconfig: 
+    seed: 2024
+    dim: 3
+    num_thetas: 256
+    bump_steps: 256 
+    r: 5
+    ect_type: "points"
+    device: "cuda:0"
+    num_features: 3
+    normalized: True
+  ectconfig: 
+    seed: 2024
+    num_thetas: 256
+    bump_steps: 256 
+    r: 5
+    ect_type: "points"
+    num_features: 3
+    normalized: True
+
+loggers: 
+  project: toporecon-dev
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+  experiment_name: "encoder_chair_sparse"
+
+trainer:
+  accelerator: auto
+  max_epochs: 500
+  log_every_n_steps: 1
+  save_dir: "trained_models" 
+  model_name: "encoder_chair_sparse.ckpt" 

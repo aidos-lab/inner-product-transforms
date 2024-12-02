@@ -119,13 +119,25 @@ class DataModule(BaseModule):
         super().__init__()
 
     def prepare_data(self):
-        ShapeNetDataset(root=self.config.root, split="train")
-        # ShapeNetDataset(root=self.config.root, split="val")
+        ShapeNetDataset(
+            root=self.config.root,
+            pre_transform=EctTransform(self.config.ectconfig),
+            cates=self.config.cates,
+            split="train",
+            force_reload=self.config.force_reload,
+        )
+        ShapeNetDataset(
+            root=self.config.root,
+            pre_transform=EctTransform(self.config.ectconfig),
+            cates=self.config.cates,
+            split="val",
+            force_reload=self.config.force_reload,
+        )
 
     def setup(self, **kwargs):
         self.train_ds = ShapeNetDataset(
             root=self.config.root,
-            # transform=RandomRotate(360 / 32, axis=1),
+            pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="train",
         )
@@ -134,14 +146,12 @@ class DataModule(BaseModule):
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="val",
-            force_reload=self.config.force_reload,
         )
         self.val_ds = ShapeNetDataset(
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="val",
-            force_reload=self.config.force_reload,
         )
 
 
@@ -195,16 +205,16 @@ class ShapeNetDataset(InMemoryDataset):
         train_data_list = [
             Data(
                 x=data["train_points"].view(-1, 3),
-                mean=data["mean"].float(),
-                std=data["std"].float(),
+                mean=data["mean"],
+                std=data["std"],
             )
             for data in train_ds
         ]
         test_data_list = [
             Data(
                 x=data["test_points"].view(-1, 3),
-                mean=data["mean"].float(),
-                std=data["std"].float(),
+                mean=data["mean"],
+                std=data["std"],
             )
             for data in test_ds
         ]

@@ -1,11 +1,13 @@
 data/
 ect/
+results/
 wandb/
 lightning_logs/
 **/__pycache__
 trained_models/**
 **/*.pt
 *.pt
+
 
 **/**.npy
 **/**.png 

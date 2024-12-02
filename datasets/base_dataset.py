@@ -10,7 +10,6 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Dataset
 
 
-
 @dataclass
 class BaseConfig:
     module: str
@@ -30,6 +29,7 @@ class BaseModule(LightningDataModule):
 
     def __init__(self):
         super().__init__()
+        self.prepare_data()
         self.setup()
 
     @abstractmethod
