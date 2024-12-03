@@ -64,7 +64,6 @@ def compute_ecc(nh, index, lin, scale):
         ),
         device=nh.device,
     )
-    print(ecc.shape)
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 

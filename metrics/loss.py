@@ -54,3 +54,9 @@ def chamfer2D(pred_pc, ref_pc):
     pred_pc = F.pad(input=pred_pc, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
     ref_pc = F.pad(input=ref_pc, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
     return chamfer_distance(pred_pc, ref_pc).mean()
+
+
+def chamfer3DECT(pred_pc, ref_pc, ect_pred, ect):
+    ch_loss = chamfer3D(pred_pc, ref_pc)
+    mse_loss = F.mse_loss(ect_pred, ect)
+    return 0.1 * ch_loss + mse_loss

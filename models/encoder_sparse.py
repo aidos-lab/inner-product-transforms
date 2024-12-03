@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import lightning as L
 from layers.directions import generate_directions
 
-from metrics.loss import chamfer2D, chamfer3D
+from metrics.loss import chamfer2D, chamfer3D, chamfer3DECT
 
 from layers.ect import EctLayer
 from layers.directions import generate_directions, generate_uniform_directions
@@ -35,21 +35,19 @@ class Model(nn.Module):
             nn.MaxPool1d(kernel_size=2),
             #
             nn.Conv1d(512, 256, kernel_size=3, stride=1),
-            nn.BatchNorm1d(num_features=256),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2),
-            nn.Conv1d(256, 128, kernel_size=3, stride=1),
+            # nn.BatchNorm1d(num_features=256),
+            # nn.ReLU(),
+            # nn.MaxPool1d(kernel_size=2),
+            # nn.Conv1d(256, 128, kernel_size=3, stride=1),
         )
 
         self.layer = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(1536, 2048),
+            nn.Linear(7168, 3 * 2048),
+            nn.ReLU(),
+            nn.Linear(3 * 2048, 3 * 2048),
             nn.Tanh(),
-            nn.Linear(2048, 2048),
-            nn.Tanh(),
-            nn.Linear(2048, 2048),
-            nn.Tanh(),
-            nn.Linear(2048, 2048 * 3),
+            nn.Linear(3 * 2048, 2048 * 3),
         )
 
     def forward(self, ect):
@@ -66,12 +64,12 @@ class BaseModel(L.LightningModule):
         self.config = config
 
         self.model = Model()
-        self.layer = EctLayer(
-            config.ectconfig,
+        self.losslayer = EctLayer(
+            config.ectlossconfig,
             v=generate_uniform_directions(
-                config.ectconfig.num_thetas,
-                config.ectconfig.num_thetas,
-                seed=config.ectconfig.seed,
+                config.ectlossconfig.num_thetas,
+                d=3,
+                seed=config.ectlossconfig.seed,
             ).cuda(),
         )
         self.count = 0
@@ -108,9 +106,14 @@ class BaseModel(L.LightningModule):
             batch.batch.max().item() + 1, device=self.device
         ).repeat_interleave(self.config.num_pts)
 
+        # ect_pred = self.losslayer(_batch, _batch.batch)
+        # ect_gt = self.losslayer(batch, batch.batch)
+
         loss = self.loss_fn(
             _batch.x.view(-1, pc_shape[0], pc_shape[1]),
             batch.x.view(-1, pc_shape[0], pc_shape[1]),
+            # ect_gt,
+            # ect_pred,
         )
         self.log(
             f"{step}_loss",

@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pyvista as pv
+import torch
 
 pv.set_jupyter_backend("static")
 
@@ -218,7 +219,7 @@ def plot_epoch_ect(x, x_gt, layer_truth, ect_pred, ect_truth):
 
 
 def plot_epoch(x, x_gt, epoch):
-    pl = pv.Plotter(shape=(1, 2), window_size=[800, 400], off_screen=True)
+    pl = pv.Plotter(shape=(1, 3), window_size=[1200, 400], off_screen=True)
     points = x_gt.detach().cpu().view(-1, 3).numpy()
     pl.subplot(0, 0)
     actor = pl.add_points(
@@ -236,6 +237,36 @@ def plot_epoch(x, x_gt, epoch):
         smooth_shading=True,
     )
     pl.subplot(0, 1)
+    actor = pl.add_points(
+        x_gt.detach().cpu().view(-1, 3).numpy(),
+        style="points",
+        emissive=False,
+        show_scalar_bar=False,
+        render_points_as_spheres=True,
+        color="lightblue",
+        point_size=5,
+        ambient=0.2,
+        diffuse=0.8,
+        specular=0.8,
+        specular_power=40,
+        smooth_shading=True,
+    )
+    points = x.reshape(-1, 3).detach().cpu().numpy()
+    actor = pl.add_points(
+        points,
+        style="points",
+        emissive=False,
+        show_scalar_bar=False,
+        render_points_as_spheres=True,
+        color="red",
+        point_size=5,
+        ambient=0.2,
+        diffuse=0.8,
+        specular=0.8,
+        specular_power=40,
+        smooth_shading=True,
+    )
+    pl.subplot(0, 2)
     points = x.reshape(-1, 3).detach().cpu().numpy()
     actor = pl.add_points(
         points,
