@@ -25,7 +25,9 @@ class EctConfig:
 
 
 def compute_ect_point_cloud(x, v, radius=1.1, resolution=32, scale=500):
-    lin = torch.linspace(-radius, radius, resolution, device=x.device).view(-1, 1, 1)
+    lin = torch.linspace(-radius, radius, resolution, device=x.device).view(
+        -1, 1, 1
+    )
     nh = (x @ v).unsqueeze(1)
     ecc = torch.nn.functional.sigmoid(scale * torch.sub(lin, nh))
     ect = torch.sum(ecc, dim=2)
@@ -86,7 +88,9 @@ class EctLayer(nn.Module):
         super().__init__()
         self.config = config
         self.lin = torch.nn.Parameter(
-            torch.linspace(-config.r, config.r, config.bump_steps).view(-1, 1, 1),
+            torch.linspace(-config.r, config.r, config.bump_steps).view(
+                -1, 1, 1
+            ),
             requires_grad=False,
         )
         if v is None:
@@ -98,7 +102,7 @@ class EctLayer(nn.Module):
         elif config.ect_type == "points_derivative":
             self.compute_ect = compute_ect_points_derivative
 
-    def forward(self, data: Data, index, scale=500):
+    def forward(self, data: Data, index, scale=64):
         """Forward method"""
         ect = self.compute_ect(data, index, self.v, self.lin, scale)
         if self.config.normalized:

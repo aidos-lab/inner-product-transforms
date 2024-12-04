@@ -7,9 +7,7 @@ import random
 import os
 from torch_geometric.data import InMemoryDataset, Data
 from datasets.base_dataset import BaseModule, BaseConfig
-from datasets.transforms import RandomRotate, RandomScale, EctTransform
-
-from dataclasses import dataclass
+from datasets.transforms import EctTransform
 
 from layers.ect import EctConfig
 
@@ -220,8 +218,12 @@ class ShapeNetDataset(InMemoryDataset):
         ]
 
         if self.pre_transform is not None:
-            train_data_list = [self.pre_transform(data) for data in train_data_list]
-            test_data_list = [self.pre_transform(data) for data in test_data_list]
+            train_data_list = [
+                self.pre_transform(data) for data in train_data_list
+            ]
+            test_data_list = [
+                self.pre_transform(data) for data in test_data_list
+            ]
 
         train_data, train_slices = self.collate(train_data_list)
         torch.save((train_data, train_slices), self.processed_paths[0])
@@ -302,7 +304,9 @@ class Uniform15KPC(Dataset):
             self.all_points_std = all_points_std
         elif self.normalize_per_shape:  # per shape normalization
             B, N = self.all_points.shape[:2]
-            self.all_points_mean = self.all_points.mean(axis=1).reshape(B, 1, input_dim)
+            self.all_points_mean = self.all_points.mean(axis=1).reshape(
+                B, 1, input_dim
+            )
             if normalize_std_per_axis:
                 self.all_points_std = (
                     self.all_points.reshape(B, N, -1)
@@ -330,7 +334,9 @@ class Uniform15KPC(Dataset):
                     self.all_points.reshape(-1).std(axis=0).reshape(1, 1, 1)
                 )
 
-        self.all_points = (self.all_points - self.all_points_mean) / self.all_points_std
+        self.all_points = (
+            self.all_points - self.all_points_mean
+        ) / self.all_points_std
         self.train_points = self.all_points[:, :10000]
         self.test_points = self.all_points[:, 10000:]
 
@@ -349,13 +355,19 @@ class Uniform15KPC(Dataset):
             s = self.all_points_std[idx].reshape(1, -1)
             return m, s
 
-        return self.all_points_mean.reshape(1, -1), self.all_points_std.reshape(1, -1)
+        return self.all_points_mean.reshape(
+            1, -1
+        ), self.all_points_std.reshape(1, -1)
 
     def renormalize(self, mean, std):
-        self.all_points = self.all_points * self.all_points_std + self.all_points_mean
+        self.all_points = (
+            self.all_points * self.all_points_std + self.all_points_mean
+        )
         self.all_points_mean = mean
         self.all_points_std = std
-        self.all_points = (self.all_points - self.all_points_mean) / self.all_points_std
+        self.all_points = (
+            self.all_points - self.all_points_mean
+        ) / self.all_points_std
         self.train_points = self.all_points[:, :10000]
         self.test_points = self.all_points[:, 10000:]
 

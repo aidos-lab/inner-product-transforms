@@ -8,7 +8,7 @@ from datasets.base_dataset import BaseConfig, BaseModule
 
 import torch
 
-from datasets.transforms import CenterTransform, EctTransform
+from datasets.transforms import CenterTransform
 from dataclasses import dataclass
 import numpy as np
 
