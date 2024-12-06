@@ -30,6 +30,7 @@ modelconfig:
     ect_type: "points"
     num_features: 2
     normalized: True
+    seed: 2024
   ectconfig: 
     dim: 2
     num_thetas: 64
@@ -39,6 +40,7 @@ modelconfig:
     device: "cuda:0"
     num_features: 2
     normalized: True
+    seed: 2024
 
 loggers: 
   project: toporecon-dev

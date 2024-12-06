@@ -8,6 +8,7 @@ pv.set_jupyter_backend("static")
 DEVICE = "cuda:0"
 ECT_PLOT_CONFIG = {"cmap": "bone", "vmin": -0.5, "vmax": 1.5}
 PC_PLOT_CONFIG = {"s": 5, "c": ".5"}
+LIGHTRED = [255, 100, 100]
 
 
 def rotate(p, origin=(0, 0), degrees=0):
@@ -53,8 +54,6 @@ def plot_recon_2d(recon_pcs, ref_pcs, num_pc=5):
 
 def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
 
-    jnt_pcs = np.stack([recon_pcs, ref_pcs], axis=1)
-
     pl = pv.Plotter(
         shape=(3, num_pc),
         window_size=[200 * num_pc, 600],
@@ -63,15 +62,15 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
     )
 
     for col in range(num_pc):
-        points = recon_pcs[col + offset].reshape(-1, 3)
+        # First plat
         pl.subplot(0, col)
         actor = pl.add_points(
-            points,
+            recon_pcs[col + offset].reshape(-1, 3),
             style="points",
             emissive=False,
             show_scalar_bar=False,
             render_points_as_spheres=True,
-            scalars=points[:, 2],
+            color="lightgray",
             point_size=2,
             ambient=0.2,
             diffuse=0.8,
@@ -79,15 +78,14 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
             specular_power=40,
             smooth_shading=True,
         )
-        points = ref_pcs[col + offset].reshape(-1, 3)
         pl.subplot(1, col)
         actor = pl.add_points(
-            points,
+            ref_pcs[col + offset].reshape(-1, 3),
             style="points",
             emissive=False,
             show_scalar_bar=False,
             render_points_as_spheres=True,
-            scalars=points[:, 2],
+            color=LIGHTRED,
             point_size=2,
             ambient=0.2,
             diffuse=0.8,
@@ -95,15 +93,29 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
             specular_power=40,
             smooth_shading=True,
         )
-        points = jnt_pcs[col + offset].reshape(-1, 3)
-        pl.subplot(2, col)
         actor = pl.add_points(
-            points,
+            recon_pcs[col + offset].reshape(-1, 3),
             style="points",
             emissive=False,
             show_scalar_bar=False,
             render_points_as_spheres=True,
-            scalars=points[:, 2],
+            color="lightgray",
+            point_size=2,
+            ambient=0.2,
+            diffuse=0.8,
+            specular=0.8,
+            specular_power=40,
+            smooth_shading=True,
+        )
+
+        pl.subplot(2, col)
+        actor = pl.add_points(
+            ref_pcs[col + offset].reshape(-1, 3),
+            style="points",
+            emissive=False,
+            show_scalar_bar=False,
+            render_points_as_spheres=True,
+            color=LIGHTRED,
             point_size=2,
             ambient=0.2,
             diffuse=0.8,

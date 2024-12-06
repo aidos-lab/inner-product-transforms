@@ -4,7 +4,7 @@ from torchvision.datasets import MNIST
 import torchvision.transforms as transforms
 from torch_geometric.data import InMemoryDataset
 
-from datasets.transforms import CenterTransform, FixedLength, SkeletonGraph
+from datasets.transforms import CenterTransform, FixedLength
 from datasets.base_dataset import BaseModule, BaseConfig
 from datasets.transforms import MnistTransform, EctTransform
 
@@ -19,76 +19,8 @@ class DataModuleConfig(BaseConfig):
     root: str = "./data/MNIST"
     module: str = "datasets.mnist"
     ectconfig: EctConfig = EctConfig(
-        num_features=2, num_thetas=64, bump_steps=64
+        num_features=2, num_thetas=64, bump_steps=64,seed=2024
     )
-
-
-class EctMnistDataModule(BaseModule):
-    def __init__(self, config):
-        self.config = config
-        # self.transform = transforms.Compose(
-        #     [MnistTransform(), CenterTransform(), EctTransform()]
-        # )
-        self.transform = transforms.Compose(
-            [
-                SkeletonGraph(),
-                CenterTransform(),
-                EctTransform(config.ectconfig),
-            ]
-        )
-        super().__init__()
-
-    def setup(self):
-        self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
-        self.train_ds, self.val_ds = random_split(
-            self.entire_ds,
-            [
-                int(0.9 * len(self.entire_ds)),
-                len(self.entire_ds) - int(0.9 * len(self.entire_ds)),
-            ],
-        )  # type: ignore
-
-        self.test_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=False
-        )
-
-
-class MnistDataModule(BaseModule):
-    def __init__(self, config):
-        self.config = config
-        self.transform = transforms.Compose(
-            [MnistTransform(), FixedLength(), CenterTransform()]
-        )
-        super().__init__(
-            config.root,
-            config.batch_size,
-            config.num_workers,
-            config.pin_memory,
-        )
-
-    def prepare_data(self):
-        MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
-
-    def setup(self, **kwargs):
-        self.entire_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=True
-        )
-        self.train_ds, self.val_ds = random_split(
-            self.entire_ds,
-            [
-                int(0.9 * len(self.entire_ds)),
-                len(self.entire_ds) - int(0.9 * len(self.entire_ds)),
-            ],
-        )  # type: ignore
-
-        self.test_ds = MnistDataset(
-            root=self.config.root, pre_transform=self.transform, train=False
-        )
-
 
 class DataModule(BaseModule):
     def __init__(self, config, force_reload=False):

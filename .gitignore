@@ -8,6 +8,8 @@ trained_models/**
 **/*.pt
 *.pt
 
+# Quarto files 
+/**_files
 
 **/**.npy
 **/**.png 

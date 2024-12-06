@@ -2,7 +2,7 @@ data:
   module: datasets.shapenetcore
   root: ./data/shapenet
   cates: 
-    - airplane
+    - car
   num_workers: 0
   batch_size: 64
   pin_memory: True
@@ -12,7 +12,7 @@ data:
     seed: 2024
     num_thetas: 256
     bump_steps: 256 
-    r: 7
+    r: 4.5
     ect_type: "points"
     num_features: 3
     normalized: True
@@ -28,7 +28,7 @@ modelconfig:
     dim: 3
     num_thetas: 64
     bump_steps: 64 
-    r: 7
+    r: 4.5
     ect_type: "points"
     device: "cuda:0"
     num_features: 3
@@ -37,7 +37,7 @@ modelconfig:
     seed: 2024
     num_thetas: 256
     bump_steps: 256 
-    r: 7
+    r: 4.5
     ect_type: "points"
     num_features: 3
     normalized: True
@@ -46,11 +46,11 @@ loggers:
   project: toporecon-dev
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_airplane_sparse"
+  experiment_name: "encoder_car_sparse"
 
 trainer:
   accelerator: auto
-  max_epochs: 1
+  max_epochs: 100
   log_every_n_steps: 1
   save_dir: "trained_models" 
-  model_name: "encoder_airplane_sparse.ckpt" 
+  model_name: "encoder_car_sparse.ckpt" 

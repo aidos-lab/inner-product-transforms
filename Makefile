@@ -1,6 +1,7 @@
-.PHONY venv
+.PHONY: venv 
 
 venv: 
-	source .venv/bin/activate
+	poetry shell
 
-
+readme: 
+	quarto render readme.ipynb --to gfm --output Readme.md

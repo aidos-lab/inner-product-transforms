@@ -7,6 +7,7 @@ import math
 import random
 import torch
 import torchvision
+import numpy as np 
 
 from torch_geometric.data import Batch, Data
 from torch_geometric.transforms import (
@@ -37,6 +38,21 @@ class RandomScale:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.scales})"
+
+class FixedLength:
+    def __init__(self, length=128):
+        self.length = length
+
+    def __call__(self, data):
+        res = data.clone()
+        if data.x.shape[0] < self.length:
+            idx = torch.tensor(np.random.choice(len(data.x), self.length, replace=True))
+        else:
+            idx = torch.tensor(
+                np.random.choice(len(data.x), self.length, replace=False)
+            )
+        res.x = data.x[idx]
+        return res
 
 
 class EctTransform:

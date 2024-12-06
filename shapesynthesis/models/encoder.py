@@ -25,7 +25,8 @@ class BaseModel(L.LightningModule):
         self.loss_layer = EctLayer(
             config.ectlossconfig,
             v=generate_uniform_directions(
-                num_thetas=config.ectlossconfig.num_thetas
+                num_thetas=config.ectlossconfig.num_thetas,
+                seed=config.ectlossconfig.seed
             ).cuda(),
         )
 
