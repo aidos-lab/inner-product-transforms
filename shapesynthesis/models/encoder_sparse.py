@@ -1,16 +1,13 @@
 from typing import TypeAlias, Literal
 import torch
 from torch import nn
-import torch.nn.functional as F
 import lightning as L
-from layers.directions import generate_directions
 
-from metrics.loss import chamfer2D, chamfer3D, chamfer3DECT
+from metrics.loss import chamfer2D, chamfer3DECT
 
 from layers.ect import EctLayer
-from layers.directions import generate_directions, generate_uniform_directions
+from layers.directions import generate_uniform_directions
 
-import matplotlib.pyplot as plt
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -75,11 +72,13 @@ class BaseModel(L.LightningModule):
         self.count = 0
 
         if config.num_dims == 3:
-            self.loss_fn = chamfer3D
+            self.loss_fn = chamfer3DECT
         elif config.num_dims == 2:
             self.loss_fn = chamfer2D
         else:
-            raise ValueError(f"Number of dimensions {config.num_dims} not supported")
+            raise ValueError(
+                f"Number of dimensions {config.num_dims} not supported"
+            )
 
         self.save_hyperparameters()
 
@@ -106,14 +105,14 @@ class BaseModel(L.LightningModule):
             batch.batch.max().item() + 1, device=self.device
         ).repeat_interleave(self.config.num_pts)
 
-        # ect_pred = self.losslayer(_batch, _batch.batch)
-        # ect_gt = self.losslayer(batch, batch.batch)
+        ect_pred = self.losslayer(_batch, _batch.batch, scale=32)
+        ect_gt = self.losslayer(batch, batch.batch, scale=32)
 
         loss = self.loss_fn(
             _batch.x.view(-1, pc_shape[0], pc_shape[1]),
             batch.x.view(-1, pc_shape[0], pc_shape[1]),
-            # ect_gt,
-            # ect_pred,
+            ect_gt,
+            ect_pred,
         )
         self.log(
             f"{step}_loss",
@@ -128,5 +127,7 @@ class BaseModel(L.LightningModule):
     def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
-    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def training_step(
+        self, batch, batch_idx
+    ):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
