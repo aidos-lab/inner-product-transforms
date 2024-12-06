@@ -3,10 +3,7 @@ import torch
 from torch import nn
 import lightning as L
 
-from metrics.loss import chamfer2D, chamfer3DECT
-
-from layers.ect import EctLayer
-from layers.directions import generate_uniform_directions
+from metrics.loss import chamfer2D, chamfer3D
 
 
 Tensor: TypeAlias = torch.Tensor
@@ -61,24 +58,14 @@ class BaseModel(L.LightningModule):
         self.config = config
 
         self.model = Model()
-        self.losslayer = EctLayer(
-            config.ectlossconfig,
-            v=generate_uniform_directions(
-                config.ectlossconfig.num_thetas,
-                d=3,
-                seed=config.ectlossconfig.seed,
-            ).cuda(),
-        )
         self.count = 0
 
         if config.num_dims == 3:
-            self.loss_fn = chamfer3DECT
+            self.loss_fn = chamfer3D
         elif config.num_dims == 2:
             self.loss_fn = chamfer2D
         else:
-            raise ValueError(
-                f"Number of dimensions {config.num_dims} not supported"
-            )
+            raise ValueError(f"Number of dimensions {config.num_dims} not supported")
 
         self.save_hyperparameters()
 
@@ -92,27 +79,15 @@ class BaseModel(L.LightningModule):
         x = self.model(ect)
         return x
 
-    def general_step(
-        self, batch, batch_idx, step: Literal["train", "test", "validation"]
-    ):
+    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
         batch_len = len(batch)
         pc_shape = batch[0].x.shape
-        _batch = batch.clone()
 
-        _batch.x = self(batch.ect).reshape(-1, self.config.num_dims)
-
-        _batch.batch = torch.arange(
-            batch.batch.max().item() + 1, device=self.device
-        ).repeat_interleave(self.config.num_pts)
-
-        ect_pred = self.losslayer(_batch, _batch.batch, scale=32)
-        ect_gt = self.losslayer(batch, batch.batch, scale=32)
+        x = self(batch.ect).reshape(-1, self.config.num_dims)
 
         loss = self.loss_fn(
-            _batch.x.view(-1, pc_shape[0], pc_shape[1]),
+            x.view(-1, pc_shape[0], pc_shape[1]),
             batch.x.view(-1, pc_shape[0], pc_shape[1]),
-            ect_gt,
-            ect_pred,
         )
         self.log(
             f"{step}_loss",
@@ -127,7 +102,5 @@ class BaseModel(L.LightningModule):
     def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
-    def training_step(
-        self, batch, batch_idx
-    ):  # pylint: disable=arguments-differ
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")

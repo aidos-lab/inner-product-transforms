@@ -18,7 +18,7 @@ data:
     normalized: True
 
 modelconfig:
-  module: models.encoder_sparse
+  module: models.encoder
   hidden_size: 512
   num_pts: 2048
   num_dims: 3
@@ -46,11 +46,11 @@ loggers:
   project: toporecon-dev
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_car_sparse"
+  experiment_name: "encoder_car"
 
 trainer:
   accelerator: auto
   max_epochs: 100
   log_every_n_steps: 1
   save_dir: "trained_models" 
-  model_name: "encoder_car_sparse.ckpt" 
+  model_name: "encoder_car.ckpt" 

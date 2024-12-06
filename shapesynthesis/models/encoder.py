@@ -1,12 +1,58 @@
-"""Encoder module"""
-
-from typing import Literal
+from typing import TypeAlias, Literal
 import torch
 from torch import nn
 import lightning as L
-from kaolin.metrics.pointcloud import chamfer_distance
+
+from metrics.loss import chamfer2D, chamfer3DECT
+
 from layers.ect import EctLayer
-from layers.directions import generate_directions, generate_uniform_directions
+from layers.directions import generate_uniform_directions
+
+
+Tensor: TypeAlias = torch.Tensor
+
+
+class Model(nn.Module):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.conv = nn.Sequential(
+            nn.Conv1d(256, 512, kernel_size=3, stride=1),
+            nn.BatchNorm1d(num_features=512),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
+            #
+            nn.Conv1d(512, 512, kernel_size=3, stride=1),
+            nn.BatchNorm1d(num_features=512),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
+            #
+            nn.Conv1d(512, 512, kernel_size=3, stride=1),
+            nn.BatchNorm1d(num_features=512),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
+            #
+            nn.Conv1d(512, 256, kernel_size=3, stride=1),
+            # nn.BatchNorm1d(num_features=256),
+            # nn.ReLU(),
+            # nn.MaxPool1d(kernel_size=2),
+            # nn.Conv1d(256, 128, kernel_size=3, stride=1),
+        )
+
+        self.layer = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(7168, 3 * 2048),
+            nn.ReLU(),
+            nn.Linear(3 * 2048, 3 * 2048),
+            nn.Tanh(),
+            nn.Linear(3 * 2048, 2048 * 3),
+        )
+
+    def forward(self, ect):
+        ect = 2 * ect - 1
+        ect = ect.movedim(-1, -2)
+        x = self.conv(ect)
+        x = self.layer(x.flatten(start_dim=1))
+        return x
 
 
 class BaseModel(L.LightningModule):
@@ -14,38 +60,26 @@ class BaseModel(L.LightningModule):
         super().__init__()
         self.config = config
 
-        self.visualization = []
-        self.validation_visualization = []
-
-        self.layer = EctLayer(
-            config.ectconfig,
-            v=generate_directions(config.ectconfig.num_thetas, config.num_dims).cuda(),
-        )
-
-        self.loss_layer = EctLayer(
+        self.model = Model()
+        self.losslayer = EctLayer(
             config.ectlossconfig,
             v=generate_uniform_directions(
-                num_thetas=config.ectlossconfig.num_thetas,
-                seed=config.ectlossconfig.seed
+                config.ectlossconfig.num_thetas,
+                d=3,
+                seed=config.ectlossconfig.seed,
             ).cuda(),
         )
+        self.count = 0
 
-        self.model = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(
-                config.ectconfig.num_thetas * config.ectconfig.bump_steps,
-                config.hidden_size,
-            ),
-            nn.ReLU(),
-            nn.Linear(config.hidden_size, config.hidden_size),
-            nn.ReLU(),
-            nn.Linear(config.hidden_size, config.hidden_size),
-            nn.ReLU(),
-            nn.Linear(
-                config.hidden_size,
-                config.num_dims * config.num_pts,
-            ),
-        )
+        if config.num_dims == 3:
+            self.loss_fn = chamfer3DECT
+        elif config.num_dims == 2:
+            self.loss_fn = chamfer2D
+        else:
+            raise ValueError(
+                f"Number of dimensions {config.num_dims} not supported"
+            )
+
         self.save_hyperparameters()
 
     def configure_optimizers(self):
@@ -54,152 +88,46 @@ class BaseModel(L.LightningModule):
         )
         return optimizer
 
-    def forward(self, batch):  # pylint: disable=arguments-differ
-        x = self.model(batch)
+    def forward(self, ect):  # pylint: disable=arguments-differ
+        x = self.model(ect)
         return x
 
     def general_step(
         self, batch, batch_idx, step: Literal["train", "test", "validation"]
     ):
         batch_len = len(batch)
+        pc_shape = batch[0].x.shape
         _batch = batch.clone()
 
-        # # Compute ECT
-        # ect = self.layer(_batch, _batch.batch)
+        _batch.x = self(batch.ect).reshape(-1, self.config.num_dims)
 
-        # Reconstruct the batch
-        _batch.x = self(batch.ect).view(-1, self.config.num_dims)
+        _batch.batch = torch.arange(
+            batch.batch.max().item() + 1, device=self.device
+        ).repeat_interleave(self.config.num_pts)
 
-        if self.config.num_dims == 2:
-            loss_cd = chamfer_distance(
-                torch.cat(
-                    [
-                        batch.x.view(batch_len, 128, 2),
-                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
-                    ],
-                    dim=-1,
-                ),
-                torch.cat(
-                    [
-                        _batch.x.view(-1, 128, 2),
-                        torch.zeros(size=(batch_len, 128, 1), device=self.device),
-                    ],
-                    dim=-1,
-                ),
-            ).mean()
-        else:
-            loss_cd = chamfer_distance(
-                batch.x.view(batch_len, -1, self.config.num_dims),
-                _batch.x.view(
-                    -1,
-                    self.config.num_pts,
-                    self.config.num_dims,
-                ),
-            ).mean()
-        # CD Loss
+        ect_pred = self.losslayer(_batch, _batch.batch, scale=32)
+        ect_gt = self.losslayer(batch, batch.batch, scale=32)
 
-        loss = loss_cd
-        ect_kld_loss = 0
-
-        self.log_dict(
-            {
-                f"{step}_loss": loss,
-                f"{step}_kld_loss": ect_kld_loss,
-                f"{step}_loss_cd": loss_cd,
-            },
+        loss = self.loss_fn(
+            _batch.x.view(-1, pc_shape[0], pc_shape[1]),
+            batch.x.view(-1, pc_shape[0], pc_shape[1]),
+            ect_gt,
+            ect_pred,
+        )
+        self.log(
+            f"{step}_loss",
+            loss,
             prog_bar=True,
             batch_size=batch_len,
             on_step=False,
             on_epoch=True,
         )
-
         return loss
 
-    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+        return self.general_step(batch, batch_idx, "test")
+
+    def training_step(
+        self, batch, batch_idx
+    ):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
-
-    def validation_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
-        with torch.no_grad():
-            loss = self.general_step(batch, batch_idx, "validation")
-
-        return loss
-
-
-###############################################################################
-###############################################################################
-###############################################################################
-
-
-# ect_pred = self.loss_layer(_batch, _batch.batch)
-# ect_target = self.loss_layer(batch, batch.batch)
-
-# eps = 10e-5
-# ect_pred /= ect_pred.sum(axis=1, keepdim=True)
-# ect_target /= ect_target.sum(axis=1, keepdim=True)
-# ect_pred += eps
-# ect_target += eps
-
-# ect_kld_loss = (
-#     F.kl_div(ect_pred.log(), ect_target, None, None, reduction="none")
-#     .sum(dim=-1)
-#     .sum(dim=-1)
-#     / self.num_pts
-# ).mean()
-
-
-# if self.current_epoch % 10 == 0 and batch_idx== 0:
-#     tensorboard_logger = self.logger.experiment
-#     ref_pcs, sample_pcs = self.validation_visualization[0]
-#     fig, axes = plt.subplots(nrows=3, ncols=8, figsize=(16, 6))
-#     fig.tight_layout()
-#     for axis, ref, pred in zip(axes.T, ref_pcs, sample_pcs):
-#         pts_ref = ref.view(-1, 2).cpu().detach()
-#         ax = axis[0]
-#         ax.scatter(pts_ref[:, 0], pts_ref[:, 1], s=0.1)
-#         ax.axis("off")
-
-#         ax = axis[1]
-#         pts_pred = pred.view(-1, 2).cpu().detach()
-#         ax.scatter(pts_pred[:, 0], pts_pred[:, 1], s=0.1)
-#         ax.axis("off")
-#         ax = axis[2]
-#         pts = torch.vstack([pts_pred, pts_ref])
-#         ax.scatter(pts[:, 0], pts[:, 1], s=0.1)
-#         ax.axis("off")
-
-#     # Adding plot to tensorboard
-#     tensorboard_logger.add_figure(
-#         "val_reconstruction", plt.gcf(), global_step=self.global_step
-#     )
-
-# self.visualization.clear()
-
-
-# def on_train_epoch_end(self) -> None:
-#     self.loss_layer.v = generate_uniform_directions(
-#             num_thetas=self.ectlossconfig.num_thetas
-#         ).cuda()
-#     return super().on_train_epoch_end()
-# if batch_idx == 0:
-#     self.visualization = [
-#         (
-#             batch.x.view(
-#                 -1, self.num_pts, self.num_dims
-#             ),
-#             _batch.x.view(
-#                 -1, self.num_pts, self.num_dims
-#             ),
-#         )
-#     ]
-#
-# if batch_idx == 0 and step == "validation":
-#     self.validation_visualization = [
-#         (
-#             batch.x.view(
-#                 -1, self.num_pts, self.num_dims
-#             ),
-#             _batch.x.view(
-#                 -1, self.num_pts, self.num_dims
-#             ),
-#         )
-#     ]
