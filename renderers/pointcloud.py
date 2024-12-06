@@ -18,6 +18,7 @@ def render_point_cloud(
     num_epochs,
     x_gt,
     scale,
+    radius,
 ):
     x = nn.Parameter(x_init)
     loss_fn = torch.nn.MSELoss()
@@ -28,7 +29,9 @@ def render_point_cloud(
     plot_epoch(x[0], x_gt, 0)
     for epoch in range(1, num_epochs + 1):
         optimizer.zero_grad()
-        ect_pred = compute_ect_point_cloud(x, v, radius=5, resolution=256, scale=scale)
+        ect_pred = compute_ect_point_cloud(
+            x, v, radius=radius, resolution=256, scale=scale
+        )
         loss = loss_fn(ect_pred, ect_gt)
         loss.backward()
         optimizer.step()
