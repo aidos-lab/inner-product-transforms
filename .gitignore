@@ -1,6 +1,7 @@
 data/
 ect/
 results/
+img/
 wandb/
 lightning_logs/
 **/__pycache__
@@ -10,7 +11,6 @@ trained_models/**
 
 
 **/**.npy
-**/**.png 
 **/**.svg 
 **/**.cu 
 metrics/ChamferDistancePytorch 
