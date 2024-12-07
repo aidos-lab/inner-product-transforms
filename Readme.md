@@ -36,16 +36,16 @@ clearly outperforms all models.
 
 ## MNIST
 
-![](readme_files/figure-commonmark/cell-6-output-1.png)
+![](Readme_files/figure-commonmark/cell-6-output-1.png)
 
 ## CNN Encoder Chair
 
-![](readme_files/figure-commonmark/cell-7-output-1.png)
+![](Readme_files/figure-commonmark/cell-7-output-1.png)
 
 ## CNN Encoder Char
 
-![](readme_files/figure-commonmark/cell-8-output-1.png)
+![](Readme_files/figure-commonmark/cell-8-output-1.png)
 
 ## CNN Encoder Airplane
 
-![](readme_files/figure-commonmark/cell-9-output-1.png)
+![](Readme_files/figure-commonmark/cell-9-output-1.png)
