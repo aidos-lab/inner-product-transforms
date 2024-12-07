@@ -8,7 +8,7 @@ lightning_logs/
 trained_models/**
 **/*.pt
 *.pt
-
+**.out
 
 **/**.npy
 **/**.svg 
