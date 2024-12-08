@@ -9,6 +9,7 @@ trained_models/**
 **/*.pt
 *.pt
 **.out
+trained_models**
 
 **/**.npy
 **/**.svg 

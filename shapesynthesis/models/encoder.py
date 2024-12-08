@@ -76,9 +76,7 @@ class BaseModel(L.LightningModule):
         elif config.num_dims == 2:
             self.loss_fn = chamfer2D
         else:
-            raise ValueError(
-                f"Number of dimensions {config.num_dims} not supported"
-            )
+            raise ValueError(f"Number of dimensions {config.num_dims} not supported")
 
         self.save_hyperparameters()
 
@@ -105,18 +103,21 @@ class BaseModel(L.LightningModule):
             batch.batch.max().item() + 1, device=self.device
         ).repeat_interleave(self.config.num_pts)
 
-        ect_pred = self.losslayer(_batch, _batch.batch, scale=32)
-        ect_gt = self.losslayer(batch, batch.batch, scale=32)
+        ect_pred = self.losslayer(_batch, _batch.batch, scale=48)
+        ect_gt = self.losslayer(batch, batch.batch, scale=48)
 
-        loss = self.loss_fn(
+        loss, ect_loss, cd_loss = self.loss_fn(
             _batch.x.view(-1, pc_shape[0], pc_shape[1]),
             batch.x.view(-1, pc_shape[0], pc_shape[1]),
             ect_gt,
             ect_pred,
         )
-        self.log(
-            f"{step}_loss",
-            loss,
+        self.log_dict(
+            {
+                f"{step}_loss": loss,
+                f"{step}_ect_loss": ect_loss,
+                f"{step}_cd_loss": cd_loss,
+            },
             prog_bar=True,
             batch_size=batch_len,
             on_step=False,
@@ -127,7 +128,8 @@ class BaseModel(L.LightningModule):
     def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
-    def training_step(
-        self, batch, batch_idx
-    ):  # pylint: disable=arguments-differ
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")
+
+    def validation_step(self, batch, batch_idx):
+        return self.general_step(batch, batch_idx, "validation")

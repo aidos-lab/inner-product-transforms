@@ -24,10 +24,14 @@ class EctConfig:
     seed: int = 2024
 
 
-def compute_ect_point_cloud(x, v, radius=1.1, resolution=32, scale=500):
-    lin = torch.linspace(-radius, radius, resolution, device=x.device).view(
-        -1, 1, 1
-    )
+def compute_ect_point_cloud(
+    x: torch.Tensor,
+    v: torch.Tensor,
+    radius: torch.Tensor,
+    resolution: torch.Tensor,
+    scale: torch.Tensor,
+):
+    lin = torch.linspace(-radius, radius, resolution, device=x.device).view(-1, 1, 1)
     nh = (x @ v).unsqueeze(1)
     ecc = torch.nn.functional.sigmoid(scale * torch.sub(lin, nh))
     ect = torch.sum(ecc, dim=2)
@@ -88,9 +92,7 @@ class EctLayer(nn.Module):
         super().__init__()
         self.config = config
         self.lin = torch.nn.Parameter(
-            torch.linspace(-config.r, config.r, config.bump_steps).view(
-                -1, 1, 1
-            ),
+            torch.linspace(-config.r, config.r, config.bump_steps).view(-1, 1, 1),
             requires_grad=False,
         )
         if v is None:

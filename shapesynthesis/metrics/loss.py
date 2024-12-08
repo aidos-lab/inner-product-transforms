@@ -33,7 +33,7 @@ def chamfer2D(pred_pc, ref_pc):
 def chamfer3DECT(pred_pc, ref_pc, ect_pred, ect):
     ch_loss = chamfer3D(pred_pc, ref_pc)
     mse_loss = F.mse_loss(ect_pred, ect)
-    return ch_loss + mse_loss
+    return ch_loss + 10 * mse_loss, mse_loss, ch_loss
 
 
 def dect_loss_fn(ect_pred, ect):

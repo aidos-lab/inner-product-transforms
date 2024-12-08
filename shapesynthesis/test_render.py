@@ -14,12 +14,14 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 @torch.no_grad()
-def evaluate_render_reconstruction(folder):
+def evaluate_render_reconstruction(cate, resolution):
 
-    sample_pcs = torch.load(f"./results/{folder}/reconstructions.pt")
-    ref_pcs = torch.load(f"./results/{folder}/references.pt")
-    means = torch.load(f"./results/{folder}/means.pt")
-    stdevs = torch.load(f"./results/{folder}/stdevs.pt")
+    sample_pcs = torch.load(
+        f"./results/rendered/reconstructions_{cate}_{resolution}.pt"
+    ).cuda()
+    ref_pcs = torch.load(f"./results/rendered/references_{cate}_{resolution}.pt").cuda()
+    means = torch.load(f"./results/rendered/means_{cate}.pt").cuda()
+    stdevs = torch.load(f"./results/rendered/stdevs_{cate}.pt").cuda()
     pc_shape = ref_pcs.shape
 
     sample_pcs = sample_pcs * stdevs + means
@@ -54,12 +56,6 @@ def evaluate_render_reconstruction(folder):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--folder",
-        required=True,
-        type=str,
-        help="Folder where the reconstructions are stored.",
-    )
-    parser.add_argument(
         "--normalize",
         default=False,
         action="store_true",
@@ -73,26 +69,29 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    model_name = args.folder
-
     results = []
     for _ in range(args.num_reruns):
-        # Evaluate reconstruction
-        result, sample_pc, ref_pc = evaluate_render_reconstruction(model_name)
-        result["normalized"] = args.normalize
-        result["model"] = model_name
+        for cate in ["airplane", "car", "chair"]:
+            for resolution in ["256", "64", "128"]:
+                model_name = f"ECT-{resolution}_{cate}"
+                # Evaluate reconstruction
+                result, sample_pc, ref_pc = evaluate_render_reconstruction(
+                    cate, resolution
+                )
+                result["normalized"] = args.normalize
+                result["model"] = model_name
 
-        if args.normalize:
-            suffix = "_normalized"
-        else:
-            suffix = ""
-
-        results.append(result)
+                if args.normalize:
+                    suffix = "_normalized"
+                else:
+                    suffix = ""
+                print(result)
+                results.append(result)
 
     # Save the results in json format, {config name}.json
     # Example ./results/encoder_mnist.json
     with open(
-        f"./results/{model_name}/{model_name}{suffix}.json",
+        "./results/rendered/rendered.json",
         "w",
         encoding="utf-8",
     ) as f:

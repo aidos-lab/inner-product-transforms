@@ -7,9 +7,9 @@ from layers.ect import EctConfig
 # config.force_reload = True
 dm = DataModule(
     DataModuleConfig(
-        cates=["airplane"],
+        cates=["car"],
         ectconfig=EctConfig(num_thetas=128, bump_steps=128),
-        force_reload=True,
+        force_reload=False,
     )
 )
 
@@ -21,6 +21,8 @@ for val_batch in dm.val_dataloader():
     print(val_batch.ect.norm(dim=-1).max())
     break
 
+
+print("len", len(dm.val_ds))
 
 print(torch.allclose(val_batch.ect, test_batch.ect))
 print(val_batch.ect.shape)

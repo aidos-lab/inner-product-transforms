@@ -7,6 +7,7 @@ import argparse
 from types import SimpleNamespace
 import torch
 import lightning as L
+from lightning.pytorch.callbacks import ModelCheckpoint
 from loaders import load_datamodule, load_model, load_config, load_logger
 
 
@@ -36,13 +37,23 @@ def train(config: SimpleNamespace, resume=False, dev=False):
         limit_train_batches = 0.1
         config.trainer.max_epochs = 1
 
+    checkpoint_callback = ModelCheckpoint(
+        monitor="validation_loss",
+        dirpath="trained_models",
+        filename=f"{config.trainer.model_name}"
+        + "-epoch={epoch}-val_loss={validation_loss:.2f}",
+        auto_insert_metric_name=False,
+    )
+
     trainer = L.Trainer(
         logger=logger,
+        callbacks=[checkpoint_callback],
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
         limit_train_batches=limit_train_batches,
-        limit_val_batches=0.1,
+        limit_val_batches=limit_train_batches,
+        enable_progress_bar=True,
     )
     model.hparams.lr = 0.00005
     trainer.fit(model, dm)
