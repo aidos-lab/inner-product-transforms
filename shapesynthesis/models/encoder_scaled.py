@@ -21,7 +21,7 @@ import lightning as L
 Tensor: TypeAlias = torch.Tensor
 
 
-class BaseModel(L.LightningModule):
+class BaseLightningModel(L.LightningModule):
     def __init__(self, ectconfig, ectlossconfig, modelconfig):
         super().__init__()
 
@@ -58,18 +58,14 @@ class BaseModel(L.LightningModule):
         )
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=self.learning_rate
-        )
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         return optimizer
 
     def forward(self, batch):  # pylint: disable=arguments-differ
         x = self.model(batch)
         return x
 
-    def general_step(
-        self, batch, _, step: Literal["train", "test", "validation"]
-    ):
+    def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
         batch_len = len(batch)
         _batch = batch.clone()
         __batch = batch.clone()
@@ -121,15 +117,11 @@ class BaseModel(L.LightningModule):
         return loss
 
     def on_train_epoch_end(self) -> None:
-        self.loss_layer.v = generate_uniform_directions(
-            d=3, num_thetas=64
-        ).cuda()
+        self.loss_layer.v = generate_uniform_directions(d=3, num_thetas=64).cuda()
         return super().on_train_epoch_end()
 
     def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "test")
 
-    def training_step(
-        self, batch, batch_idx
-    ):  # pylint: disable=arguments-differ
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")

@@ -7,7 +7,7 @@ import math
 import random
 import torch
 import torchvision
-import numpy as np 
+import numpy as np
 
 from torch_geometric.data import Batch, Data
 from torch_geometric.transforms import (
@@ -16,7 +16,7 @@ from torch_geometric.transforms import (
 )
 
 from layers.directions import generate_uniform_directions
-from layers.ect import EctLayer
+from layers.ect import EctLayer, EctConfig
 
 
 class RandomScale:
@@ -39,6 +39,7 @@ class RandomScale:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.scales})"
 
+
 class FixedLength:
     def __init__(self, length=128):
         self.length = length
@@ -56,17 +57,17 @@ class FixedLength:
 
 
 class EctTransform:
-    def __init__(self, ectconfig, normalized=True):
+    def __init__(self, ectconfig: EctConfig, normalized=True):
         v = generate_uniform_directions(
             num_thetas=ectconfig.num_thetas,
-            d=ectconfig.num_features,
+            d=ectconfig.ambient_dimension,
             seed=ectconfig.seed,
-        ).cuda()
-        self.layer = EctLayer(config=ectconfig, v=v).cuda()
+        )
+        self.layer = EctLayer(config=ectconfig, v=v)
         self.normalized = normalized
 
     def __call__(self, data):
-        batch = Batch.from_data_list([data]).cuda()
+        batch = Batch.from_data_list([data])
         ect = self.layer(batch, batch.batch)
         if self.normalized:
             data.ect = (ect / ect.max()).cpu()
@@ -154,6 +155,4 @@ class RandomRotate(BaseTransform):
         return data
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
-        )
+        return f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"

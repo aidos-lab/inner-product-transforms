@@ -13,9 +13,7 @@ def normalize(pts):
     assert pts.shape[1:] == (2048, 3)
     pts_means = pts.mean(axis=-2, keepdim=True)
     pts = pts - pts_means
-    pts_norms = torch.norm(pts, dim=-1, keepdim=True).max(
-        dim=-2, keepdim=True
-    )[0]
+    pts_norms = torch.norm(pts, dim=-1, keepdim=True).max(dim=-2, keepdim=True)[0]
     pts = pts / pts_norms
     return pts, pts_means, pts_norms
 
@@ -70,7 +68,7 @@ class ModelWrapper:
             reconstructed_ect = batch.ect
 
         pointcloud = self.encoder(reconstructed_ect).view(
-            -1, pc_shape[0], pc_shape[1]
+            -1, self.encoder.config.num_pts, pc_shape[1]
         )
 
         if normalized:

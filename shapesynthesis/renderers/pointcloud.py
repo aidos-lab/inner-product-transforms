@@ -23,7 +23,7 @@ def render_point_cloud(
     loss_fn = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(
         params=[x],
-        lr=3.5,
+        lr=0.5,
     )
 
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
@@ -43,13 +43,13 @@ def render_point_cloud(
         # print(epoch)
         if epoch % 100 == 0:
             print(epoch)
-        #     print(
-        #         epoch,
-        #         loss.item(),
-        #         chamfer_distance(
-        #             x.view(-1, num_pts, 3), x_gt.view(-1, num_pts, 3)
-        #         ).item(),
-        #     )
-        #     with torch.no_grad():
-        #         plot_epoch(x[0], x_gt, epoch)
+            print(
+                epoch,
+                loss.item(),
+                # chamfer_distance(
+                #     x.view(-1, num_pts, 3), x_gt.view(-1, num_pts, 3)
+                # ).item(),
+            )
+            # with torch.no_grad():
+            #     plot_epoch(x[0], x_gt, epoch)
     return x.detach().cpu()

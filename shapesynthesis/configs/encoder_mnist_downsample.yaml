@@ -30,7 +30,7 @@ data:
 
 modelconfig:
   module: models.encoder
-  num_pts: 128
+  num_pts: 16
   learning_rate: 0.001
   ectconfig: *ref-ectconfig 
   ectlossconfig: *ref-ectlossconfig
@@ -40,12 +40,12 @@ loggers:
   project: toporecon-dev
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_mnist"
+  experiment_name: "encoder_mnist_downsample"
 
 trainer:
   accelerator: auto
   max_epochs: 50
   log_every_n_steps: 1
   save_dir: "trained_models" 
-  model_name: "encoder_mnist.ckpt" 
+  model_name: "encoder_mnist_downsample.ckpt" 
   

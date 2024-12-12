@@ -23,7 +23,7 @@ def plot_recon_2d(recon_pcs, ref_pcs, num_pc=5):
 
     jnt_pcs = np.stack([ref_pcs, ref_pcs], axis=1)
 
-    fig, axes = plt.subplots(nrows=3, ncols=num_pc)
+    fig, axes = plt.subplots(nrows=3, ncols=num_pc, figsize=(num_pc * 2, 3 * 2))
 
     for recon_pc, ref_pc, jnt_pc, axis in zip(recon_pcs, ref_pcs, jnt_pcs, axes.T):
         recon_pc = rotate(recon_pc.reshape(-1, 2), degrees=-90)
@@ -50,6 +50,7 @@ def plot_recon_2d(recon_pcs, ref_pcs, num_pc=5):
         ax.set_ylim([-1, 1])
         ax.set_aspect(1)
         ax.axis("off")
+    plt.show()
 
 
 def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):

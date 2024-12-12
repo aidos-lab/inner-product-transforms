@@ -29,6 +29,8 @@ def train(config: SimpleNamespace, resume=False, dev=False):
     else:
         model = load_model(config.modelconfig).to(DEVICE)
 
+    print(model)
+
     logger = load_logger(config.loggers, logger_type="tensorboard")
 
     limit_train_batches = None
@@ -55,9 +57,12 @@ def train(config: SimpleNamespace, resume=False, dev=False):
         limit_val_batches=limit_train_batches,
         enable_progress_bar=True,
     )
-    model.hparams.lr = 0.00005
+    # model.hparams.lr = 0.00005
     trainer.fit(model, dm)
-    trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.model_name}")
+    if not dev:
+        trainer.save_checkpoint(
+            f"./{config.trainer.save_dir}/{config.trainer.model_name}"
+        )
 
 
 if __name__ == "__main__":

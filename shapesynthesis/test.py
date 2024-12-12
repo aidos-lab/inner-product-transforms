@@ -4,7 +4,8 @@ from pprint import pprint
 import torch
 import torch.nn.functional as F
 
-import numpy as np 
+import numpy as np
+
 # from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
@@ -25,19 +26,16 @@ def evaluate_reconstruction(model, dm):
         pc_shape = batch[0].x.shape
 
         # m, s = data["mean"].float(), data["std"].float()
-        m = torch.tensor(np.stack(batch.mean)).cuda()
-        s = torch.tensor(np.stack(batch.std)).cuda()
+        if hasattr(batch, "mean") and hasattr(batch, "std"):
+            m = torch.tensor(np.stack(batch.mean)).cuda()
+            s = torch.tensor(np.stack(batch.std)).cuda()
+        else:
+            m = torch.zeros(size=(1, 1, pc_shape[-1])).cuda()
+            s = torch.ones(size=(1, 1, 1)).cuda()
 
         te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
         out_pc = out_pc * s + m
         te_pc = te_pc * s + m
-
-
-        # if args.normalize:
-        #     te_pc, means, norms = normalize(te_pc.clone())
-        #     out_pc -= means
-        #     out_pc /= norms
-
 
         all_sample.append(out_pc)
         all_ref.append(te_pc)
@@ -46,11 +44,8 @@ def evaluate_reconstruction(model, dm):
 
     sample_pcs = torch.cat(all_sample, dim=0)
     ref_pcs = torch.cat(all_ref, dim=0)
-    means = torch.cat(all_means,dim=0)
-    stdevs = torch.cat(all_std,dim=0)
-
-
-    
+    means = torch.cat(all_means, dim=0)
+    stdevs = torch.cat(all_std, dim=0)
 
     if pc_shape[1] == 2:
         sample_pcs = F.pad(
@@ -58,6 +53,8 @@ def evaluate_reconstruction(model, dm):
         )
         ref_pcs = F.pad(input=ref_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
 
+    print(sample_pcs.shape)
+    print(ref_pcs.shape)
     results = EMD_CD(
         sample_pcs,
         ref_pcs,
@@ -182,8 +179,5 @@ if __name__ == "__main__":
         stdevs,
         f"./results/{model_name}/stdevs.pt",
     )
-
-
-
 
     pprint(results)

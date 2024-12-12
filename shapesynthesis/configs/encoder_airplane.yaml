@@ -19,28 +19,17 @@ data:
 
 modelconfig:
   module: models.encoder
-  hidden_size: 512
   num_pts: 2048
-  num_dims: 3
-  learning_rate: 0.0001
+  learning_rate: 0.00005
   ectlossconfig: 
     seed: 2024
-    dim: 3
     num_thetas: 64
     bump_steps: 64 
     r: 7
     ect_type: "points"
-    device: "cuda:0"
-    num_features: 3
+    num_features: 3 
     normalized: True
-  ectconfig: 
-    seed: 2024
-    num_thetas: 256
-    bump_steps: 256 
-    r: 7
-    ect_type: "points"
-    num_features: 3
-    normalized: True
+
 
 loggers: 
   project: toporecon-dev

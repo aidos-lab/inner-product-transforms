@@ -1,3 +1,4 @@
+import re
 import torch
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST
@@ -17,10 +18,18 @@ from layers.ect import EctConfig
 @dataclass
 class DataModuleConfig(BaseConfig):
     root: str = "./data/MNIST"
-    module: str = "datasets.mnist"
     ectconfig: EctConfig = EctConfig(
-        num_features=2, num_thetas=64, bump_steps=64,seed=2024
+        num_thetas=32,
+        resolution=32,
+        ambient_dimension=2,
+        r=1.1,
+        scale=32,
+        ect_type="points",
+        normalized=True,
+        seed=2024,
     )
+    module: str = "datasets.mnist"
+
 
 class DataModule(BaseModule):
     def __init__(self, config, force_reload=False):

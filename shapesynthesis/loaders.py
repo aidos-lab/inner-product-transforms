@@ -15,11 +15,15 @@ def load_datamodule(config):
 
 def load_model(config, model_path=None):
     module = importlib.import_module(config.module)
-    model_class = getattr(module, "BaseModel")
+    model_class = getattr(module, "BaseLightningModel")
+    config_class = getattr(module, "ModelConfig")
 
     if model_path:
         model = model_class.load_from_checkpoint(model_path)
     else:
+        print(config.__dict__)
+        config_dict = json.loads(json.dumps(config, default=lambda s: vars(s)))
+        config = config_class(**config_dict)
         model = model_class(config)
     return model
 

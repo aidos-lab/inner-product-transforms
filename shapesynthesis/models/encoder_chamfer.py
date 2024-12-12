@@ -52,7 +52,7 @@ class Model(nn.Module):
         return x
 
 
-class BaseModel(L.LightningModule):
+class BaseLightningModel(L.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
