@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 resolutions = []
-for resolution in range(2, 512):
+for resolution in range(2, 128):
     gradients = []
     for scale in range(1, 128):
         # Set x values, remains fixed.
