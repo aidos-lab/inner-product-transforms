@@ -155,6 +155,7 @@ if __name__ == "__main__":
 
         results.append(result)
 
+    print("SAVING RESULTS", model_name)
     # Save the results in json format, {config name}.json
     # Example ./results/encoder_mnist.json
     with open(

@@ -6,15 +6,17 @@ from renderers.pointcloud import render_point_cloud
 from datasets.mnist import DataModule, DataModuleConfig
 from layers.ect import EctConfig
 from plotting import plot_recon_2d
+import matplotlib.pyplot as plt
+
 
 NUM_EPOCHS = 1000
-RESOLUTION = 64
-SCALE = RESOLUTION * 0.75
+RESOLUTION = 32
+SCALE = 16
 IDX = 8
-SEED = 2013
+SEED = 2024
 RADIUS = 1.1
 DTYPE = torch.float32
-NUM_PTS = 128
+NUM_PTS = 32
 DIM = 2
 
 v = (
@@ -25,13 +27,22 @@ v = (
 # x_gt_pcs = torch.load("./results/encoder_chair_sparse/references.pt")
 
 # print(x_gt_pcs.shape)
-
 dm = DataModule(
     DataModuleConfig(
         root="./data/mnistpointcloud",
-        ectconfig=EctConfig(num_thetas=RESOLUTION, bump_steps=RESOLUTION),
+        ectconfig=EctConfig(
+            num_thetas=32,
+            r=1.1,
+            scale=SCALE,
+            ect_type="points",
+            resolution=RESOLUTION,
+            ambient_dimension=2,
+            normalized=True,
+            seed=SEED,
+        ),
         batch_size=16,
-    )
+    ),
+    force_reload=False,
 )
 
 total = len(dm.test_ds)
@@ -65,8 +76,11 @@ for test_batch in dm.test_dataloader():
 x_rendered_pcs = torch.cat(x_rendered_pcs)
 x_gt_pcs = torch.cat(x_gt_pcs)
 
-plot_recon_2d(x_rendered_pcs.cpu().detach(), x_gt_pcs.cpu().detach())
 
+print(ect_gt.shape)
+
+fig = plot_recon_2d(x_rendered_pcs.cpu().detach(), x_gt_pcs.cpu().detach())
+plt.show()
 
 # torch.save(x_rendered_pcs, f"./results/rendered_mnist/reconstructions_{RESOLUTION}.pt")
 # torch.save(x_gt_pcs, f"./results/rendered_mnist/references_{RESOLUTION}.pt")

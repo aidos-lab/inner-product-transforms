@@ -5,11 +5,12 @@ from pydantic import BaseModel
 import torch
 from torch import nn
 import lightning as L
-
+import wandb
 from metrics.loss import chamfer2DECT, chamfer3DECT
 
 from layers.ect import EctLayer, EctConfig
 from layers.directions import generate_uniform_directions
+from plotting import plot_recon_2d
 
 
 Tensor: TypeAlias = torch.Tensor
@@ -128,6 +129,8 @@ class BaseLightningModel(L.LightningModule):
 
         self.save_hyperparameters()
 
+        self.plot_batch = None
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.config.learning_rate
@@ -139,6 +142,7 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
+
         batch_len = len(batch)
         pc_shape = batch[0].x.shape
         _batch = batch.clone()
@@ -182,4 +186,21 @@ class BaseLightningModel(L.LightningModule):
         return self.general_step(batch, batch_idx, "train")
 
     def validation_step(self, batch, batch_idx):
+        # Save one batch for plotting.
+        if batch_idx == 0:
+            self.plot_batch = batch
+
         return self.general_step(batch, batch_idx, "validation")
+
+    # def on_validation_epoch_end(self):
+    #     with torch.no_grad():
+    #         recon = self.model(self.plot_batch.ect)
+
+    #     fig = plot_recon_2d(
+    #         recon_pcs=recon.view(-1, self.config.num_pts, 2).cpu().detach().numpy(),
+    #         ref_pcs=self.plot_batch.x.view(-1, 128, 2).cpu().numpy(),
+    #         num_pc=10,
+    #     )
+
+    #     # # Option 2 for specifically logging images
+    #     self.logger.log_image(key="generated_images", images=[fig])

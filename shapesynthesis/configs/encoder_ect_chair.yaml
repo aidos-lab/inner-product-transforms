@@ -1,55 +1,54 @@
-# Global ect config, referenced in modelconfig.
 ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 256
   resolution: 256 
   scale: 128
-  r: 7
+  r: 5
   ect_type: "points"
   ambient_dimension: 3
   normalized: True
 
-ectlossconfig: &ref-ectlossconfig 
+
+ectlossconfig: 
+  seed: 2024
   num_thetas: 64
-  resolution: 64  
-  scale: 32
-  r: 7
+  resolution: 64 
+  r: 5
   ect_type: "points"
   ambient_dimension: 3
   normalized: True
-  seed: 2024
 
 data: 
   module: datasets.shapenetcore
   root: ./data/shapenet
   cates: 
-    - airplane
+    - chair
   num_workers: 0
   batch_size: 64
   pin_memory: True
   drop_last: False
   force_reload: False
   ectconfig: *ref-ectconfig
-    
 
 modelconfig:
-  module: models.encoder
-  num_pts: 2028
+  module: models.encoder_ect
+  num_pts: 2048
   learning_rate: 0.00005
-  ectlossconfig: *ref-ectlossconfig
   ectconfig: *ref-ectconfig
-
+  ectlossconfig: *ref-ectlossconfig
+  
 loggers: 
   logger: wandb
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_airplane"
+  experiment_name: "encoder_ect_chair"
   tags: []
+
 
 trainer:
   accelerator: auto
-  max_epochs: 100
+  max_epochs: 200
   log_every_n_steps: 1
   save_dir: "trained_models" 
-  model_name: "encoder_airplane.ckpt" 
+  model_name: "encoder_ect_chair.ckpt" 

@@ -23,9 +23,11 @@ data:
   module: datasets.mnist
   root: "./data/mnistpointcloud"
   num_workers: 0
+  num_pts: 128
   batch_size: 64
   pin_memory: True
   drop_last: False
+  force_reload: False
   ectconfig: *ref-ectconfig
 
 modelconfig:
@@ -37,14 +39,16 @@ modelconfig:
   
   
 loggers: 
-  project: toporecon-dev
+  logger: wandb
+  project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
   experiment_name: "encoder_mnist_downsample"
+  tags: []
 
 trainer:
   accelerator: auto
-  max_epochs: 50
+  max_epochs: 10
   log_every_n_steps: 1
   save_dir: "trained_models" 
   model_name: "encoder_mnist_downsample.ckpt" 

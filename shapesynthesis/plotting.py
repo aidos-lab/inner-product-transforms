@@ -19,9 +19,13 @@ def rotate(p, origin=(0, 0), degrees=0):
     return np.squeeze((R @ (p.T - o.T) + o.T).T)
 
 
-def plot_recon_2d(recon_pcs, ref_pcs, num_pc=5):
+def plot_recon_2d(recon_pcs, ref_pcs, jnt_pcs=None, num_pc=5):
 
-    jnt_pcs = np.stack([ref_pcs, ref_pcs], axis=1)
+    if jnt_pcs is None:
+        jnt_pcs = np.hstack([ref_pcs, recon_pcs])
+        colors = np.array(ref_pcs.shape[1] * ["blue"] + recon_pcs.shape[1] * ["red"])
+    else:
+        colors = np.array(jnt_pcs.shape[1] * [0.5])
 
     fig, axes = plt.subplots(nrows=3, ncols=num_pc, figsize=(num_pc * 2, 3 * 2))
 
@@ -45,12 +49,12 @@ def plot_recon_2d(recon_pcs, ref_pcs, num_pc=5):
         ax.axis("off")
 
         ax = axis[2]
-        ax.scatter(jnt_pc[:, 0], jnt_pc[:, 1], **PC_PLOT_CONFIG)
+        ax.scatter(jnt_pc[:, 0], jnt_pc[:, 1], s=5, c=colors)
         ax.set_xlim([-1, 1])
         ax.set_ylim([-1, 1])
         ax.set_aspect(1)
         ax.axis("off")
-    plt.show()
+    return fig
 
 
 def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):

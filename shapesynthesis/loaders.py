@@ -6,13 +6,29 @@ import json
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.loggers import TensorBoardLogger
 
+import timeit
+import functools
 
+
+def timeit_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        timer = timeit.Timer(lambda: func(*args, **kwargs))
+        execution_time = timer.timeit(number=1)
+        print(f"Function {func.__name__!r} executed in {execution_time:.4f} seconds")
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+# @timeit_decorator
 def load_datamodule(config):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "DataModule")
     return model_class(config)
 
 
+# @timeit_decorator
 def load_model(config, model_path=None):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "BaseLightningModel")
@@ -28,10 +44,12 @@ def load_model(config, model_path=None):
     return model
 
 
+# @timeit_decorator
 def load_object(dct):
     return SimpleNamespace(**dct)
 
 
+# @timeit_decorator
 def load_config(path):
     with open(path, encoding="utf-8") as stream:
         run_dict = yaml.safe_load(stream)
@@ -39,6 +57,7 @@ def load_config(path):
     return config
 
 
+# @timeit_decorator
 def get_wandb_logger(config):
     """
     Loads the wandb logger.
@@ -50,16 +69,18 @@ def get_wandb_logger(config):
     return wandb_logger
 
 
-def load_logger(config, logger_type="tensorboard"):
+def load_logger(config):
     """
     Loads the wandb logger.
     """
-    if logger_type == "wandb":
+    if config.logger == "wandb":
         logger = WandbLogger(
             project=config.project,
             entity=config.entity,
             save_dir=config.save_dir,
+            name=config.experiment_name,
+            tags=config.tags,
         )
-    elif logger_type == "tensorboard":
+    elif config.logger == "tensorboard":
         logger = TensorBoardLogger("my_logs", name=f"{config.experiment_name}")
     return logger

@@ -10,6 +10,10 @@ trained_models/**
 *.pt
 **.out
 trained_models**
+scratch**
+viz**
+diffusers**
+ddpm-butterflies-128/
 
 **/**.npy
 **/**.svg 

@@ -4,10 +4,12 @@ datasets.
 """
 
 import argparse
+import json
 from types import SimpleNamespace
 import torch
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
+import yaml
 from loaders import load_datamodule, load_model, load_config, load_logger
 
 
@@ -15,7 +17,7 @@ from loaders import load_datamodule, load_model, load_config, load_logger
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def train(config: SimpleNamespace, resume=False, dev=False):
+def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
     """
     Method to train models.
     """
@@ -29,16 +31,6 @@ def train(config: SimpleNamespace, resume=False, dev=False):
     else:
         model = load_model(config.modelconfig).to(DEVICE)
 
-    print(model)
-
-    logger = load_logger(config.loggers, logger_type="tensorboard")
-
-    limit_train_batches = None
-
-    if dev:
-        limit_train_batches = 0.1
-        config.trainer.max_epochs = 1
-
     checkpoint_callback = ModelCheckpoint(
         monitor="validation_loss",
         dirpath="trained_models",
@@ -47,19 +39,25 @@ def train(config: SimpleNamespace, resume=False, dev=False):
         auto_insert_metric_name=False,
     )
 
+    if not prod:
+        config.loggers.tags.append("dev")
+
     trainer = L.Trainer(
-        logger=logger,
+        logger=None if debug else load_logger(config.loggers),
         callbacks=[checkpoint_callback],
         accelerator=config.trainer.accelerator,
-        max_epochs=config.trainer.max_epochs,
+        max_epochs=1 if debug else config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
-        limit_train_batches=limit_train_batches,
-        limit_val_batches=limit_train_batches,
+        limit_train_batches=3 if debug else None,
+        limit_val_batches=3 if debug else None,
         enable_progress_bar=True,
     )
+
+    print("DONE LOADING")
+
     # model.hparams.lr = 0.00005
     trainer.fit(model, dm)
-    if not dev:
+    if not debug:
         trainer.save_checkpoint(
             f"./{config.trainer.save_dir}/{config.trainer.model_name}"
         )
@@ -69,7 +67,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     parser.add_argument(
-        "--dev", default=False, action="store_true", help="Run a test batch"
+        "--prod", default=False, action="store_true", help="Run a test batch"
+    )
+    parser.add_argument(
+        "--debug", default=False, action="store_true", help="Run a quick batch"
     )
     parser.add_argument(
         "--resume", default=False, action="store_true", help="Resume training"
@@ -77,4 +78,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_config = load_config(args.INPUT)
-    train(run_config, resume=args.resume, dev=args.dev)
+    run_config_dict = json.loads(json.dumps(run_config, default=lambda s: vars(s)))
+    # print(80 * "#")
+    # print("###", "Loading configuration (unvalidated).")
+    # print(80 * "#")
+    # print(yaml.safe_dump(run_config_dict))
+    # print(80 * "#")
+
+    train(run_config, resume=args.resume, debug=args.debug, prod=args.prod)

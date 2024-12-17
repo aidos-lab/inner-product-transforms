@@ -5,7 +5,7 @@ from torchvision.datasets import MNIST
 import torchvision.transforms as transforms
 from torch_geometric.data import InMemoryDataset
 
-from datasets.transforms import CenterTransform, FixedLength
+from datasets.transforms import CenterTransform, FixedLength, Skeleton
 from datasets.base_dataset import BaseModule, BaseConfig
 from datasets.transforms import MnistTransform, EctTransform
 
@@ -17,8 +17,8 @@ from layers.ect import EctConfig
 
 @dataclass
 class DataModuleConfig(BaseConfig):
-    root: str = "./data/mnistpointcloud"
-    num_pts: int = 32
+    root: str = "./data/mnist-pointcloud-sparse"
+    num_pts: int = 16
     ectconfig: EctConfig = EctConfig(
         num_thetas=32,
         resolution=32,
@@ -29,7 +29,7 @@ class DataModuleConfig(BaseConfig):
         normalized=True,
         seed=2024,
     )
-    module: str = "datasets.mnist"
+    module: str = "datasets.mnist_sparse"
     force_reload: bool = False
 
 
@@ -40,6 +40,7 @@ class DataModule(BaseModule):
         self.config = config
         self.transform = transforms.Compose(
             [
+                Skeleton(),
                 MnistTransform(),
                 FixedLength(config.num_pts),
                 CenterTransform(),

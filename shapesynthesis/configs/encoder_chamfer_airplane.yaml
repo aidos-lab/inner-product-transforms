@@ -1,3 +1,24 @@
+# Global ect config, referenced in modelconfig.
+ectconfig: &ref-ectconfig
+  seed: 2024
+  num_thetas: 256
+  resolution: 256 
+  scale: 128
+  r: 7
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+
+ectlossconfig: &ref-ectlossconfig 
+  num_thetas: 64
+  resolution: 64  
+  scale: 32
+  r: 7
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+  seed: 2024
+
 data: 
   module: datasets.shapenetcore
   root: ./data/shapenet
@@ -8,38 +29,27 @@ data:
   pin_memory: True
   drop_last: False
   force_reload: False
-  ectconfig: 
-    seed: 2024
-    num_thetas: 256
-    bump_steps: 256 
-    r: 7
-    ect_type: "points"
-    num_features: 3
-    normalized: True
+  ectconfig: *ref-ectconfig
+    
 
 modelconfig:
   module: models.encoder_chamfer
-  num_pts: 2048
+  num_pts: 2028
   learning_rate: 0.00005
-  ectlossconfig: 
-    seed: 2024
-    num_thetas: 64
-    bump_steps: 64 
-    r: 7
-    ect_type: "points"
-    num_features: 3
-    normalized: True
-
+  ectlossconfig: *ref-ectlossconfig
+  ectconfig: *ref-ectconfig
 
 loggers: 
-  project: toporecon-dev
+  logger: wandb
+  project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
   experiment_name: "encoder_chamfer_airplane"
+  tags: []
 
 trainer:
   accelerator: auto
-  max_epochs: 200
+  max_epochs: 100
   log_every_n_steps: 1
   save_dir: "trained_models" 
   model_name: "encoder_chamfer_airplane.ckpt" 

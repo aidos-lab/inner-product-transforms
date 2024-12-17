@@ -13,7 +13,11 @@ from torch_geometric.data import Batch, Data
 from torch_geometric.transforms import (
     BaseTransform,
     LinearTransformation,
+    KNNGraph,
+    RandomJitter,
 )
+
+from skimage.morphology import skeletonize
 
 from layers.directions import generate_uniform_directions
 from layers.ect import EctLayer, EctConfig
@@ -156,3 +160,17 @@ class RandomRotate(BaseTransform):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+
+
+class Skeleton:
+    def __init__(self):
+        self.tr = torchvision.transforms.ToTensor()
+        # self.knn = KNNGraph(k=2, force_undirected=True)
+        self.lin = torch.linspace(-1, 1, 28)
+        self.translate = RandomJitter(translate=0.05)
+
+    def __call__(self, data: tuple) -> tuple:
+        image, y = data
+        # perform skeletonization
+        skeleton = skeletonize(self.tr(image).squeeze().numpy()).reshape(1, 28, 28)
+        return skeleton, y

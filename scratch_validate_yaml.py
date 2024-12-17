@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from types import SimpleNamespace
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -21,29 +22,35 @@ class User(BaseModel):
     friends: List[int] = []
 
 
+# yaml_str = """
+# bill-to: &id-001
+#     given  : Chris
+#     family : Dumars
+# ship-to:
+#     order: The order
+#     address: *id-001
+# """
+
 yaml_str = """
-bill-to: &id-001
-    given  : Chris
-    family : Dumars
+lr: .1
+subuser: 
+    prop: 10
+family : Dumars
 ship-to: 
-    order: The order
-    address: *id-001
+order: The order
+address: *id-001
 """
 
-data = yaml.safe_load(yaml_str)
-print(data)
+
+# data = yaml.safe_load(yaml_str)
+
+data_obj = SimpleNamespace(x=10, config=SimpleNamespace(lr=0.1))
 
 
-# # Parse your YAML into a dictionary, then validate against your model.
-# external_data = {
-#     "id": "123",
-#     "lr": "1e-4",
-#     "name": "Hello",
-#     "signup_ts": "2019-06-01 12:22",
-#     "friends": [1, 2, "3"],
-# }
-# # # user = User(**external_data)
-# user2 = User(**data)
-# # # print(user)
-# # print(json.dumps(user2))
-# print()
+# print(80 * "#")
+# print("###", "Configuration")
+# print(80 * "#")
+# print(yaml.safe_dump(data))
+# print(80 * "#")
+
+print(data_obj.__dict__)
