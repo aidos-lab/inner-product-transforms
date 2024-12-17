@@ -9,7 +9,7 @@ ectconfig: &ref-ectconfig
   normalized: True
 
 
-ectlossconfig: 
+ectlossconfig: &ref-ectlossconfig
   seed: 2024
   num_thetas: 64
   resolution: 64 
