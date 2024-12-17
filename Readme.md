@@ -46,15 +46,15 @@ clearly outperforms all models.
 
 ![](Readme_files/figure-commonmark/cell-9-output-1.png)
 
-## CNN Encoder Chair
+## CNN Encoder Chair (ECT + Chamfer distance loss)
 
 ![](Readme_files/figure-commonmark/cell-10-output-1.png)
 
-## CNN Encoder Chair
+## CNN Encoder Chair (ECT + Chamfer loss)
 
 ![](Readme_files/figure-commonmark/cell-11-output-1.png)
 
-# Encoder with ECT loss
+# Encoder with only ECT loss
 
 ![](Readme_files/figure-commonmark/cell-12-output-1.png)
 
@@ -67,6 +67,10 @@ clearly outperforms all models.
 ## ECT-64
 
 ![](Readme_files/figure-commonmark/cell-16-output-1.png)
+
+![](Readme_files/figure-commonmark/cell-16-output-2.png)
+
+![](Readme_files/figure-commonmark/cell-16-output-3.png)
 
 # Downsample Airplane
 
