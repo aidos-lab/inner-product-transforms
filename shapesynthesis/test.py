@@ -111,6 +111,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     encoder_config = load_config(args.encoder_config)
+
     encoder_model = load_model(
         encoder_config.modelconfig,
         f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
