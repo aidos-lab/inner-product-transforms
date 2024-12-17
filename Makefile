@@ -4,4 +4,4 @@ venv:
 	poetry shell
 
 readme: 
-	quarto render readme.ipynb --to gfm --output Readme.md
+	quarto render Readme.ipynb --to gfm --output Readme.md

@@ -40,38 +40,38 @@ clearly outperforms all models.
 
 ## MNIST
 
-![](readme_files/figure-commonmark/cell-6-output-1.png)
+![](Readme_files/figure-commonmark/cell-6-output-1.png)
 
-![](readme_files/figure-commonmark/cell-7-output-1.png)
+![](Readme_files/figure-commonmark/cell-7-output-1.png)
 
-![](readme_files/figure-commonmark/cell-9-output-1.png)
-
-## CNN Encoder Chair
-
-![](readme_files/figure-commonmark/cell-10-output-1.png)
+![](Readme_files/figure-commonmark/cell-9-output-1.png)
 
 ## CNN Encoder Chair
 
-![](readme_files/figure-commonmark/cell-11-output-1.png)
+![](Readme_files/figure-commonmark/cell-10-output-1.png)
+
+## CNN Encoder Chair
+
+![](Readme_files/figure-commonmark/cell-11-output-1.png)
 
 # Encoder with ECT loss
 
-![](readme_files/figure-commonmark/cell-12-output-1.png)
+![](Readme_files/figure-commonmark/cell-12-output-1.png)
 
-![](readme_files/figure-commonmark/cell-13-output-1.png)
+![](Readme_files/figure-commonmark/cell-13-output-1.png)
 
-![](readme_files/figure-commonmark/cell-14-output-1.png)
+![](Readme_files/figure-commonmark/cell-14-output-1.png)
 
 ## CNN Encoder Airplane
 
 ## ECT-64
 
-![](readme_files/figure-commonmark/cell-16-output-1.png)
+![](Readme_files/figure-commonmark/cell-16-output-1.png)
 
 # Downsample Airplane
 
-![](readme_files/figure-commonmark/cell-17-output-1.png)
+![](Readme_files/figure-commonmark/cell-17-output-1.png)
 
-![](readme_files/figure-commonmark/cell-18-output-1.png)
+![](Readme_files/figure-commonmark/cell-18-output-1.png)
 
-![](readme_files/figure-commonmark/cell-19-output-1.png)
+![](Readme_files/figure-commonmark/cell-19-output-1.png)
