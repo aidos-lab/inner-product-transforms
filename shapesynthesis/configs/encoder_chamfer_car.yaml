@@ -9,14 +9,14 @@ ectconfig: &ref-ectconfig
   normalized: True
 
 ectlossconfig: &ref-ectlossconfig 
-    seed: 2024
-    num_thetas: 64
-    resolution: 64 
-    scale: 32
-    r: 4.5
-    ect_type: "points"
-    ambient_dimension: 3 
-    normalized: True
+  seed: 2024
+  num_thetas: 64
+  resolution: 64 
+  scale: 32
+  r: 4.5
+  ect_type: "points"
+  ambient_dimension: 3 
+  normalized: True
 
 
 data: 

@@ -51,10 +51,30 @@ def load_object(dct):
 
 # @timeit_decorator
 def load_config(path):
+    """
+    Loads the configuration yaml and parses it into an object with dot access.
+    """
     with open(path, encoding="utf-8") as stream:
-        run_dict = yaml.safe_load(stream)
-        config = json.loads(json.dumps(run_dict), object_hook=load_object)
-    return config
+        # Load dict
+        config_dict = yaml.safe_load(stream)
+
+        # Convert to namespace (access via config.data etc)
+        config = json.loads(json.dumps(config_dict), object_hook=load_object)
+    return config, config_dict
+
+
+def validate_configuration(run_config_dict: dict):
+    """
+    Loads the pydantic configuration object and checks if it is valid. This
+    ensures we can test all configurations for missing keys etc, before running
+    the experiments.
+    """
+
+    # Test the model config
+    module = importlib.import_module(run_config_dict["modelconfig"]["module"])
+    model_class = getattr(module, "BaseLightningModel")
+    config_class = getattr(module, "ModelConfig")
+    config_class(**run_config_dict["modelconfig"])
 
 
 # @timeit_decorator

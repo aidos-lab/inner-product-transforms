@@ -10,7 +10,13 @@ import torch
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint
 import yaml
-from loaders import load_datamodule, load_model, load_config, load_logger
+from loaders import (
+    load_datamodule,
+    load_model,
+    load_config,
+    load_logger,
+    validate_configuration,
+)
 
 
 # Settings
@@ -53,8 +59,6 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
         enable_progress_bar=True,
     )
 
-    print("DONE LOADING")
-
     # model.hparams.lr = 0.00005
     trainer.fit(model, dm)
     if not debug:
@@ -77,12 +81,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    run_config = load_config(args.INPUT)
-    run_config_dict = json.loads(json.dumps(run_config, default=lambda s: vars(s)))
-    # print(80 * "#")
-    # print("###", "Loading configuration (unvalidated).")
-    # print(80 * "#")
-    # print(yaml.safe_dump(run_config_dict))
-    # print(80 * "#")
+    run_config, run_config_dict = load_config(args.INPUT)
 
     train(run_config, resume=args.resume, debug=args.debug, prod=args.prod)
