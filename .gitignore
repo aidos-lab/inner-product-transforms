@@ -23,7 +23,7 @@ metrics/PyTorchEMD
 **.zip 
 *.ps1
 figures/
-
+scratch/
 
 my_logs/
 shapenet/
