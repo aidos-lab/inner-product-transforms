@@ -5,23 +5,30 @@ from torch import nn
 import lightning as L
 from torchmetrics.regression import MeanSquaredError
 import matplotlib.pyplot as plt
+from pydantic import BaseModel
 
 
-from layers.ect import EctLayer
+from layers.ect import EctConfig, EctLayer
 from layers.directions import generate_directions
-from metrics.loss import compute_mse_loss_fn
+from metrics.loss import compute_mse_kld_loss_fn, compute_mse_loss_fn
+
+
+class ModelConfig(BaseModel):
+    in_channels: int
+    latent_dim: int
+    learning_rate: float
+    ectconfig: EctConfig
 
 
 class VanillaVAE(nn.Module):
 
     def __init__(
         self,
-        vaeconfig,
+        config: ModelConfig,
     ) -> None:
         super().__init__()
-        in_channels = vaeconfig.in_channels
-        img_size = vaeconfig.img_size
-        latent_dim = vaeconfig.latent_dim
+        in_channels = config.in_channels
+        latent_dim = config.latent_dim
         hidden_dims = [32, 64, 128, 256, 512]
 
         self.latent_dim = latent_dim
@@ -47,8 +54,16 @@ class VanillaVAE(nn.Module):
 
         self.encoder = nn.Sequential(*modules)
         with torch.no_grad():
-            out = self.encoder(torch.zeros(2, 1, img_size, img_size))
+            out = self.encoder(
+                torch.zeros(
+                    3,
+                    1,
+                    config.ectconfig.num_thetas,
+                    config.ectconfig.resolution,
+                )
+            )
         self.conv_out_shape = torch.tensor(out.shape[1:])
+        print(self.conv_out_shape)
         self.conv_out_size = int(torch.prod(self.conv_out_shape))
 
         self.fc_mu = nn.Linear(self.conv_out_size, latent_dim)
@@ -90,9 +105,7 @@ class VanillaVAE(nn.Module):
             ),
             nn.BatchNorm2d(hidden_dims[-1]),
             nn.LeakyReLU(),
-            nn.Conv2d(
-                hidden_dims[-1], out_channels=1, kernel_size=3, padding=1
-            ),
+            nn.Conv2d(hidden_dims[-1], out_channels=1, kernel_size=3, padding=1),
             nn.Tanh(),
         )
 
@@ -166,25 +179,17 @@ class VanillaVAE(nn.Module):
         return self.forward(x)[0]
 
 
-class BaseModel(L.LightningModule):
+class BaseLightningModel(L.LightningModule):
     """ "Base model for VAE models"""
 
-    def __init__(self, config):
+    def __init__(self, config: ModelConfig):
         self.config = config
         super().__init__()
         self.training_accuracy = MeanSquaredError()
         self.validation_accuracy = MeanSquaredError()
         self.test_accuracy = MeanSquaredError()
 
-        self.layer = EctLayer(
-            self.config.ectconfig,
-            v=generate_directions(
-                self.config.ectconfig.num_thetas,
-                self.config.ectconfig.num_features,
-            ).cuda(),
-        )
-
-        self.model = VanillaVAE(vaeconfig=self.config)
+        self.model = VanillaVAE(config=self.config)
 
         self.visualization = []
 
@@ -209,12 +214,16 @@ class BaseModel(L.LightningModule):
 
         decoded, _, z_mean, z_log_var = self(ect)
 
-        loss = compute_mse_loss_fn(decoded, ect)
+        # loss = compute_mse_loss_fn(decoded, ect)
+        loss, kld_loss, mse_loss = compute_mse_kld_loss_fn(
+            decoded, z_mean, z_log_var, ect, beta=0.000001
+        )
+
         self.log_dict(
             {
-                f"{step}_loss": loss,
-                # f"{step}_kld_loss": kld_loss,
-                # f"{step}_mse_loss": mse_loss,
+                f"{step}_loss": loss.item(),
+                f"{step}_kld_loss": kld_loss.item(),
+                f"{step}_mse_loss": mse_loss.item(),
                 # f"{step}_beta": beta,
             },
             prog_bar=True,
@@ -222,8 +231,8 @@ class BaseModel(L.LightningModule):
             on_step=False,
             on_epoch=True,
         )
-        if batch_idx == 0 and step == "validation":
-            self.visualization = [(ect, decoded)]
+        # if batch_idx == 0 and step == "validation":
+        #     self.visualization = [(ect, decoded)]
 
         return loss
 
@@ -232,42 +241,38 @@ class BaseModel(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss = self.general_step(batch, batch_idx, "validation")
-        if self.current_epoch % 10 == 0 and self.visualization:
-            tensorboard_logger = self.logger.experiment
-            ect, decoded = self.visualization[0]
-            fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(16, 4))
-            fig.tight_layout()
-            for axis, orig, pred in zip(
-                axes.T, ect.squeeze(), decoded.squeeze()
-            ):
-                ax = axis[0]
-                ax.imshow(orig.detach().cpu().numpy())
-                ax.axis("off")
-                ax = axis[1]
-                ax.imshow(pred.detach().cpu().numpy())
-                ax.axis("off")
+        # if self.current_epoch % 10 == 0 and self.visualization:
+        #     tensorboard_logger = self.logger.experiment
+        #     ect, decoded = self.visualization[0]
+        #     fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(16, 4))
+        #     fig.tight_layout()
+        #     for axis, orig, pred in zip(axes.T, ect.squeeze(), decoded.squeeze()):
+        #         ax = axis[0]
+        #         ax.imshow(orig.detach().cpu().numpy())
+        #         ax.axis("off")
+        #         ax = axis[1]
+        #         ax.imshow(pred.detach().cpu().numpy())
+        #         ax.axis("off")
 
-            # Adding plot to tensorboard
-            tensorboard_logger.add_figure(
-                "reconstruction", plt.gcf(), global_step=self.global_step
-            )
+        #     # Adding plot to tensorboard
+        #     tensorboard_logger.add_figure(
+        #         "reconstruction", plt.gcf(), global_step=self.global_step
+        #     )
 
-            samples = self.model.sample(8, "cuda:0")
-            fig, axes = plt.subplots(nrows=1, ncols=8, figsize=(16, 2))
-            fig.tight_layout()
-            for ax, s in zip(axes, samples.squeeze()):
-                ax.imshow(s.detach().cpu().numpy())
-                ax.axis("off")
+        #     samples = self.model.sample(8, "cuda:0")
+        #     fig, axes = plt.subplots(nrows=1, ncols=8, figsize=(16, 2))
+        #     fig.tight_layout()
+        #     for ax, s in zip(axes, samples.squeeze()):
+        #         ax.imshow(s.detach().cpu().numpy())
+        #         ax.axis("off")
 
-            # Adding plot to tensorboard
-            tensorboard_logger.add_figure(
-                "samples", plt.gcf(), global_step=self.global_step
-            )
+        #     # Adding plot to tensorboard
+        #     tensorboard_logger.add_figure(
+        #         "samples", plt.gcf(), global_step=self.global_step
+        #     )
 
-        self.visualization.clear()
+        # self.visualization.clear()
         return loss
 
-    def training_step(
-        self, batch, batch_idx
-    ):  # pylint: disable=arguments-differ
+    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
         return self.general_step(batch, batch_idx, "train")

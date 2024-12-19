@@ -1,18 +1,19 @@
+ectconfig: &ref-ectconfig
+  seed: 2024
+  num_thetas: 64
+  resolution: 64 
+  scale: 64
+  r: 1.1
+  ect_type: "points"
+  ambient_dimension: 2
+  normalized: True
 
 modelconfig:
   module: models.vae
   in_channels: 1
   latent_dim: 64
-  img_size: 64
   learning_rate: 0.001
-  ectconfig: 
-    num_thetas: 64
-    bump_steps: 64
-    r: 1.1
-    ect_type: "points"
-    device: "cuda:0"
-    num_features: 2
-    normalized: True
+  ectconfig: *ref-ectconfig
 
 data: 
   module: datasets.mnist
@@ -21,29 +22,23 @@ data:
   batch_size: 64
   pin_memory: True
   drop_last: False
-  ectconfig: 
-    seed: 2024
-    num_thetas: 64
-    bump_steps: 64 
-    r: 1.1
-    ect_type: "points"
-    device: "cuda:0"
-    num_features: 2
-    normalized: True
+  force_reload: False
+  num_pts: 128
+  ectconfig: *ref-ectconfig
 
 trainer:
   accelerator: auto
-  max_epochs: 100
+  max_epochs: 1
   log_every_n_steps: 1
   save_dir: ./trained_models 
   experimentname: vae_mnist
   model_name: "vae_mnist.ckpt"
 
 
-
 loggers: 
-  project: toporecon-dev
+  logger: wandb
+  project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_mnist"
-
+  experiment_name: "vae_mnist"
+  tags: []

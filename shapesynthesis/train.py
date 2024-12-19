@@ -37,6 +37,8 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
     else:
         model = load_model(config.modelconfig).to(DEVICE)
 
+    print(model)
+
     checkpoint_callback = ModelCheckpoint(
         monitor="validation_loss",
         dirpath="trained_models",
@@ -59,7 +61,6 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
         enable_progress_bar=True,
     )
 
-    # model.hparams.lr = 0.00005
     trainer.fit(model, dm)
     if not debug:
         trainer.save_checkpoint(

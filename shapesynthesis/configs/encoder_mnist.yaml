@@ -2,7 +2,7 @@
 ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 64
-  resolution: 128 
+  resolution: 64 
   scale: 64
   r: 1.1
   ect_type: "points"

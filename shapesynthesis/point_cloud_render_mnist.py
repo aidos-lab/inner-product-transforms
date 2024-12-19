@@ -26,9 +26,16 @@ v = (
 )
 # x_gt_pcs = torch.load("./results/encoder_chair_sparse/references.pt")
 
+
 # print(x_gt_pcs.shape)
 dm = DataModule(
     DataModuleConfig(
+        module="datasets.mnist",
+        num_pts=128,
+        pin_memory=True,
+        drop_last=False,
+        force_reload=False,
+        num_workers=0,
         root="./data/mnistpointcloud",
         ectconfig=EctConfig(
             num_thetas=32,
@@ -46,6 +53,8 @@ dm = DataModule(
 )
 
 total = len(dm.test_ds)
+
+
 idx = 0
 x_rendered_pcs = []
 x_gt_pcs = []

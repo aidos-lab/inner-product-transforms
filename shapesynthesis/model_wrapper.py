@@ -9,7 +9,8 @@ import torch
 
 from layers.directions import generate_uniform_directions
 from layers.ect import EctLayer, compute_ect_point_cloud
-from models.encoder import BaseLightningModel
+from models.encoder import BaseLightningModel as Encoder
+from models.vae import BaseLightningModel as VAE
 
 DEVICE = "cuda:0"
 
@@ -24,27 +25,32 @@ def normalize(pts):
 
 
 class ModelWrapper:
-    def __init__(self, encoder, vae=None) -> None:
+    def __init__(self, encoder: Encoder, vae: VAE | None = None) -> None:
         self.encoder = encoder
         self.vae = vae
         if vae:
             self.vae.model.eval()
 
     @torch.no_grad()
-    def sample(self, B, N):
+    def sample(self, num_samples: int, num_points: int, ambient_dimension: int):
         """
+        out_pc, sample_ect = model.sample(len(batch), pc_shape)
         The way we expect the input
         B is the number of point clouds
         N is the number of points per cloud.
         _, out_pc = model.sample(B, N)
         """
-        ect_samples = self.vae.model.sample(B, "cuda:0")
+        ect_samples = self.vae.model.sample(
+            num_samples=num_samples, device="cuda:0"
+        ).squeeze()
 
         # Rescale to 0,1
         ect_samples = (ect_samples + 1) / 2
 
-        vae_pointcloud = self.encoder(ect_samples).view(B, N, 3)
-        return None, vae_pointcloud
+        vae_pointcloud = self.encoder(ect_samples).view(
+            num_samples, num_points, ambient_dimension
+        )
+        return vae_pointcloud, ect_samples
 
     @torch.no_grad()
     def reconstruct(self, batch, normalized=False):
@@ -63,30 +69,37 @@ class ModelWrapper:
                 batch.x.view(-1, pc_shape[0], pc_shape[1])
             )
 
+        reconstructed_ect = None
         if self.vae is not None:
+            # print(self.vae)
             # Rescale to [-1,1] for the VAE
-            ect = 2 * batch.ect - 1
-            reconstructed_ect, _, _, _ = self.vae(ect.unsqueeze(1))
-            # Rescale to 0,1
-            reconstructed_ect = (reconstructed_ect + 1) / 2
-        else:
-            reconstructed_ect = batch.ect
+            ect = 2 * batch.ect.unsqueeze(1) - 1
+            # print(ect.shape)
+            # [self.decode(z), input_tensor, mu, log_var]
+            reconstructed_ect, _, _, _ = self.vae.model(ect)
 
-        pointcloud = self.encoder(reconstructed_ect).view(
-            -1, self.encoder.config.num_pts, pc_shape[1]
-        )
+            # Rescale to 0,1
+            reconstructed_ect = (reconstructed_ect.squeeze() + 1) / 2
+            pointcloud = self.encoder(reconstructed_ect).view(
+                -1, self.encoder.config.num_pts, pc_shape[1]
+            )
+            # assert torch.allclose(reconstructed_ect, batch.ect)
+        else:
+            pointcloud = self.encoder(batch.ect).view(
+                -1, self.encoder.config.num_pts, pc_shape[1]
+            )
 
         if normalized:
             pointcloud = pointcloud * batch_std + batch_means
 
-        return pointcloud
+        return pointcloud, reconstructed_ect
 
 
 class ModelDownsampleWrapper:
     def __init__(
         self,
-        encoder_downsampler: BaseLightningModel,
-        encoder_upsampler: BaseLightningModel,
+        encoder_downsampler: Encoder,
+        encoder_upsampler: Encoder,
     ) -> None:
         self.encoder_downsampler = encoder_downsampler.eval()
         self.encoder_upsampler = encoder_upsampler.eval()
@@ -127,4 +140,4 @@ class ModelDownsampleWrapper:
             -1, self.encoder_upsampler.config.num_pts, pc_shape[1]
         )
 
-        return pointcloud
+        return pointcloud, None

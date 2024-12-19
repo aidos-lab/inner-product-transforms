@@ -1,4 +1,5 @@
 import re
+from pydantic import BaseModel
 import torch
 from torch.utils.data import random_split
 from torchvision.datasets import MNIST
@@ -15,22 +16,18 @@ from dataclasses import dataclass
 from layers.ect import EctConfig
 
 
-@dataclass
-class DataModuleConfig(BaseConfig):
-    root: str = "./data/mnistpointcloud"
-    num_pts: int = 32
-    ectconfig: EctConfig = EctConfig(
-        num_thetas=32,
-        resolution=32,
-        ambient_dimension=2,
-        r=1.1,
-        scale=32,
-        ect_type="points",
-        normalized=True,
-        seed=2024,
-    )
-    module: str = "datasets.mnist"
-    force_reload: bool = False
+class DataModuleConfig(BaseModel):
+    module: str
+    root: str
+    num_workers: int
+    batch_size: int
+    pin_memory: bool
+    drop_last: bool
+    root: str
+    num_pts: int
+    ectconfig: EctConfig
+    module: str
+    force_reload: bool
 
 
 class DataModule(BaseModule):

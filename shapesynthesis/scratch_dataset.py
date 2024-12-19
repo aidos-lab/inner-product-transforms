@@ -1,18 +1,19 @@
-from datasets.mnist import DataModule, DataModuleConfig
+from datasets.shapenetcore import DataModule, DataModuleConfig
 from layers.ect import EctConfig
 import matplotlib.pyplot as plt
-from loaders import load_config, load_model
+from loaders import load_config, load_datamodule, load_model
 from torch_geometric.sampler import BaseSampler
 from torchvision.datasets import MNIST
 
 
-# config = load_config("./shapesynthesis/configs/encoder_mnist.yaml")
+config, _ = load_config("./shapesynthesis/configs/vae_chair.yaml")
 
+dm = load_datamodule(config.data)
 
-dm = DataModule(
-    config=DataModuleConfig(),
-    force_reload=True,
-)
+# dm = DataModule(
+#     config=DataModuleConfig(),
+#     force_reload=True,
+# )
 # data1 = dm.test_ds[0]
 # data2 = dm.test_ds[0]
 
@@ -22,6 +23,10 @@ dm = DataModule(
 
 for batch in dm.test_dataloader():
     print(batch[0].num_nodes)
+    print(batch.ect.shape)
+    print(batch.ect.min())
+    print(batch.ect.max())
+
     break
 
 

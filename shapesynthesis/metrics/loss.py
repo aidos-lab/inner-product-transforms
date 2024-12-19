@@ -10,14 +10,14 @@ def compute_mse_loss_fn(ect_hat, ect):
 
 
 # I am not sure if I used mean or sum here.
-def compute_mse_kld_loss_fn(decoded, mu, log_var, ect, beta=0):
+def compute_mse_kld_loss_fn(decoded, mu, log_var, ect, beta=0.0):
     kld_loss = torch.mean(
         -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
     )
 
-    pixelwise = F.mse_loss(decoded, ect, reduction="mean")
+    mse_loss = F.mse_loss(decoded, ect, reduction="mean")
 
-    return pixelwise + beta * kld_loss
+    return mse_loss + beta * kld_loss, kld_loss, mse_loss
 
 
 def chamfer3D(pred_pc, ref_pc):

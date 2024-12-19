@@ -76,6 +76,15 @@ def validate_configuration(run_config_dict: dict):
     config_class = getattr(module, "ModelConfig")
     config_class(**run_config_dict["modelconfig"])
 
+    # Test the dataset
+    module = importlib.import_module(run_config_dict["data"]["module"])
+    model_class = getattr(module, "DataModule")
+    config_class = getattr(module, "DataModuleConfig")
+    config_class(**run_config_dict["data"])
+
+    assert "logger" in run_config_dict["loggers"]
+    assert "tags" in run_config_dict["loggers"]
+
 
 # @timeit_decorator
 def get_wandb_logger(config):

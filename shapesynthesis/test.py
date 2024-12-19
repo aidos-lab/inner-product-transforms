@@ -16,13 +16,15 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 @torch.no_grad()
-def evaluate_reconstruction(model, dm):
+def evaluate_reconstruction(model: ModelWrapper, dm):
     all_sample = []
     all_ref = []
     all_means = []
     all_std = []
+    all_ects = []
+    all_recon_ect = []
     for i, batch in enumerate(dm.test_dataloader()):
-        out_pc = model.reconstruct(batch.to(DEVICE))
+        out_pc, reconstructed_ect = model.reconstruct(batch.to(DEVICE))
         pc_shape = batch[0].x.shape
 
         # m, s = data["mean"].float(), data["std"].float()
@@ -41,11 +43,20 @@ def evaluate_reconstruction(model, dm):
         all_ref.append(te_pc)
         all_means.append(m)
         all_std.append(s)
+        if torch.is_tensor(reconstructed_ect):
+            all_ects.append(batch.ect)
+            all_recon_ect.append(reconstructed_ect)
 
     sample_pcs = torch.cat(all_sample, dim=0)
     ref_pcs = torch.cat(all_ref, dim=0)
     means = torch.cat(all_means, dim=0)
     stdevs = torch.cat(all_std, dim=0)
+    if torch.is_tensor(reconstructed_ect):
+        reconstructed_ect = torch.cat(all_recon_ect)
+        ects = torch.cat(all_ects)
+    else:
+        reconstructed_ect = None
+        ects = None
 
     if pc_shape[1] == 2:
         sample_pcs = F.pad(
@@ -53,8 +64,6 @@ def evaluate_reconstruction(model, dm):
         )
         ref_pcs = F.pad(input=ref_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
 
-    print(sample_pcs.shape)
-    print(ref_pcs.shape)
     results = EMD_CD(
         sample_pcs,
         ref_pcs,
@@ -72,7 +81,7 @@ def evaluate_reconstruction(model, dm):
         for k, v in results.items()
     }
 
-    return results, sample_pcs, ref_pcs, means, stdevs
+    return results, sample_pcs, ref_pcs, reconstructed_ect, ects, means, stdevs
 
 
 if __name__ == "__main__":
@@ -110,7 +119,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    encoder_config,_ = load_config(args.encoder_config)
+    encoder_config, _ = load_config(args.encoder_config)
 
     encoder_model = load_model(
         encoder_config.modelconfig,
@@ -128,8 +137,15 @@ if __name__ == "__main__":
     # equality of the VAE data configs.
 
     if args.vae_config:
-        vae_config = load_config(args.encoder_config)
-        vae_model = load_model(vae_config.model_config).to(DEVICE)
+        vae_config, _ = load_config(args.vae_config)
+
+        # Check that the configs are equal for the ECT.
+        assert vae_config.ectconfig == encoder_config.ectconfig
+
+        vae_model = load_model(
+            vae_config.modelconfig,
+            f"./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
+        ).to(DEVICE)
 
         # If VAE is provided, overwrite the modelname.
         model_name = vae_config.trainer.model_name.split(".")[0]
@@ -145,7 +161,9 @@ if __name__ == "__main__":
     results = []
     for _ in range(args.num_reruns):
         # Evaluate reconstruction
-        result, sample_pc, ref_pc, means, stdevs = evaluate_reconstruction(model, dm)
+        result, sample_pc, ref_pc, reconstructed_ect, ect, means, stdevs = (
+            evaluate_reconstruction(model, dm)
+        )
         result["normalized"] = args.normalize
         result["model"] = model_name
 
@@ -156,7 +174,6 @@ if __name__ == "__main__":
 
         results.append(result)
 
-    print("SAVING RESULTS", model_name)
     # Save the results in json format, {config name}.json
     # Example ./results/encoder_mnist.json
     with open(
@@ -181,5 +198,14 @@ if __name__ == "__main__":
         stdevs,
         f"./results/{model_name}/stdevs.pt",
     )
+    if torch.is_tensor(reconstructed_ect):
+        torch.save(
+            reconstructed_ect,
+            f"./results/{model_name}/reconstructed_ect.pt",
+        )
+        torch.save(
+            ect,
+            f"./results/{model_name}/ect.pt",
+        )
 
     pprint(results)
