@@ -5,18 +5,25 @@ from pydantic import BaseModel
 import torch
 from torch import nn
 import lightning as L
-import wandb
-from metrics.loss import chamfer2DECT, chamfer3DECT
 
+from metrics.loss import chamfer2DECT, chamfer3DECT
 from layers.ect import EctLayer, EctConfig
 from layers.directions import generate_uniform_directions
-from plotting import plot_recon_2d
 
 
 Tensor: TypeAlias = torch.Tensor
 
 
 class ModelConfig(BaseModel):
+    """
+    Base configuration for the model and contains all parameters. The module
+    provides the relative path to the file. Number of points determines the
+    number of points that the model outputs. The ECT config is the configuration
+    of the ECT used for the input image and the ECT Loss configuration is the
+    config for the ECT used to calculate the loss between the reconstructed
+    point cloud and the ground truth.
+    """
+
     module: str
     num_pts: int
     learning_rate: float
@@ -25,6 +32,10 @@ class ModelConfig(BaseModel):
 
 
 class Model(nn.Module):
+    """
+    The core model that reconstructs an ECT back into a point cloud.
+    """
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.conv = nn.Sequential(
@@ -66,6 +77,9 @@ class Model(nn.Module):
             ),
         )
 
+        # Function to calculate the shape of the CNN output, in order to
+        # initialize the linear layers without having to adjust the input
+        # dimension manually.
         num_cnn_features = functools.reduce(
             operator.mul,
             list(
@@ -77,6 +91,7 @@ class Model(nn.Module):
             ),
         )
 
+        # Ambient dimension is 3 for 3D and 2 for 2D point clouds.
         self.layer = nn.Sequential(
             nn.Flatten(),
             nn.Linear(
@@ -95,6 +110,13 @@ class Model(nn.Module):
         )
 
     def forward(self, ect):
+        """
+        We compute the forward pass here. The input ECT is viewed as a image and
+        each pixel has values between [0,1]. We rescale to [-1,1] to accommodat
+        the CNN layers, who prefer this type of input. Lastly, the Tanh
+        activation function at the end ensures that the models output is
+        relatively bounded.
+        """
         ect = 2 * ect - 1
         ect = ect.movedim(-1, -2)
         x = self.conv(ect)
@@ -116,8 +138,9 @@ class BaseLightningModel(L.LightningModule):
                 seed=config.ectlossconfig.seed,
             ).cuda(),
         )
-        self.count = 0
 
+        # Determine the loss function based on dimension.
+        # The 2D chamfer first embeds the 2d into 3d.
         if config.ectlossconfig.ambient_dimension == 3:
             self.loss_fn = chamfer3DECT
         elif config.ectlossconfig.ambient_dimension == 2:
@@ -142,7 +165,14 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
-
+        """
+        We clone the batch, the predict the reconstruction and compute the ECT
+        of both the predicted and the ground truth point clouds. While the
+        ground truth ect could be computed beforehand, for small
+        resolution/directions (64x64) in our case, it does not slow down too
+        much. For larger (128x128 or 256x256) it would be recommended to do
+        this.
+        """
         batch_len = len(batch)
         pc_shape = batch[0].x.shape
         _batch = batch.clone()
@@ -186,21 +216,4 @@ class BaseLightningModel(L.LightningModule):
         return self.general_step(batch, batch_idx, "train")
 
     def validation_step(self, batch, batch_idx):
-        # Save one batch for plotting.
-        if batch_idx == 0:
-            self.plot_batch = batch
-
         return self.general_step(batch, batch_idx, "validation")
-
-    # def on_validation_epoch_end(self):
-    #     with torch.no_grad():
-    #         recon = self.model(self.plot_batch.ect)
-
-    #     fig = plot_recon_2d(
-    #         recon_pcs=recon.view(-1, self.config.num_pts, 2).cpu().detach().numpy(),
-    #         ref_pcs=self.plot_batch.x.view(-1, 128, 2).cpu().numpy(),
-    #         num_pc=10,
-    #     )
-
-    #     # # Option 2 for specifically logging images
-    #     self.logger.log_image(key="generated_images", images=[fig])

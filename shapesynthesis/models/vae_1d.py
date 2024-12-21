@@ -17,6 +17,15 @@ from metrics.loss import compute_mse_kld_loss_beta_annealing_fn
 
 
 class ModelConfig(BaseModel):
+    """
+    Base configuration for the VAE model and contains all parameters. The module
+    provides the relative path to the file. The ECT config is the configuration
+    of the ECT used for the input image. The latent dimension is the dimension
+    of the VAE. The Beta min and Beta max are the are the minimum and maximum
+    values of the weighting factor of the KL-divergence and the period (in
+    epochs) is the period until the wight returns at its original value.
+    """
+
     latent_dim: int
     learning_rate: float
     ectconfig: EctConfig
@@ -26,6 +35,11 @@ class ModelConfig(BaseModel):
 
 
 class VanillaVAE(nn.Module):
+    """
+    Standard implementation of a VAE. Taken from reference implementations.
+    The only adaptations is that we converted the VAE to handle 1d signals,
+    instead of 2d, as is customary.
+    """
 
     def __init__(
         self,
@@ -99,11 +113,6 @@ class VanillaVAE(nn.Module):
             )
 
         self.decoder = nn.Sequential(*modules)
-        # with torch.no_grad():
-        #     decoded_out = self.decoder(out)
-        #     print(decoded_out.shape)
-        #     # print(out.shape)
-        #     raise "init"
         self.final_layer = nn.Sequential(
             nn.ConvTranspose1d(
                 hidden_dims[-1],
@@ -188,7 +197,7 @@ class VanillaVAE(nn.Module):
 
 
 class BaseLightningModel(L.LightningModule):
-    """ "Base model for VAE models"""
+    """Base model for VAE models"""
 
     def __init__(self, config: ModelConfig):
         self.config = config
@@ -216,21 +225,10 @@ class BaseLightningModel(L.LightningModule):
     def general_step(
         self, batch, batch_idx, step: Literal["train", "test", "validation"]
     ):
-        # ect = self.layer(batch, batch.batch).unsqueeze(1) * 2 - 1
 
         ect = batch.ect * 2 - 1
 
         decoded, _, z_mean, z_log_var = self(ect)
-
-        # decoded_ect: Tensor,
-        #     z_mean: Tensor,
-        #     z_log_var: Tensor,
-        #     ect: Tensor,
-        #     current_epoch: Tensor,
-        #     period: int,
-        #     beta_min: float,
-        #     beta_max: float,
-        #     prefix: str,
 
         # loss = compute_mse_loss_fn(decoded, ect)
         loss_dict = compute_mse_kld_loss_beta_annealing_fn(
@@ -252,55 +250,15 @@ class BaseLightningModel(L.LightningModule):
             on_step=False,
             on_epoch=True,
         )
-        # if batch_idx == 0 and step == "validation":
-        #     self.visualization = [(ect, decoded)]
 
         return loss_dict[f"{step}_loss"]
 
-    def test_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
 
     def validation_step(self, batch, batch_idx):
         loss = self.general_step(batch, batch_idx, "validation")
-        # if self.current_epoch % 10 == 0 and self.visualization:
-        #     tensorboard_logger = self.logger.experiment
-        #     ect, decoded = self.visualization[0]
-        #     fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(16, 4))
-        #     fig.tight_layout()
-        #     for axis, orig, pred in zip(axes.T, ect.squeeze(), decoded.squeeze()):
-        #         ax = axis[0]
-        #         ax.imshow(orig.detach().cpu().numpy())
-        #         ax.axis("off")
-        #         ax = axis[1]
-        #         ax.imshow(pred.detach().cpu().numpy())
-        #         ax.axis("off")
-
-        #     # Adding plot to tensorboard
-        #     tensorboard_logger.add_figure(
-        #         "reconstruction", plt.gcf(), global_step=self.global_step
-        #     )
-
-        #     samples = self.model.sample(8, "cuda:0")
-        #     fig, axes = plt.subplots(nrows=1, ncols=8, figsize=(16, 2))
-        #     fig.tight_layout()
-        #     for ax, s in zip(axes, samples.squeeze()):
-        #         ax.imshow(s.detach().cpu().numpy())
-        #         ax.axis("off")
-
-        #     # Adding plot to tensorboard
-        #     tensorboard_logger.add_figure(
-        #         "samples", plt.gcf(), global_step=self.global_step
-        #     )
-
-        # self.visualization.clear()
         return loss
 
-    def training_step(self, batch, batch_idx):  # pylint: disable=arguments-differ
+    def training_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "train")
-
-
-if __name__ == "__main__":
-    import sys
-
-    sys.path.append("./shapesysthesis")
-    print("hello")

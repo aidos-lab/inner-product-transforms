@@ -17,6 +17,13 @@ Tensor: TypeAlias = torch.Tensor
 
 
 class ModelConfig(BaseModel):
+    """
+    Base configuration for the model and contains all parameters. The module
+    provides the relative path to the file. Number of points determines the
+    number of points that the model outputs. The ECT config is the configuration
+    of the ECT used for the input image.
+    """
+
     module: str
     num_pts: int
     learning_rate: float
