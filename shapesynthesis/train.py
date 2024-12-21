@@ -37,8 +37,6 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
     else:
         model = load_model(config.modelconfig).to(DEVICE)
 
-    print(model)
-
     checkpoint_callback = ModelCheckpoint(
         monitor="validation_loss",
         dirpath="trained_models",
@@ -60,9 +58,11 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
         limit_val_batches=3 if debug else None,
         enable_progress_bar=True,
     )
+    # model.hparams.lr = 0.0001
 
     trainer.fit(model, dm)
     if not debug:
+        print("SAVING TO:", f"./{config.trainer.save_dir}/{config.trainer.model_name}")
         trainer.save_checkpoint(
             f"./{config.trainer.save_dir}/{config.trainer.model_name}"
         )

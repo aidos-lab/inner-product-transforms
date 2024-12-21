@@ -2,17 +2,16 @@ ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 64
   resolution: 64 
-  scale: 64
+  scale: 48
   r: 1.1
   ect_type: "points"
   ambient_dimension: 2
   normalized: True
 
 modelconfig:
-  module: models.vae
-  in_channels: 1
-  latent_dim: 64
-  learning_rate: 0.001
+  module: models.vae_1d
+  latent_dim: 128
+  learning_rate: 0.0001
   ectconfig: *ref-ectconfig
 
 data: 
@@ -28,7 +27,7 @@ data:
 
 trainer:
   accelerator: auto
-  max_epochs: 1
+  max_epochs: 10
   log_every_n_steps: 1
   save_dir: ./trained_models 
   experimentname: vae_mnist

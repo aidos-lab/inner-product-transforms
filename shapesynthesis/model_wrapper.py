@@ -47,8 +47,10 @@ class ModelWrapper:
         # Rescale to 0,1
         ect_samples = (ect_samples + 1) / 2
 
+        print(ect_samples.shape)
+
         vae_pointcloud = self.encoder(ect_samples).view(
-            num_samples, num_points, ambient_dimension
+            num_samples, self.encoder.config.num_pts, ambient_dimension
         )
         return vae_pointcloud, ect_samples
 

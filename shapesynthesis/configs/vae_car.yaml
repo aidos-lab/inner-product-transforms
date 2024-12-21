@@ -1,0 +1,46 @@
+ectconfig: &ref-ectconfig
+  seed: 2024
+  num_thetas: 256
+  resolution: 256 
+  scale: 128
+  r: 4.5
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+
+data: 
+  module: datasets.shapenetcore
+  root: ./data/shapenet
+  cates: 
+    - car
+  num_workers: 0
+  batch_size: 64
+  pin_memory: True
+  drop_last: False
+  force_reload: False
+  ectconfig: *ref-ectconfig
+
+modelconfig:
+  module: models.vae_1d
+  # in_channels: 1
+  latent_dim: 64
+  beta_min: 0.00000001
+  beta_max: 0.0001
+  beta_period: 400
+  learning_rate: 0.0001
+  ectconfig: *ref-ectconfig 
+
+trainer:
+  accelerator: auto
+  max_epochs: 1200 
+  log_every_n_steps: 1
+  save_dir: ./trained_models 
+  model_name: vae_car.ckpt
+
+loggers: 
+  logger: wandb
+  project: shape-synthesis
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+  experiment_name: "vae_car"
+  tags: []

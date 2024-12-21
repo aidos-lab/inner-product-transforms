@@ -9,7 +9,7 @@ import numpy as np
 # from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-from model_wrapper import ModelDownsampleWrapper, ModelWrapper
+from model_wrapper import ModelDownsampleWrapper
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"

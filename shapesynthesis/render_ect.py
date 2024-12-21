@@ -19,23 +19,26 @@ NUM_EPOCHS = 2000
 # RADIUS = 1.1
 # DTYPE = torch.float32
 
+NUM_PTS = 64
 
-NUM_PTS = 1024
-
-
-config, _ = load_config("./shapesynthesis/configs/vae_chair.yaml")
+config, _ = load_config("./shapesynthesis/configs/vae_mnist.yaml")
 ectconfig = config.data.ectconfig
+# ectconfig.scale = 32
 print(ectconfig)
+
+
 v = generate_uniform_directions(
     num_thetas=ectconfig.num_thetas, d=ectconfig.ambient_dimension, seed=ectconfig.seed
 ).cuda()
 
 # Load the ECT's
-ects = torch.load("./results/vae_chair/ect.pt").cuda()[:2] * NUM_PTS
+ects = torch.load("./results/vae_mnist/reconstructed_ect.pt").cuda()[:9] * NUM_PTS
 # ects = torch.load("./ectbatch.pt").cuda() * NUM_PTS
 print("ECT min", ects.min())
 print("ECT max", ects.max())
 print(len(ects))
+plt.imshow(ects[0].squeeze().cpu().numpy())
+plt.show()
 
 x_init = (
     torch.rand(size=(len(ects), NUM_PTS, ectconfig.ambient_dimension)) - 0.5

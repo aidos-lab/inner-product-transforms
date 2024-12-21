@@ -1,1 +1,1 @@
-[{"MMD-CD": 0.004326379857957363, "MMD-EMD": 0.01300925575196743, "fscore": 0.3437862694263458, "normalized": false, "model": "encoder_mnist"}]
+[{"MMD-CD": 0.004373258911073208, "MMD-EMD": 0.012694084085524082, "fscore": 0.3382984697818756, "normalized": false, "model": "encoder_mnist"}]

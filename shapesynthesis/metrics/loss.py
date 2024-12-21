@@ -1,12 +1,54 @@
+from typing import TypeAlias
 import torch
 import torch.nn.functional as F
 from torchmetrics.regression import KLDivergence
 from kaolin.metrics.pointcloud import chamfer_distance
+from dataclasses import dataclass
+
+
+Tensor: TypeAlias = torch.Tensor
 
 
 def compute_mse_loss_fn(ect_hat, ect):
     pixelwise = F.mse_loss(ect_hat, ect)
     return pixelwise
+
+
+def compute_mse_kld_loss_beta_annealing_fn(
+    decoded_ect: Tensor,
+    z_mean: Tensor,
+    z_log_var: Tensor,
+    ect: Tensor,
+    current_epoch: int,
+    period: int,
+    beta_min: float,
+    beta_max: float,
+    prefix: str,
+) -> dict[str, Tensor]:
+    """
+    Computes an annealed schedule for the KL Loss and the MSE Loss.
+    It starts with a pure reconstruction loss and cycles every max-epochs.
+    """
+
+    beta = (beta_max - beta_min) * (
+        1 - torch.cos(2 * torch.pi * torch.tensor(current_epoch - 100) / period)
+    ) / 2 + beta_min
+
+    # First focus on recon loss.
+    if current_epoch < 100:
+        beta = beta_min
+    kld_loss = torch.mean(
+        -0.5 * torch.sum(1 + z_log_var - z_mean**2 - z_log_var.exp(), dim=1), dim=0
+    )
+
+    mse_loss = F.mse_loss(decoded_ect, ect, reduction="mean")
+
+    return {
+        f"{prefix}loss": mse_loss + beta * kld_loss,
+        f"{prefix}kld_loss": kld_loss,
+        f"{prefix}ect_loss": mse_loss,
+        "beta": beta,
+    }
 
 
 # I am not sure if I used mean or sum here.
