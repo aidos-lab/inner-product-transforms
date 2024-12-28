@@ -2,13 +2,13 @@
 Ect layer implementation
 """
 
-from typing import Protocol, TypeAlias, Literal
-
 from dataclasses import dataclass
+from typing import Literal, Protocol, TypeAlias
+
 import torch
+from pydantic import BaseModel
 from torch import nn
 from torch_geometric.data import Batch
-from pydantic import BaseModel
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -39,7 +39,7 @@ def compute_ect_point_cloud(
     v: Tensor,
     radius: float,
     resolution: int,
-    scale: Tensor,
+    scale: float,
 ) -> Tensor:
     lin = torch.linspace(
         start=-radius, end=radius, steps=resolution, device=x.device
@@ -82,7 +82,9 @@ class EctLayer(nn.Module):
 
         # Make the resolution grid.
         self.lin = torch.nn.Parameter(
-            torch.linspace(-config.r, config.r, config.resolution).view(-1, 1, 1),
+            torch.linspace(-config.r, config.r, config.resolution).view(
+                -1, 1, 1
+            ),
             requires_grad=False,
         )
 
@@ -90,7 +92,9 @@ class EctLayer(nn.Module):
 
     def forward(self, batch: EctBatch, index):
         """Forward method"""
-        ect = compute_ect_points(batch.x, index, self.v, self.lin, self.config.scale)
+        ect = compute_ect_points(
+            batch.x, index, self.v, self.lin, self.config.scale
+        )
         if self.config.normalized:
             return ect / torch.amax(ect, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
         return ect

@@ -1,14 +1,9 @@
 import torch
-from layers.directions import generate_uniform_directions
 from layers.ect import compute_ect_point_cloud
-import pyvista as pv
 from torch import nn
-import matplotlib.pyplot as plt
-
-from plotting import plot_epoch
-from kaolin.metrics.pointcloud import chamfer_distance
 
 
+@torch.compile
 def render_point_cloud(
     x_init,
     ect_gt,
@@ -40,16 +35,16 @@ def render_point_cloud(
         optimizer.step()
 
         scheduler.step()
-        # print(epoch)
-        if epoch % 100 == 0:
-            print(epoch)
-            print(
-                epoch,
-                loss.item(),
-                # chamfer_distance(
-                #     x.view(-1, num_pts, 3), x_gt.view(-1, num_pts, 3)
-                # ).item(),
-            )
-            # with torch.no_grad():
-            #     plot_epoch(x[0], x_gt, epoch)
-    return x.detach().cpu()
+        # # print(epoch)
+        # if epoch % 100 == 0:
+        #     print(epoch)
+        #     print(
+        #         epoch,
+        #         loss.item(),
+        #         # chamfer_distance(
+        #         #     x.view(-1, num_pts, 3), x_gt.view(-1, num_pts, 3)
+        #         # ).item(),
+        #     )
+        #     # with torch.no_grad():
+        #     #     plot_epoch(x[0], x_gt, epoch)
+    return x.detach()

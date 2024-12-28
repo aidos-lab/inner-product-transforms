@@ -1,0 +1,34 @@
+data:
+  batch_size: 16
+  cates:
+  - airplane
+  drop_last: false
+  ectconfig:
+    ambient_dimension: 3
+    ect_type: points
+    normalized: true
+    num_thetas: 8
+    r: 7
+    resolution: 8
+    scale: 1
+    seed: 2024
+  force_reload: false
+  module: datasets.shapenetcore
+  num_pts: 2048
+  num_workers: 0
+  pin_memory: true
+  root: ./data/shapenet
+render:
+  dataset_name: airplane
+  ectconfig:
+    ambient_dimension: 3
+    ect_type: points
+    normalized: true
+    num_thetas: 64
+    r: 7
+    resolution: 64
+    scale: 16
+    seed: 2024
+  experiment_name: 64_16_airplane
+  num_epochs: 2000
+  num_pts: 2048

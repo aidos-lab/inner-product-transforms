@@ -16,11 +16,16 @@ torch = "^2.5.1"
 lightning = "^2.4.0"
 torch-geometric = "^2.6.1"
 torchvision = "^0.20.1"
-kaolin = {url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp312-cp312-linux_x86_64.whl"}
+kaolin = {url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl"}
 tensorboard = "^2.18.0"
 tensorboardx = "^2.6.2.2"
 emd-ext = {path = "shapesynthesis/metrics/PyTorchEMD/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl"}
 chamfer-3d = {path = "shapesynthesis/metrics/ChamferDistancePytorch/chamfer3D/chamfer_3D-0.0.0-cp310-cp310-linux_x86_64.whl"}
+scikit-image = "^0.25.0"
+pydantic = "^2.10.4"
+wandb = "^0.19.1"
+matplotlib = "^3.10.0"
+pyvista = "^0.44.2"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.25.0"

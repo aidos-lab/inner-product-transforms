@@ -1,185 +1,191 @@
+"""
+Experiment to build the following table.
+For each element in the table there is a config file.
+
+|         | ECT-64 |     |       | ECT-128 |       |     | ECT256 |       |     |
+| ------- | ------ | --- | ----- | ------- | ----- | --- | ------ | ----- | --- |
+| Dataset | Air    | Car | Chair | Air     | Chair | Car | Air    | Chair | Car |
+| Scale   |        |     |       |         |       |     |        |       |     |
+| 25%     |        |     |       |         |       |     |        |       |     |
+| 50%     |        |     |       |         |       |     |        |       |     |
+| 75%     |        |     |       |         |       |     |        |       |     |
+| 100%    |        |     |       |         |       |     |        |       |     |
+
+"""
+
+import argparse
+import json
+from pprint import pprint
+
+import numpy as np
 import torch
+from datasets.shapenetcore import DataModuleConfig as DataConfig
 from layers.directions import generate_uniform_directions
-import pyvista as pv
-from layers.ect import compute_ect_point_cloud
+from layers.ect import EctConfig, compute_ect_point_cloud
+from loaders import load_config, load_datamodule
+from metrics.evaluation import EMD_CD
+from pydantic import BaseModel
 from renderers.pointcloud import render_point_cloud
-from datasets.shapenetcore import DataModule, DataModuleConfig
-from layers.ect import EctConfig
-from plotting import plot_epoch
 
-NUM_EPOCHS = 1000
-RESOLUTION = torch.tensor(128)
-SCALE = RESOLUTION * 0.25
-IDX = 8
-SEED = 2013
-RADIUS = torch.tensor(7)
+torch.set_float32_matmul_precision("medium")
 DTYPE = torch.float32
-CATE = "airplane"
 
-v = (
-    generate_uniform_directions(num_thetas=RESOLUTION, d=3, seed=SEED)
-    .type(DTYPE)
-    .cuda()
-)
-# x_gt_pcs = torch.load("./results/encoder_chair_sparse/references.pt")
 
-# print(x_gt_pcs.shape)
+class RenderConfig(BaseModel):
+    num_pts: int
+    num_epochs: int
+    dataset_name: str
+    experiment_name: str
+    ectconfig: EctConfig
 
-dm = DataModule(
-    DataModuleConfig(
-        cates=[CATE],
-        ectconfig=EctConfig(num_thetas=RESOLUTION, bump_steps=RESOLUTION),
-        batch_size=16,
-    )
-)
 
-total = len(dm.test_ds)
-idx = 0
-x_rendered_pcs = []
-x_gt_pcs = []
-for test_batch in dm.test_dataloader():
-    idx += 1
-    x_gt = test_batch.x.view(-1, 2048, 3).type(DTYPE).cuda()
+def render_point_clouds(
+    dm,
+    dataconfig: DataConfig,
+    renderconfig: RenderConfig,
+    fast_run: bool = False,
+):
+    loader = dm.test_dataloader()
+    total = len(dm.test_ds)
 
-    print(f"Processing idx {idx} out of {total // 16}")
-    x_init = (torch.rand(size=(len(x_gt), 2048, 3), dtype=DTYPE) - 0.5).cuda()
-    ect_gt = compute_ect_point_cloud(
-        x_gt, v, radius=RADIUS, resolution=RESOLUTION, scale=SCALE
-    )
-    # plot_epoch(x_init, x_gt, 0)
-
-    x_rendered = render_point_cloud(
-        x_init,
-        ect_gt,
-        v,
-        NUM_EPOCHS,
-        scale=SCALE,
-        radius=RADIUS,
-        resolution=RESOLUTION,
+    # Set up the ECT configuration.
+    v = (
+        generate_uniform_directions(
+            renderconfig.ectconfig.num_thetas,
+            renderconfig.ectconfig.ambient_dimension,
+            renderconfig.ectconfig.seed,
+        )
+        .type(DTYPE)
+        .cuda()
     )
 
-    x_rendered_pcs.append(x_rendered)
-    x_gt_pcs.append(x_gt)
+    x_rendered_pcs, x_gt_pcs = [], []
+    for batch_idx, test_batch in enumerate(loader):
+        if fast_run and batch_idx == 1:
+            break
 
-x_rendered_pcs = torch.cat(x_rendered_pcs)
-x_gt_pcs = torch.cat(x_gt_pcs)
-torch.save(
-    x_rendered_pcs, f"./results/rendered/reconstructions_{CATE}_{RESOLUTION.item()}.pt"
-)
-torch.save(x_gt_pcs, f"./results/rendered/references_{CATE}_{RESOLUTION.item()}.pt")
+        test_batch.cuda()
+        x_gt = (
+            test_batch.x.view(
+                -1,
+                dataconfig.num_pts,
+                dataconfig.ectconfig.ambient_dimension,
+            )
+            .type(DTYPE)
+            .cuda()
+        )
+        pc_shape = x_gt.shape
+        print(
+            f"Processing idx {batch_idx} out of {total // dataconfig.batch_size}"
+        )
+        x_init = (renderconfig.ectconfig.r / 2) * (
+            torch.rand(
+                size=(
+                    len(x_gt),
+                    renderconfig.num_pts,
+                    renderconfig.ectconfig.ambient_dimension,
+                ),
+                dtype=DTYPE,
+            )
+            - 0.5
+        ).cuda()
+        ect_gt = compute_ect_point_cloud(
+            x_gt,
+            v,
+            radius=renderconfig.ectconfig.r,
+            resolution=renderconfig.ectconfig.resolution,
+            scale=renderconfig.ectconfig.scale,
+        )
 
-# pl = pv.Plotter(shape=(1, 3), window_size=[1200, 400])
-# points = x_rendered_pcs[0].detach().cpu().view(-1, 3).numpy()
-# pl.subplot(0, 0)
-# actor = pl.add_points(
-#     points,
-#     style="points",
-#     emissive=False,
-#     show_scalar_bar=False,
-#     render_points_as_spheres=True,
-#     scalars=points[:, 2],
-#     point_size=5,
-#     ambient=0.2,
-#     diffuse=0.8,
-#     specular=0.8,
-#     specular_power=40,
-#     smooth_shading=True,
-# )
-# pl.subplot(0, 1)
-# actor = pl.add_points(
-#     x_rendered_pcs[0].detach().cpu().view(-1, 3).numpy(),
-#     style="points",
-#     emissive=False,
-#     show_scalar_bar=False,
-#     render_points_as_spheres=True,
-#     color="lightblue",
-#     point_size=5,
-#     ambient=0.2,
-#     diffuse=0.8,
-#     specular=0.8,
-#     specular_power=40,
-#     smooth_shading=True,
-# )
-# points = test_batch[0].x.reshape(-1, 3).detach().cpu().numpy()
-# actor = pl.add_points(
-#     points,
-#     style="points",
-#     emissive=False,
-#     show_scalar_bar=False,
-#     render_points_as_spheres=True,
-#     color="red",
-#     point_size=5,
-#     ambient=0.2,
-#     diffuse=0.8,
-#     specular=0.8,
-#     specular_power=40,
-#     smooth_shading=True,
-# )
-# pl.subplot(0, 2)
-# actor = pl.add_points(
-#     points,
-#     style="points",
-#     emissive=False,
-#     show_scalar_bar=False,
-#     render_points_as_spheres=True,
-#     scalars=points[:, 2],
-#     point_size=5,
-#     ambient=0.2,
-#     diffuse=0.8,
-#     specular=0.8,
-#     specular_power=40,
-#     smooth_shading=True,
-# )
+        x_rendered = render_point_cloud(
+            x_init,
+            ect_gt,
+            v,
+            renderconfig.num_epochs,
+            scale=renderconfig.ectconfig.scale,
+            radius=renderconfig.ectconfig.r,
+            resolution=renderconfig.ectconfig.resolution,
+        ).cpu()
 
-# pl.background_color = "w"
-# pl.link_views()
-# pl.camera_position = "xy"
-# pos = pl.camera.position
-# pl.camera.position = (pos[0] + 3, pos[1], pos[2])
-# pl.camera.azimuth = 145
-# pl.camera.elevation = 20
+        # m, s = data["mean"].float(), data["std"].float()
+        if hasattr(test_batch, "mean") and hasattr(test_batch, "std"):
+            m = torch.tensor(np.stack(test_batch.mean))
+            s = torch.tensor(np.stack(test_batch.std))
+        else:
+            m = torch.zeros(size=(1, 1, pc_shape[-1]))
+            s = torch.ones(size=(1, 1, 1))
 
-# # create a top down light
-# light = pv.Light(
-#     position=(0, 0, 3),
-#     positional=True,
-#     cone_angle=50,
-#     exponent=20,
-#     intensity=0.2,
-# )
-# pl.add_light(light)
-# pl.show()
+        x_gt = x_gt.cpu() * s + m
+        x_rendered = x_rendered * s + m
+
+        x_rendered_pcs.append(x_rendered)
+        x_gt_pcs.append(x_gt)
+
+    x_rendered_pcs = torch.cat(x_rendered_pcs)
+    x_gt_pcs = torch.cat(x_gt_pcs)
+
+    results = EMD_CD(
+        x_rendered_pcs,
+        x_gt_pcs,
+        batch_size=8,
+        reduced=True,
+        accelerated_cd=True,
+    )
+    results = {
+        ("%s" % k): (v if isinstance(v, float) else v.item())
+        for k, v in results.items()
+    }
+
+    return results, x_rendered_pcs, x_gt_pcs
 
 
-# import imageio
+def main():
+    """
+    Builds the argparser and parses them.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, help="Input configuration")
+    parser.add_argument(
+        "--fast-run",
+        default=False,
+        action="store_true",
+        help="Run only a few batches",
+    )
+    args = parser.parse_args()
 
-# images = []
-# for idx in range(NUM_EPOCHS):
-#     if idx % 5 == 0:
-#         images.append(imageio.imread(f"./img/{idx}.png"))
-# imageio.mimsave("movie.gif", images, fps=5)
+    config, _ = load_config(args.config)
+
+    dm = load_datamodule(config.data)
+
+    results, x_rendered_pcs, x_gt_pcs = render_point_clouds(
+        dm, config.data, config.render, fast_run=args.fast_run
+    )
+
+    # Add extra information to the result.
+    results["model"] = (
+        f"render_{config.render.experiment_name}_{config.render.dataset_name}"
+    )
+
+    pprint(results)
+
+    with open(
+        f"./results/rendered_ect/{config.render.dataset_name}/{config.render.experiment_name}.json",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(results, f)
+
+    torch.save(
+        x_rendered_pcs,
+        f"./results/rendered_ect/{config.render.dataset_name}/{config.render.experiment_name}_reconstructions.pt",
+    )
+    torch.save(
+        x_gt_pcs,
+        f"./results/rendered_ect/{config.render.dataset_name}/references.pt",
+    )
+
+    # Compute Metrics
 
 
-# idx = 0
-# # data = dm.test_ds[idx]
-
-# recon_pts = torch.load("./results/encoder_chair_sparse/reconstructions.pt")
-# ref_pts = torch.load("./results/encoder_chair_sparse/references.pt")
-
-# data_recon = Data(x=recon_pts[idx])
-# data_ref = Data(x=ref_pts[idx])
-
-# recon_batch = Batch.from_data_list([data_recon]).cuda()
-# ref_batch = Batch.from_data_list([data_ref]).cuda()
-
-# ect_gt = layer(ref_batch, ref_batch.batch, scale=SCALE)
-
-
-# x = render_point_cloud(
-#     ect_gt,
-#     layer=layer,
-#     num_epochs=NUM_EPOCHS,
-#     x_gt=ref_batch[0].x,
-#     x_init=recon_batch.x,
-#     init_radius=5,
-# )
+if __name__ == "__main__":
+    main()

@@ -1,76 +1,124 @@
 import torch
 from layers.directions import generate_uniform_directions
-import pyvista as pv
 from layers.ect import compute_ect_point_cloud
 from renderers.pointcloud import render_point_cloud
-from datasets.shapenetcore import DataModule, DataModuleConfig
-from layers.ect import EctConfig
-from plotting import plot_epoch
 
-NUM_EPOCHS = 1000
-RESOLUTION = torch.tensor(128)
-SCALE = RESOLUTION * 0.25
+# torch.set_float32_matmul_precision("high")
+NUM_EPOCHS = 2000
+RESOLUTION = 128
+SCALE = int(RESOLUTION * 0.25)
 IDX = 8
 SEED = 2013
 RADIUS = torch.tensor(7)
-DTYPE = torch.float32
-CATE = "airplane"
-
+DTYPE = torch.float16
+CATE = "car"
+RADIUS = 7
+BATCH_SIZE = 32
 v = (
     generate_uniform_directions(num_thetas=RESOLUTION, d=3, seed=SEED)
     .type(DTYPE)
     .cuda()
 )
-# x_gt_pcs = torch.load("./results/encoder_chair_sparse/references.pt")
 
-# print(x_gt_pcs.shape)
+# dm = DataModule(
+#     DataModuleConfig(
+#         cates=[CATE],
+#         ectconfig=EctConfig(
+#             num_thetas=RESOLUTION,
+#             resolution=RESOLUTION,
+#             r=7,
+#             scale=SCALE,
+#             ect_type="points",
+#             ambient_dimension=3,
+#             normalized=True,
+#             seed=SEED,
+#         ),
+#         batch_size=BATCH_SIZE,
+#     )
+# )
 
-dm = DataModule(
-    DataModuleConfig(
-        cates=[CATE],
-        ectconfig=EctConfig(num_thetas=RESOLUTION, bump_steps=RESOLUTION),
-        batch_size=16,
-    )
+backend_kwargs = {
+    # "enabled_precisions": {torch.half},
+    "debug": True,
+    # "min_block_size": 2,
+    # "torch_executed_ops": {"torch.ops.aten.sub.Tensor"},
+    # "optimization_level": 4,
+    # "use_python_runtime": False,
+}
+
+compute_ect_point_cloud_compiled = torch.compile(
+    compute_ect_point_cloud,
+    backend="inductor",
+    # options=backend_kwargs,
+    # dynamic=False,
 )
 
-total = len(dm.test_ds)
+total = 1
 idx = 0
 x_rendered_pcs = []
 x_gt_pcs = []
-for test_batch in dm.test_dataloader():
-    idx += 1
-    x_gt = test_batch.x.view(-1, 2048, 3).type(DTYPE).cuda()
+# for test_batch in dm.test_dataloader():
+#     break
 
-    print(f"Processing idx {idx} out of {total // 16}")
-    x_init = (torch.rand(size=(len(x_gt), 2048, 3), dtype=DTYPE) - 0.5).cuda()
-    ect_gt = compute_ect_point_cloud(
-        x_gt, v, radius=RADIUS, resolution=RESOLUTION, scale=SCALE
+test_batch = torch.load("batch.pt")
+
+idx += 1
+x_gt = test_batch.x.view(-1, 2048, 3).type(DTYPE).cuda()
+x_gt = torch.cat([x_gt, x_gt])
+
+print(x_gt.shape)
+
+
+print(f"Processing idx {idx} out of {total // 16}")
+x_init = (torch.rand(size=(len(x_gt), 2048, 3), dtype=DTYPE) - 0.5).cuda()
+ect_gt = compute_ect_point_cloud_compiled(
+    x_gt,
+    v,
+    radius=RADIUS,
+    resolution=RESOLUTION,
+    scale=torch.tensor(SCALE).cuda(),
+)
+
+
+def timed(fn):
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
+    start.record()
+    result = fn()
+    end.record()
+    torch.cuda.synchronize()
+    return result, start.elapsed_time(end) / 1000
+
+
+for _ in range(5):
+    x_rendered, elapsed = timed(
+        lambda: render_point_cloud(
+            x_init,
+            ect_gt,
+            v,
+            NUM_EPOCHS,
+            scale=SCALE,
+            radius=RADIUS,
+            resolution=RESOLUTION,
+        )
     )
-    # plot_epoch(x_init, x_gt, 0)
+    print(x_rendered.dtype)
 
-    x_rendered = render_point_cloud(
-        x_init,
-        ect_gt,
-        v,
-        NUM_EPOCHS,
-        scale=SCALE,
-        radius=RADIUS,
-        resolution=RESOLUTION,
-    )
+    print(elapsed)
 
-    x_rendered_pcs.append(x_rendered)
-    x_gt_pcs.append(x_gt)
-    break
+x_rendered_pcs.append(x_rendered)
+x_gt_pcs.append(x_gt)
 
 x_rendered_pcs = torch.cat(x_rendered_pcs)
 x_gt_pcs = torch.cat(x_gt_pcs)
-torch.save(
-    x_rendered_pcs,
-    f"./results/rendered/reconstructions_{CATE}_{RESOLUTION.item()}.pt",
-)
-torch.save(
-    x_gt_pcs, f"./results/rendered/references_{CATE}_{RESOLUTION.item()}.pt"
-)
+
+# torch.save(
+#     x_rendered_pcs,
+#     f"./results/rendered/reconstructions_{CATE}_{RESOLUTION.item()}.pt",
+# )
+# torch.save(
+#     x_gt_pcs, f"./results/rendered/references_{CATE}_{RESOLUTION.item()}.pt"
+# )
 
 # pl = pv.Plotter(shape=(1, 3), window_size=[1200, 400])
 # points = x_rendered_pcs[0].detach().cpu().view(-1, 3).numpy()

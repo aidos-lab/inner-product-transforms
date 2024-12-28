@@ -1,13 +1,10 @@
-import torch
-from layers.directions import generate_uniform_directions
-import pyvista as pv
-from layers.ect import compute_ect_point_cloud
-from renderers.pointcloud import render_point_cloud
-from datasets.mnist import DataModule, DataModuleConfig
-from layers.ect import EctConfig
-from plotting import plot_recon_2d
 import matplotlib.pyplot as plt
-
+import torch
+from datasets.mnist import DataModule, DataModuleConfig
+from layers.directions import generate_uniform_directions
+from layers.ect import EctConfig, compute_ect_point_cloud
+from plotting import plot_recon_2d
+from renderers.pointcloud import render_point_cloud
 
 NUM_EPOCHS = 1000
 RESOLUTION = 32
@@ -63,7 +60,9 @@ for test_batch in dm.test_dataloader():
     x_gt = test_batch.x.view(-1, NUM_PTS, DIM).type(DTYPE).cuda()
 
     print(f"Processing idx {idx} out of {total // 16}")
-    x_init = (torch.rand(size=(len(x_gt), NUM_PTS, DIM), dtype=DTYPE) - 0.5).cuda()
+    x_init = (
+        torch.rand(size=(len(x_gt), NUM_PTS, DIM), dtype=DTYPE) - 0.5
+    ).cuda()
     ect_gt = compute_ect_point_cloud(
         x_gt, v, radius=RADIUS, resolution=RESOLUTION, scale=SCALE
     )
