@@ -9,7 +9,7 @@ import numpy as np
 # from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-from model_wrapper import ModelWrapper
+from model_wrapper import ModelNoOpWrapper, ModelWrapper
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -112,10 +112,10 @@ if __name__ == "__main__":
         help="Evaluation generative performance.",
     )
     parser.add_argument(
-        "--normalize",
+        "--noop",
         default=False,
         action="store_true",
-        help="Normalize data before passing it to the model.",
+        help="Bypass model and evaluate training points vs test points.",
     )
     args = parser.parse_args()
 
@@ -152,7 +152,13 @@ if __name__ == "__main__":
     else:
         vae_model = None
 
-    model = ModelWrapper(encoder_model, vae_model)
+    encoder_model.eval()
+
+    # Overwrite model if noop is passed
+    if args.noop:
+        model = ModelNoOpWrapper()
+    else:
+        model = ModelWrapper(encoder_model, vae_model)
 
     # for i, batch in enumerate(dm.test_dataloader()):
     #     out_pc = model.reconstruct(batch.to(DEVICE))

@@ -1,0 +1,13 @@
+{
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/build",
+        ".git",
+        "myenv/**",
+        "scratch/"
+    ],
+    "include": [
+        "shapesynthesis"
+    ]
+}

@@ -1,4 +1,12 @@
 {
     "python.analysis.typeCheckingMode": "basic",
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "python.analysis.exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/build",
+        ".git",
+        "myenv/**",
+        "scratch/"
+    ]
 }
