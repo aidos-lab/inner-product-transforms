@@ -1,12 +1,14 @@
 {
-    "python.analysis.typeCheckingMode": "basic",
+    // "python.analysis.typeCheckingMode": "basic",
+    "autoDocstring.docstringFormat": "numpy",
     "makefile.configureOnOpen": false,
-    "python.analysis.exclude": [
-        "**/node_modules",
-        "**/__pycache__",
-        "**/build",
-        ".git",
-        "myenv/**",
-        "scratch/"
-    ]
+    "comment-divider.mainHeaderFiller": "#",
+    // "python.analysis.exclude": [
+    //     "**/node_modules",
+    //     "**/__pycache__",
+    //     "**/build",
+    //     ".git",
+    //     "myenv/**",
+    //     "scratch/"
+    // ]
 }
