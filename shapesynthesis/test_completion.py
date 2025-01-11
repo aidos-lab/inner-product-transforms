@@ -8,55 +8,122 @@ import numpy as np
 
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-from model_wrapper import ModelCompletionWrapper
+
+# from model_wrapper import ModelCompletionWrapper
+from datasets.shapenet_data_pc import ShapeNet15kPointClouds
+from layers.ect import compute_ect_point_cloud
+from layers.directions import generate_uniform_directions
+from models.encoder import BaseLightningModel as Encoder
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
+def get_dataset(dataroot, npoints, category):
+    tr_dataset = ShapeNet15kPointClouds(
+        root_dir=dataroot,
+        categories=category,
+        split="train",
+        tr_sample_size=npoints,
+        te_sample_size=npoints,
+        scale=1.0,
+        normalize_per_shape=False,
+        normalize_std_per_axis=False,
+        random_subsample=True,
+    )
+    te_dataset = ShapeNet15kPointClouds(
+        root_dir=dataroot,
+        categories=category,
+        split="val",
+        tr_sample_size=npoints,
+        te_sample_size=npoints,
+        scale=1.0,
+        normalize_per_shape=False,
+        normalize_std_per_axis=False,
+        all_points_mean=tr_dataset.all_points_mean,
+        all_points_std=tr_dataset.all_points_std,
+        random_subsample=True,
+    )
+    return te_dataset
+
+
+class ModelCompletionWrapper:
+    def __init__(
+        self,
+        encoder: Encoder,
+    ) -> None:
+        self.encoder = encoder.eval()
+        self.config = encoder.config
+
+        # Sample 200 points
+        self.subset_indexes = torch.randperm(n=self.config.num_pts)[:200]
+        self.v = generate_uniform_directions(
+            num_thetas=self.config.ectconfig.num_thetas,
+            d=self.config.ectconfig.ambient_dimension,
+            seed=self.config.ectconfig.seed,
+        ).cuda()
+
+    @torch.no_grad()
+    def reconstruct(self, batch, normalized=False):
+        """
+        The method first subsamples the point cloud to create a point cloud that
+        it can recreate. The completion model has _not_ been finetuned and
+        consists of the standard encoder. The ECT's it is decoding in this
+        experiment are thus far out of distribution.
+        """
+        tr_pcs = batch["train_points"].cuda()
+
+        pc_shape = tr_pcs.shape
+
+        # print(batch.x.shape)
+        # Select 200 random point from the dataset.
+        sparse_pointcloud = tr_pcs.view(-1, 2048, 3)[:, self.subset_indexes, :]
+
+        print("computeing ect")
+        print(sparse_pointcloud.shape)
+        sparse_ect = (
+            compute_ect_point_cloud(
+                x=sparse_pointcloud,
+                v=self.v,
+                radius=self.config.ectconfig.r,
+                resolution=self.config.ectconfig.resolution,
+                scale=self.config.ectconfig.scale,
+            )
+            / 200
+        )
+
+        # Complete the point cloud to 2048 points.
+        pointcloud = self.encoder(sparse_ect).view(
+            -1, self.encoder.config.num_pts, pc_shape[-1]
+        )
+
+        return pointcloud, None
+
+
 @torch.no_grad()
-def evaluate_reconstruction(model, dm):
+def evaluate_reconstruction(model, loader):
     all_sample = []
     all_ref = []
     all_means = []
     all_std = []
-    for i, batch in enumerate(dm.test_dataloader()):
-        print(len(batch))
-        print("x", batch.x.view(-1, 2048, 3).shape)
 
-        out_pc, _ = model.reconstruct(batch.to(DEVICE))
-        pc_shape = batch[0].x.shape
+    for i, batch in enumerate(loader):
 
-        # m, s = data["mean"].float(), data["std"].float()
-        if hasattr(batch, "mean") and hasattr(batch, "std"):
-            m = torch.tensor(np.stack(batch.mean)).cuda()
-            s = torch.tensor(np.stack(batch.std)).cuda()
-        else:
-            m = torch.zeros(size=(1, 1, pc_shape[-1])).cuda()
-            s = torch.ones(size=(1, 1, 1)).cuda()
+        out_pc, _ = model.reconstruct(batch)
+        pc_shape = batch["train_points"]
 
-        te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
+        m, s = batch["mean"].float().cuda(), batch["std"].float().cuda()
+
+        te_pc = batch["train_points"].cuda()
         out_pc = out_pc * s + m
         te_pc = te_pc * s + m
 
         all_sample.append(out_pc)
         all_ref.append(te_pc)
-        all_means.append(m)
-        all_std.append(s)
 
     sample_pcs = torch.cat(all_sample, dim=0)
     ref_pcs = torch.cat(all_ref, dim=0)
-    means = torch.cat(all_means, dim=0)
-    stdevs = torch.cat(all_std, dim=0)
 
-    if pc_shape[1] == 2:
-        sample_pcs = F.pad(
-            input=sample_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0
-        )
-        ref_pcs = F.pad(input=ref_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
-
-    print(sample_pcs.shape)
-    print(ref_pcs.shape)
     results = EMD_CD(
         sample_pcs,
         ref_pcs,
@@ -65,16 +132,12 @@ def evaluate_reconstruction(model, dm):
         accelerated_cd=True,
     )
 
-    if pc_shape[1] == 2:
-        sample_pcs = sample_pcs[:, :, :2]
-        ref_pcs = ref_pcs[:, :, :2]
-
     results = {
         ("%s" % k): (v if isinstance(v, float) else v.item())
         for k, v in results.items()
     }
 
-    return results, sample_pcs, ref_pcs, means, stdevs
+    return (results, sample_pcs, ref_pcs)
 
 
 if __name__ == "__main__":
@@ -107,14 +170,21 @@ if __name__ == "__main__":
     model_name = model_name_stem[0] + "_completion_" + model_name_stem[1]
 
     # Load data
-    dm = load_datamodule(encoder_config.data)
+    # dm = load_datamodule(encoder_config.data)
+    # get_dataset(dataroot, npoints,category):
+    te_ds = get_dataset(
+        "/mnt/c/Users/ernst/Documents/02-Work/06-Repos/PVD/ShapeNetCore.v2.PC15k",
+        2048,
+        encoder_config.data.cates,
+    )
+    loader = torch.utils.data.DataLoader(te_ds, batch_size=64)
 
     model = ModelCompletionWrapper(encoder_model)
 
     results = []
     for _ in range(args.num_reruns):
         # Evaluate reconstruction
-        result, sample_pc, ref_pc, means, stdevs = evaluate_reconstruction(model, dm)
+        result, sample_pc, ref_pc = evaluate_reconstruction(model, loader)
         result["normalized"] = False
         result["model"] = model_name
 
@@ -122,32 +192,11 @@ if __name__ == "__main__":
 
         results.append(result)
 
-    print("SAVING RESULTS", model_name)
+    # Example ./results/encoder_mnist.json
+    with open(
+        f"./results/{model_name}/{model_name}.json",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(results, f)
     pprint(results)
-
-    # Save the results in json format, {config name}.json
-    # # Example ./results/encoder_mnist.json
-    # with open(
-    #     f"./results/{model_name}/{model_name}{suffix}.json",
-    #     "w",
-    #     encoding="utf-8",
-    # ) as f:
-    #     json.dump(results, f)
-    # torch.save(
-    #     sample_pc,
-    #     f"./results/{model_name}/reconstructions{suffix}.pt",
-    # )
-    # torch.save(
-    #     ref_pc,
-    #     f"./results/{model_name}/references{suffix}.pt",
-    # )
-    # torch.save(
-    #     means,
-    #     f"./results/{model_name}/means.pt",
-    # )
-    # torch.save(
-    #     stdevs,
-    #     f"./results/{model_name}/stdevs.pt",
-    # )
-
-    # pprint(results)

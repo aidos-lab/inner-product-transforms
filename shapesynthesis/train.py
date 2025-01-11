@@ -50,15 +50,15 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
 
     trainer = L.Trainer(
         logger=None if debug else load_logger(config.loggers),
-        callbacks=[checkpoint_callback],
+        # callbacks=[checkpoint_callback],
         accelerator=config.trainer.accelerator,
         max_epochs=1 if debug else config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
         limit_train_batches=3 if debug else None,
         limit_val_batches=3 if debug else None,
         enable_progress_bar=True,
+        enable_checkpointing=False,
     )
-    # model.hparams.lr = 0.0001
 
     trainer.fit(model, dm)
     if not debug:

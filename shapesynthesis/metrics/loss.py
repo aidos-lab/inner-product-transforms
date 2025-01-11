@@ -37,6 +37,9 @@ def compute_mse_kld_loss_beta_annealing_fn(
     # First focus on recon loss.
     if current_epoch < 100:
         beta = beta_min
+
+    beta = 0.0000001
+
     kld_loss = torch.mean(
         -0.5 * torch.sum(1 + z_log_var - z_mean**2 - z_log_var.exp(), dim=1), dim=0
     )

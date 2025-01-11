@@ -53,7 +53,7 @@ def evaluate_gen(model: ModelWrapper, dm, fast_run: bool):
         all_ects.append(batch.ect)
         all_sample_ect.append(sample_ect)
 
-        if fast_run and i == 1:
+        if fast_run and i == 2:
             break
 
     sample_pcs = torch.cat(all_sample, dim=0)
@@ -69,7 +69,7 @@ def evaluate_gen(model: ModelWrapper, dm, fast_run: bool):
         ref_pcs = F.pad(input=ref_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
 
     # Compute metrics
-    results = compute_all_metrics(sample_pcs, ref_pcs, 8, accelerated_cd=True)
+    results = compute_all_metrics(sample_pcs, ref_pcs, 100, accelerated_cd=True)
     results = {
         k: (v.cpu().detach().item() if not isinstance(v, float) else v)
         for k, v in results.items()

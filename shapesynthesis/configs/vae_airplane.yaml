@@ -13,7 +13,7 @@ data:
   root: ./data/shapenet
   cates: 
     - airplane
-  num_workers: 0
+  num_workers: 23
   batch_size: 64
   pin_memory: True
   drop_last: False
@@ -23,7 +23,7 @@ data:
 modelconfig:
   module: models.vae_1d
   # in_channels: 1
-  latent_dim: 64
+  latent_dim: 128
   beta_min: 0.00000001
   beta_max: 0.001
   beta_period: 400

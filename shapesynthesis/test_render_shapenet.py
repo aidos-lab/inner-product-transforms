@@ -16,7 +16,7 @@ For each element in the table there is a config file.
 import argparse
 import json
 from pprint import pprint
-from typing import Any, Tuple
+from typing import Any, Callable, Tuple
 
 import numpy as np
 import torch
@@ -44,6 +44,7 @@ def render_point_clouds(
     dm,
     dataconfig: DataConfig,
     renderconfig: RenderConfig,
+    render_point_cloud_compiled: Callable,
     fast_run: bool = False,
 ) -> Tuple[dict[str, Any], torch.Tensor, torch.Tensor]:
     loader = dm.test_dataloader()
@@ -59,7 +60,7 @@ def render_point_clouds(
         .type(DTYPE)
         .cuda()
     )
-    render_point_cloud_compiled = torch.compile(render_point_cloud)
+
     x_rendered_pcs, x_gt_pcs = [], []
     for batch_idx, test_batch in enumerate(loader):
         if fast_run and batch_idx == 1:
@@ -156,11 +157,15 @@ def main():
     config, _ = load_config(args.config)
 
     dm = load_datamodule(config.data)
-
+    render_point_cloud_compiled = torch.compile(render_point_cloud)
     results = []
     for _ in range(args.num_reruns):
         result, x_rendered_pcs, x_gt_pcs = render_point_clouds(
-            dm, config.data, config.render, fast_run=args.fast_run
+            dm,
+            config.data,
+            config.render,
+            render_point_cloud_compiled,
+            fast_run=args.fast_run,
         )
 
         # Add extra information to the result.
@@ -186,8 +191,6 @@ def main():
         x_gt_pcs,  # type: ignore
         f"./results/rendered_ect/{config.render.dataset_name}/references.pt",
     )
-
-    # Compute Metrics
 
 
 if __name__ == "__main__":

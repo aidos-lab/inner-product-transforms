@@ -117,6 +117,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Bypass model and evaluate training points vs test points.",
     )
+    parser.add_argument(
+        "--normalize",
+        default=False,
+        action="store_true",
+        help="Bypass model and evaluate training points vs test points.",
+    )
     args = parser.parse_args()
 
     encoder_config, _ = load_config(args.encoder_config)

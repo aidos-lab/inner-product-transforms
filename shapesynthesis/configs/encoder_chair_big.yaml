@@ -1,0 +1,56 @@
+ectconfig: &ref-ectconfig
+  seed: 2024
+  num_thetas: 256
+  resolution: 256 
+  scale: 128
+  r: 5
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+
+
+ectlossconfig: &ref-ectlossconfig
+  seed: 2024
+  num_thetas: 64
+  resolution: 64
+  scale: 16
+  r: 5
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+
+
+data: 
+  module: datasets.shapenetcore
+  root: ./data/shapenet
+  cates: 
+    - chair
+  num_workers: 0
+  batch_size: 32
+  pin_memory: True
+  drop_last: True
+  force_reload: False
+  ectconfig: *ref-ectconfig
+
+modelconfig:
+  module: models.encoder
+  num_pts: 2048
+  learning_rate: 0.00005
+  ectconfig: *ref-ectconfig
+  ectlossconfig: *ref-ectlossconfig
+  
+loggers: 
+  logger: wandb
+  project: shape-synthesis
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+  experiment_name: "encoder_chair_big"
+  tags: []
+
+
+trainer:
+  accelerator: auto
+  max_epochs: 500
+  log_every_n_steps: 1
+  save_dir: "trained_models" 
+  model_name: "encoder_chair_big.ckpt" 
