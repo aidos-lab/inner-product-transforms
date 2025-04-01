@@ -200,11 +200,8 @@ class ShapeNetDataset(InMemoryDataset):
     @property
     def processed_file_names(self):
         return [
-            f"{self.split}_{self.cates[0]}.pt",
+            f"{self.split}_{'_'.join(self.cates)}.pt",
         ]
-
-    def download(self):
-        pass
 
     def process(self):
 

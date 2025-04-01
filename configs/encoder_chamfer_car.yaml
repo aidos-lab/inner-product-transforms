@@ -26,6 +26,7 @@ data:
     - car
   num_workers: 0
   batch_size: 64
+  debug: False
   pin_memory: True
   drop_last: False
   force_reload: False
