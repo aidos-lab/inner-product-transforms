@@ -92,7 +92,7 @@ def compute_ecc(nh, index, lin, scale):
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
-@torch.compile
+#@torch.compile
 def compute_ect_points(x, index, v, lin, scale):
     """Compute the ECT of a set of points."""
     nh = x @ v

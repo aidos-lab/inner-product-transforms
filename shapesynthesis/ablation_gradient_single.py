@@ -16,23 +16,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Hyper parameters
+radius = 4.0
 resolution = 16
-scale = 16
+scale = 4
 
 gradients = []
 for resolution in range(1, 64):
     # Set x values, remains fixed.
-    x = torch.tensor(-0.4, requires_grad=True)
-    x_hat = torch.tensor(0.4)
+    x = torch.tensor(-0.4 * radius, requires_grad=True)
+    x_hat = torch.tensor(0.4 * radius)
 
-    lin = torch.tensor(np.linspace(-1, 1, resolution))
+    lin = torch.tensor(np.linspace(-radius, radius, resolution))
 
     ect = torch.nn.functional.sigmoid(scale * (lin - x))
     ect_hat = torch.nn.functional.sigmoid(scale * (lin - x_hat))
 
     loss = torch.nn.functional.mse_loss(ect, ect_hat)
     loss.backward()
-    gradients.append(x.grad)
+    gradients.append(x.grad.clone())
 
 
 plt.plot(torch.stack(gradients))
