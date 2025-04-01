@@ -4,6 +4,8 @@
 
 # Installation 
 
+## Data
+
 ```sh 
 #! /bin/bash
 
@@ -15,6 +17,28 @@ mkdir -p data/shapenet/raw
 mv ShapeNetCore.v2.PC15k.zip data/shapenet/raw
 cd data/shapenet/raw
 unzip ShapeNetCore.v2.PC15k.zip
+
 ```
+
+## Venv 
+
+There are some iffy dependencies on the cuda version of the EMD.  
+Custom wheel available for python 3.10
+
+```shell 
+poetry install 
+```
+
+# Run code 
+
+Train a test model (in a poetry shell).
+
+```
+python train.py ./configs/config.yaml
+```
+
+
+
+
 
 
