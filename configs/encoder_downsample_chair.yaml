@@ -25,7 +25,6 @@ data:
   cates: 
     - chair
   num_workers: 0
-  debug: False
   batch_size: 64
   pin_memory: True
   drop_last: False

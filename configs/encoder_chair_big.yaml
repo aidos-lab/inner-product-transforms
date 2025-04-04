@@ -28,7 +28,6 @@ data:
   num_workers: 0
   batch_size: 32
   pin_memory: True
-  debug: False
   drop_last: True
   force_reload: False
   ectconfig: *ref-ectconfig

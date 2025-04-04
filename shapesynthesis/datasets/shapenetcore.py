@@ -116,7 +116,6 @@ class DataModuleConfig(BaseConfig):
     root: str = "./data/shapenet"
     module: str = "datasets.shapenetcore"
     force_reload: bool = False
-    debug: bool = False
     num_pts: int = 2048
 
 
@@ -133,7 +132,6 @@ class DataModule(BaseModule):
             cates=self.config.cates,
             split="train",
             force_reload=self.config.force_reload,
-            debug=self.config.debug,
         )
         ShapeNetDataset(
             root=self.config.root,
@@ -141,7 +139,6 @@ class DataModule(BaseModule):
             cates=self.config.cates,
             split="test",
             force_reload=self.config.force_reload,
-            debug=self.config.debug,
         )
 
     def setup(self, **kwargs):
@@ -150,21 +147,18 @@ class DataModule(BaseModule):
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="train",
-            debug=self.config.debug,
         )
         self.test_ds = ShapeNetDataset(
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="test",
-            debug=self.config.debug,
         )
         self.val_ds = ShapeNetDataset(
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="test",
-            debug=self.config.debug,
         )
 
 
@@ -178,12 +172,10 @@ class ShapeNetDataset(InMemoryDataset):
         pre_filter=None,
         cates: list = ["airplane"],
         force_reload: bool = False,
-        debug: bool = False,
     ):
         self.split = split
         self.root = root
         self.cates = cates
-        self.debug = debug
         super().__init__(
             root,
             transform,
@@ -211,20 +203,18 @@ class ShapeNetDataset(InMemoryDataset):
 
         if self.split == "train":
             ds = train_ds
+            num_samples = 2
         elif self.split == "test": 
             ds = test_ds
+            num_samples = 1
         else: 
             raise ValueError("Split Not Correct")
 
         data_list = []
 
-        for idx, data in enumerate(ds):
-            if self.debug:
-                print(idx)
-                if idx == 1:
-                    break
 
-            for _ in range(10):
+        for idx, data in enumerate(ds):
+            for _ in range(num_samples):
                 data_list.append(
                     Data(
                         x=torch.tensor(data[f"{self.split}_points"].view(-1, 3)),

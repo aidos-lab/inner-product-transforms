@@ -41,7 +41,6 @@ data:
   pin_memory: True
   drop_last: False
   force_reload: False
-  debug: True
   ectconfig: *ref-ectconfig
     
 
