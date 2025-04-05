@@ -14,8 +14,10 @@ from loaders import load_config, load_model
 
 CATE = "airplane"
 NUM_INTERPOLATION_STEPS = 100
-START_IDX = 17  # The object to load start point
-END_IDX = 19  # The object to end point
+START_IDX = 1  # The object to load start point
+END_IDX = 4  # The object to end point
+# START_IDX = 2  # The object to load start point
+# END_IDX = 9  # The object to end point
 
 # ---------------------------------- Loading --------------------------------- #
 
@@ -25,11 +27,11 @@ config, _ = load_config(f"./shapesynthesis/configs/encoder_{CATE}.yaml")
 
 # Load the encoder model.
 print("Loading model")
-model = load_model(config.modelconfig, f"./trained_models/encoder_{CATE}.ckpt")
+model = load_model(config.modelconfig, f"./trained_models/encoder_{CATE}.ckpt").cuda()
 
 # Load the ect of chairs
 print("Loading ect")
-ect = torch.load(f"./results/vae_{CATE}/ect.pt")
+ect = torch.load(f"./results/vae_{CATE}/ect.pt").cuda()
 
 # Basic bookkeeping for reference
 print("Min", ect[0].min())
@@ -46,9 +48,13 @@ ect_start = ect[START_IDX].unsqueeze(0)
 ect_end = ect[END_IDX].unsqueeze(0)
 
 # Using torch.linspace does not work as it does not include endpoints.
-interval = torch.tensor(
-    np.linspace(0, 1, NUM_INTERPOLATION_STEPS, endpoint=True), dtype=torch.float32
-).view(-1, 1, 1)
+interval = (
+    torch.tensor(
+        np.linspace(0, 1, NUM_INTERPOLATION_STEPS, endpoint=True), dtype=torch.float32
+    )
+    .view(-1, 1, 1)
+    .cuda()
+)
 
 # Check that all shapes are correct
 # [I, 256, 256] for the ECT and

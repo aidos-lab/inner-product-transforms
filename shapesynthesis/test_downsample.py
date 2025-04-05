@@ -9,7 +9,7 @@ import numpy as np
 # from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-from model_wrapper import ModelDownsampleWrapper
+from model_wrapper import ModelCompletionWrapper, ModelDownsampleWrapper
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -22,7 +22,7 @@ def evaluate_reconstruction(model, dm):
     all_means = []
     all_std = []
     for i, batch in enumerate(dm.test_dataloader()):
-        out_pc = model.reconstruct(batch.to(DEVICE))
+        out_pc, te_pc = model.reconstruct(batch.to(DEVICE))
         pc_shape = batch[0].x.shape
 
         # m, s = data["mean"].float(), data["std"].float()
@@ -33,7 +33,6 @@ def evaluate_reconstruction(model, dm):
             m = torch.zeros(size=(1, 1, pc_shape[-1])).cuda()
             s = torch.ones(size=(1, 1, 1)).cuda()
 
-        te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
         out_pc = out_pc * s + m
         te_pc = te_pc * s + m
 
@@ -53,8 +52,6 @@ def evaluate_reconstruction(model, dm):
         )
         ref_pcs = F.pad(input=ref_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
 
-    print(sample_pcs.shape)
-    print(ref_pcs.shape)
     results = EMD_CD(
         sample_pcs,
         ref_pcs,
@@ -90,6 +87,11 @@ if __name__ == "__main__":
         help="Encoder upsampler (should be default encoder model) configuration",
     )
     parser.add_argument(
+        "--uniform",
+        action="store_true",
+        help="Uniform downsampling.",
+    )
+    parser.add_argument(
         "--num_reruns",
         default=1,
         type=int,
@@ -120,8 +122,12 @@ if __name__ == "__main__":
     # Load the datamodule
     # NOTE: Loads the datamodule from the encoder and does not check for
     # equality of the VAE data configs.
+    suffix = ""
+    if args.uniform:
+        model = ModelCompletionWrapper(encoder_upsample_model)
 
-    model = ModelDownsampleWrapper(encoder_downsample_model, encoder_upsample_model)
+    else:
+        model = ModelDownsampleWrapper(encoder_downsample_model, encoder_upsample_model)
 
     results = []
     for _ in range(args.num_reruns):
@@ -129,9 +135,13 @@ if __name__ == "__main__":
         result, sample_pc, ref_pc, means, stdevs = evaluate_reconstruction(model, dm)
         result["normalized"] = False
         result["model"] = model_name
-
-        suffix = ""
-
+        # Hacky solution.
+        if args.uniform:
+            model_name_split = model_name.split("_")
+            result["model"] = "_".join(
+                [*model_name_split[:-2], "uniform", model_name_split[-1]]
+            )
+            suffix = "uniform"
         results.append(result)
 
     print("SAVING RESULTS", model_name)

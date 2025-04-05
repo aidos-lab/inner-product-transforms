@@ -47,6 +47,12 @@ p = pv.Plotter()
 # Mesh
 # p.add_mesh(pv.Sphere(1), name="sphere", render=False)
 
+p.camera_position = "xy"
+pos = p.camera.position
+p.camera.position = (pos[0] + 5, pos[1] + 3, pos[2])
+p.camera.azimuth = 145
+p.camera.elevation = 20
+p.camera.zoom(0.3)
 p.add_points(
     points=rec_pc[0].reshape(-1, 3),
     style="points",
@@ -88,11 +94,16 @@ time_slider = p.add_slider_widget(
     interaction_event="always",
 )
 
+p.open_gif("wave.gif")
 # Start incrementing time automatically
 for i in t:
     # ax.set_xlim([0, t[i]])
     time_slider.GetSliderRepresentation().SetValue(i)
     update_time(i)
+    p.write_frame()
+
     time.sleep(0.1)
 
-p.show()  # Keep plotter open to let user play with time slider
+p.close()
+# p.show()  # Keep plotter open to let user play with time slider
+# p.export_html("pv.html")

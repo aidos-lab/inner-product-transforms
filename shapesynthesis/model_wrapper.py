@@ -163,7 +163,7 @@ class ModelDownsampleWrapper:
             -1, self.encoder_upsampler.config.num_pts, pc_shape[1]
         )
 
-        return pointcloud, None
+        return pointcloud, sparse_pointcloud
 
 
 class ModelCompletionWrapper:
@@ -175,7 +175,7 @@ class ModelCompletionWrapper:
         self.config = encoder.config
 
         # Sample 200 points
-        self.subset_indexes = torch.randperm(n=self.config.num_pts)[:200]
+        self.subset_indexes = torch.randperm(n=self.config.num_pts)[:256]
         self.v = generate_uniform_directions(
             num_thetas=self.config.ectconfig.num_thetas,
             d=self.config.ectconfig.ambient_dimension,
@@ -215,7 +215,7 @@ class ModelCompletionWrapper:
             -1, self.encoder.config.num_pts, pc_shape[1]
         )
 
-        return pointcloud, None
+        return pointcloud, sparse_pointcloud
 
 
 # if __name__ == "__main__":

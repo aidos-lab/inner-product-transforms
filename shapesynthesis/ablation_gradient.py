@@ -15,15 +15,17 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
+RADIUS = 7
+
 resolutions = []
 for resolution in range(2, 128):
     gradients = []
     for scale in range(1, 128):
         # Set x values, remains fixed.
-        x = torch.tensor(0.2, requires_grad=True)
-        x_hat = torch.tensor(0.4)
+        x = torch.tensor(RADIUS * 0.2, requires_grad=True)
+        x_hat = torch.tensor(RADIUS * 0.4)
 
-        lin = torch.tensor(np.linspace(-1, 1, resolution))
+        lin = torch.tensor(np.linspace(-RADIUS, RADIUS, resolution))
 
         ect = torch.nn.functional.sigmoid(scale * (lin - x))
         ect_hat = torch.nn.functional.sigmoid(scale * (lin - x_hat))

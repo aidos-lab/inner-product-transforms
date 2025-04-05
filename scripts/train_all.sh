@@ -15,17 +15,6 @@ python3 ./shapesynthesis/train.py ./shapesynthesis/configs/encoder_chamfer_airpl
 python3 ./shapesynthesis/train.py ./shapesynthesis/configs/encoder_chair.yaml $DEV
 
 
-
-
-
-
-
-
-
-
-
-
-
 # # Chamfer + ECT
 # python3 ./shapesynthesis/train.py ./shapesynthesis/configs/encoder_car.yaml $DEV
 # python3 ./shapesynthesis/train.py ./shapesynthesis/configs/encoder_chair.yaml $DEV

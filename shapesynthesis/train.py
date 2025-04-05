@@ -59,6 +59,7 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
         enable_progress_bar=True,
         enable_checkpointing=False,
     )
+    # model.hparams.lr = 0.000005
 
     trainer.fit(model, dm)
     if not debug:
