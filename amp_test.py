@@ -1,6 +1,5 @@
 import torch, time, gc
 
-
 batch_size = 2048  # Try, for example, 128, 256, 513.
 in_size = 4096
 out_size = 4096

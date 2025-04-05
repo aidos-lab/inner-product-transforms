@@ -137,7 +137,7 @@ class DataModule(BaseModule):
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
-            split="val",
+            split="test",
             force_reload=self.config.force_reload,
         )
 
@@ -152,13 +152,13 @@ class DataModule(BaseModule):
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
-            split="val",
+            split="test",
         )
         self.val_ds = ShapeNetDataset(
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
-            split="val",
+            split="test",
         )
 
 
@@ -183,10 +183,7 @@ class ShapeNetDataset(InMemoryDataset):
             pre_filter,
             force_reload=force_reload,
         )
-        if self.split == "train":
-            self.data, self.slices = torch.load(self.processed_paths[0])
-        else:
-            self.data, self.slices = torch.load(self.processed_paths[1])
+        self.load(self.processed_paths[0])
 
     @property
     def raw_file_names(self):
@@ -195,49 +192,41 @@ class ShapeNetDataset(InMemoryDataset):
     @property
     def processed_file_names(self):
         return [
-            f"train_{self.cates[0]}.pt",
-            f"test_{self.cates[0]}.pt",
+            f"{self.split}_{'_'.join(self.cates)}.pt",
         ]
 
-    def download(self):
-        pass
-
     def process(self):
-        print(self.cates)
-        print(self.root)
+
         train_ds, test_ds = get_datasets(
             self.cates, self.root + "/raw/ShapeNetCore.v2.PC15k"
         )
 
-        train_data_list = [
-            Data(
-                x=data["train_points"].view(-1, 3),
-                mean=data["mean"],
-                std=data["std"],
-            )
-            for data in train_ds
-        ]
-        test_data_list = [
-            Data(
-                x=data["test_points"].view(-1, 3),
-                mean=data["mean"],
-                std=data["std"],
-            )
-            for data in test_ds
-        ]
+        if self.split == "train":
+            ds = train_ds
+            num_samples = 2
+        elif self.split == "test": 
+            ds = test_ds
+            num_samples = 1
+        else: 
+            raise ValueError("Split Not Correct")
+
+        data_list = []
+
+
+        for idx, data in enumerate(ds):
+            for _ in range(num_samples):
+                data_list.append(
+                    Data(
+                        x=torch.tensor(data[f"{self.split}_points"].view(-1, 3)),
+                        mean=torch.tensor(data["mean"]),
+                        std=torch.tensor(data["std"]),
+                    )
+                )
 
         if self.pre_transform is not None:
-            train_data_list = [
-                self.pre_transform(data) for data in train_data_list
-            ]
-            test_data_list = [
-                self.pre_transform(data) for data in test_data_list
-            ]
+            data_list = [self.pre_transform(data) for data in data_list]
 
-        train_data, train_slices = self.collate(train_data_list)
-        torch.save((train_data, train_slices), self.processed_paths[0])
-        test_data, test_slices = self.collate(test_data_list)
-        torch.save((test_data, test_slices), self.processed_paths[1])
+        self.save(data_list, self.processed_paths[0])
 
 
 class Uniform15KPC(Dataset):
@@ -313,9 +302,7 @@ class Uniform15KPC(Dataset):
             self.all_points_std = all_points_std
         elif self.normalize_per_shape:  # per shape normalization
             B, N = self.all_points.shape[:2]
-            self.all_points_mean = self.all_points.mean(axis=1).reshape(
-                B, 1, input_dim
-            )
+            self.all_points_mean = self.all_points.mean(axis=1).reshape(B, 1, input_dim)
             if normalize_std_per_axis:
                 self.all_points_std = (
                     self.all_points.reshape(B, N, -1)
@@ -343,9 +330,7 @@ class Uniform15KPC(Dataset):
                     self.all_points.reshape(-1).std(axis=0).reshape(1, 1, 1)
                 )
 
-        self.all_points = (
-            self.all_points - self.all_points_mean
-        ) / self.all_points_std
+        self.all_points = (self.all_points - self.all_points_mean) / self.all_points_std
         self.train_points = self.all_points[:, :10000]
         self.test_points = self.all_points[:, 10000:]
 
@@ -364,19 +349,13 @@ class Uniform15KPC(Dataset):
             s = self.all_points_std[idx].reshape(1, -1)
             return m, s
 
-        return self.all_points_mean.reshape(
-            1, -1
-        ), self.all_points_std.reshape(1, -1)
+        return self.all_points_mean.reshape(1, -1), self.all_points_std.reshape(1, -1)
 
     def renormalize(self, mean, std):
-        self.all_points = (
-            self.all_points * self.all_points_std + self.all_points_mean
-        )
+        self.all_points = self.all_points * self.all_points_std + self.all_points_mean
         self.all_points_mean = mean
         self.all_points_std = std
-        self.all_points = (
-            self.all_points - self.all_points_mean
-        ) / self.all_points_std
+        self.all_points = (self.all_points - self.all_points_mean) / self.all_points_std
         self.train_points = self.all_points[:, :10000]
         self.test_points = self.all_points[:, 10000:]
 
