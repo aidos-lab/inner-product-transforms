@@ -4,15 +4,11 @@ from typing import Literal, TypeAlias
 
 import lightning as L
 import torch
-import torch.nn.functional as F
 from layers.directions import generate_uniform_directions
 from layers.ect import EctConfig, EctLayer
 from metrics.loss import chamfer2DECT, chamfer3DECT
-from plotting import plot_recon_2d
 from pydantic import BaseModel
 from torch import nn
-
-import wandb
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -44,7 +40,7 @@ class Model(nn.Module):
                 kernel_size=3,
                 stride=1,
             ),
-            nn.LayerNorm(num_features=2 * config.ectconfig.num_thetas),
+            nn.LayerNorm([512, 254]),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             nn.Conv1d(
@@ -53,7 +49,7 @@ class Model(nn.Module):
                 kernel_size=3,
                 stride=1,
             ),
-            nn.LayerNorm(num_features=2 * config.ectconfig.num_thetas),
+            nn.LayerNorm(normalized_shape=[512, 125]),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             #
@@ -63,7 +59,7 @@ class Model(nn.Module):
                 kernel_size=3,
                 stride=1,
             ),
-            nn.LayerNorm(normalized_shape=),
+            nn.LayerNorm(normalized_shape=[512, 60]),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             #
@@ -125,8 +121,9 @@ class BaseLightningModel(L.LightningModule):
                 seed=config.ectlossconfig.seed,
             ).cuda(),
         )
-        self.count = 0
 
+        # Determine the loss function based on dimension.
+        # The 2D chamfer first embeds the 2d into 3d.
         if config.ectlossconfig.ambient_dimension == 3:
             self.loss_fn = chamfer3DECT
         elif config.ectlossconfig.ambient_dimension == 2:
@@ -151,7 +148,14 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, batch, _, step: Literal["train", "test", "validation"]):
-
+        """
+        We clone the batch, the predict the reconstruction and compute the ECT
+        of both the predicted and the ground truth point clouds. While the
+        ground truth ect could be computed beforehand, for small
+        resolution/directions (64x64) in our case, it does not slow down too
+        much. For larger (128x128 or 256x256) it would be recommended to do
+        this.
+        """
         batch_len = len(batch)
         pc_shape = batch[0].x.shape
         _batch = batch.clone()
@@ -167,11 +171,19 @@ class BaseLightningModel(L.LightningModule):
         ect_pred = self.losslayer(_batch, _batch.batch)
         ect_gt = self.losslayer(batch, batch.batch)
 
-        loss = F.mse_loss(ect_pred, ect_gt)
-
+        loss, ect_loss, cd_loss = self.loss_fn(
+            _batch.x.view(
+                -1, self.config.num_pts, self.config.ectconfig.ambient_dimension
+            ),
+            batch.x.view(-1, pc_shape[0], pc_shape[1]),
+            ect_gt,
+            ect_pred,
+        )
         self.log_dict(
             {
                 f"{step}_loss": loss,
+                f"{step}_ect_loss": ect_loss,
+                f"{step}_cd_loss": cd_loss,
             },
             prog_bar=True,
             batch_size=batch_len,
@@ -187,8 +199,4 @@ class BaseLightningModel(L.LightningModule):
         return self.general_step(batch, batch_idx, "train")
 
     def validation_step(self, batch, batch_idx):
-        # # Save one batch for plotting.
-        # if batch_idx == 0:
-        #     self.plot_batch = batch
-
         return self.general_step(batch, batch_idx, "validation")
