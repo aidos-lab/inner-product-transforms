@@ -1,10 +1,10 @@
 import argparse
 import json
 from pprint import pprint
-import torch
-import torch.nn.functional as F
 
 import numpy as np
+import torch
+import torch.nn.functional as F
 
 # from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
@@ -29,13 +29,18 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
 
         # m, s = data["mean"].float(), data["std"].float()
         if hasattr(batch, "mean") and hasattr(batch, "std"):
-            m = torch.tensor(np.stack(batch.mean)).cuda()
-            s = torch.tensor(np.stack(batch.std)).cuda()
+            if not isinstance(batch.mean, torch.Tensor):
+                m = torch.tensor(np.stack(batch.mean)).cuda()
+                s = torch.tensor(np.stack(batch.std)).cuda()
+            else:
+                m = batch.mean.unsqueeze(1)
+                s = batch.std.unsqueeze(1)
         else:
             m = torch.zeros(size=(1, 1, pc_shape[-1])).cuda()
             s = torch.ones(size=(1, 1, 1)).cuda()
 
         te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
+        print(out_pc.shape, m.shape, s.shape)
         out_pc = out_pc * s + m
         te_pc = te_pc * s + m
 

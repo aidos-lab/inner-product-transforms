@@ -2,10 +2,10 @@ import argparse
 import json
 from pprint import pprint
 from typing import TypeAlias
-import torch
-import torch.nn.functional as F
 
 import numpy as np
+import torch
+import torch.nn.functional as F
 
 # from model_wrapper import ModelWrapper
 from loaders import load_config, load_datamodule, load_model
@@ -20,8 +20,12 @@ Tensor: TypeAlias = torch.Tensor
 def get_means(batch) -> tuple[Tensor, Tensor]:
     # m, s = data["mean"].float(), data["std"].float()
     if hasattr(batch, "mean") and hasattr(batch, "std"):
-        m = torch.tensor(np.stack(batch.mean)).cuda()
-        s = torch.tensor(np.stack(batch.std)).cuda()
+        if not isinstance(batch.mean, torch.Tensor):
+            m = torch.tensor(np.stack(batch.mean)).cuda()
+            s = torch.tensor(np.stack(batch.std)).cuda()
+        else:
+            m = batch.mean.unsqueeze(1).cuda()
+            s = batch.std.unsqueeze(1).cuda()
     else:
         m = torch.zeros(size=(1, 1, batch.x.shape[-1])).cuda()
         s = torch.ones(size=(1, 1, 1)).cuda()
