@@ -11,8 +11,8 @@ ectconfig: &ref-ectconfig
 
 ectlossconfig: &ref-ectlossconfig
   seed: 2024
-  num_thetas: 64
-  resolution: 64
+  num_thetas: 128
+  resolution: 128
   scale: 32
   r: 5
   ect_type: "points"
