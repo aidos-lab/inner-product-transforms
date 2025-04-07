@@ -18,9 +18,8 @@ ddpm-butterflies-128/
 
 **/**.npy
 **/**.svg 
-**/**.cu 
-metrics/ChamferDistancePytorch 
-metrics/PyTorchEMD
+# metrics/ChamferDistancePytorch 
+# metrics/PyTorchEMD
 **.zip 
 *.ps1
 figures/
