@@ -8,7 +8,6 @@ import argparse
 import json
 
 import torch
-from PIL.Image import re
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchvision.transforms import Resize
 
@@ -100,7 +99,6 @@ def compute_ect_fid(sample_ect, reference_ect):
 def evaluate_fid(sample_ect_file, reference_ect_file):
     sample_ect = torch.load(sample_ect_file).cpu()
     reference_ect = torch.load(reference_ect_file).cpu()
-
     pre_validation_ect(sample_ect, reference_ect)
     processed_samples, processed_references = preprocess_ect(sample_ect, reference_ect)
     post_validation_ect(processed_samples, processed_references)
@@ -117,46 +115,67 @@ if __name__ == "__main__":
     (without a trailing slash).
     We assume that the following files are present:
     - ect.pt
-        The ect of the reference point cloud
+        The ect of the validation set.
     - sample_ect.pt
         The generated ects by the model.
     - reconstructed_ect.pt
         The reconstructed ECTs by the VAE.
+
+    Optionally a set of reference ECT's.
     """
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "INPUT",
+        "--results_folder",
         type=str,
         help="Input folder under results, e.g. ./results/vae_airplane",
     )
     parser.add_argument(
-        "--train",
+        "--reference_ect",
         type=str,
         default=None,
-        help="Reference ects",
+        help="Reference ects of the training set.",
     )
     args = parser.parse_args()
 
-    sample_ect_file = f"{args.INPUT}/sample_ect.pt"
-    recon_ect_file = f"{args.INPUT}/reconstructed_ect.pt"
-    ref_ect_file = f"{args.INPUT}/ect.pt"
+    generated_ect_file = f"{args.results_folder}/sample_ect.pt"
+    reconstructed_ect_file = f"{args.results_folder}/reconstructed_ect.pt"
+    validation_ect_file = f"{args.results_folder}/ect.pt"
 
     result = {
-        "sample_vs_validation_fid": evaluate_fid(sample_ect_file, ref_ect_file).item(),
-        "reconstruction_vs_validation_fid": evaluate_fid(
-            recon_ect_file, ref_ect_file
+        "generated_vs_reconstructed_fid": evaluate_fid(
+            generated_ect_file, reconstructed_ect_file
+        ).item(),
+        "reconstructed_vs_validation_fid": evaluate_fid(
+            reconstructed_ect_file, validation_ect_file
+        ).item(),
+        "generated_vs_validation_fid": evaluate_fid(
+            generated_ect_file, validation_ect_file
+        ).item(),
+        "generated_vs_generated_fid": evaluate_fid(
+            generated_ect_file, generated_ect_file
         ).item(),
     }
 
-    if args.train is not None:
+    # If a reference file is added we also pass the
+    # compute the statistics w.r.t. the reference
+    # file. For now one can pass the ect's of the
+    # training set or the test set.
+    # TODO: Better naming here.
+    if args.reference_ect is not None:
         train_result = {
-            "sample_vs_train_fid": evaluate_fid(sample_ect_file, args.train).item(),
-            "reconstruction_vs_train_fid": evaluate_fid(
-                recon_ect_file, args.train
+            "generated_vs_reference_fid": evaluate_fid(
+                generated_ect_file, args.reference_ect
             ).item(),
-            "validation_vs_train_fid": evaluate_fid(ref_ect_file, args.train).item(),
+            "reconstruction_vs_reference_fid": evaluate_fid(
+                reconstructed_ect_file, args.reference_ect
+            ).item(),
+            "validation_vs_reference_fid": evaluate_fid(
+                validation_ect_file, args.reference_ect
+            ).item(),
         }
         result |= train_result
 
-    print(json.dumps(result, indent=4))
+    print(results)
+    with open(f"{args.results_folder}/generation_evaluation.json", "w") as f:
+        json.dump(result, f, indent=4)

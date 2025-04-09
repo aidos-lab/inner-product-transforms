@@ -52,8 +52,8 @@ explicit = true
 
 [tool.uv.sources]
 kaolin = { url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl" }
-chamfer-3d = { path = "shapesynthesis/metrics/ChamferDistancePytorch/chamfer3D/chamfer_3D-0.0.0-cp310-cp310-linux_x86_64.whl" }
-emd-ext = { path = "shapesynthesis/metrics/PyTorchEMD/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+emd-ext = { path = "dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+chamfer-3d = { path = "dist/chamfer_3D-0.0.0-cp310-cp310-linux_x86_64.whl" }
 
 [build-system]
 requires = ["hatchling"]

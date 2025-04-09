@@ -57,7 +57,7 @@ found and added to the virtual environment via
 uv add shapesynthesis/metrics/PyTorchEMD/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl
 ```
 
-# Run code 
+# Training and evaluation.
 
 Train a model via the following command. 
 
@@ -96,8 +96,28 @@ This takes a while to run (~30 minutes) so some patience is
 required. 
 
 
+## Developing your own Models. 
 
+If you wish to build your own models the following instructions 
+should help. 
 
+In the model directory we can add a new file `my_new_model.py`
+and add two base classes to it. 
+First is the `ModelConfig` class containing all the model configurations 
+and one is a `BaseLightningModel` class which can be copied verbatim from 
+one of the already implemented models. 
 
+**ModelConfig.** The ModelConfig class has one mandatory argument and 
+that is the relative module path to the specific model. 
+In the example above, if the model is implemented in the file 
+`my_new_model.py`, the module_path gets the value `models.my_new_model`. 
 
+The remainder of the arguments are arbitrary and depend on the type 
+of model you aim to develop. 
+The corresponding section in the configuration yaml will have exactly the 
+same keys as this class and will serve for input validation. 
+
+**BaseLightningModule** This class contains all specifics for dealing with the 
+torch geometric datasets and logging metrics and will need only need minimal change. 
+The actual model lives under the `self.model` and can be implemented separately. 
 
