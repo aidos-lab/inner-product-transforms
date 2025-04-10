@@ -110,8 +110,8 @@ class CenterTransform(object):
     def __call__(self, data):
         data.x -= data.x.mean(axis=0)
         data.x /= data.x.pow(2).sum(axis=1).sqrt().max()
-        data.mean = torch.tensor([0, 0, 0.0])
-        data.std = torch.tensor([0.0])
+        data.mean = torch.zeros(size=(1, 1, data.x.shape[-1]))
+        data.std = torch.ones(size=(1, 1, 1))
         return data
 
 
