@@ -14,6 +14,10 @@ config, _ = load_config("./configs/vae_airplane_latent.yaml")
 dm = load_datamodule(config.data)
 val_len = len(dm.test_ds)
 torch.save(dm.train_ds[:val_len].ect, "./results/references/airplane_train_ect.pt")
+torch.save(dm.train_ds.x, "./results/references/airplane_train_pts.pt")
+torch.save(dm.train_ds.mean, "./results/references/airplane_train_pts_means.pt")
+torch.save(dm.train_ds.std, "./results/references/airplane_train_pts_std.pt")
+
 
 # Car
 config, _ = load_config("./configs/vae_car_latent.yaml")

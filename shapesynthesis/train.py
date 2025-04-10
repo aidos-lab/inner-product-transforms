@@ -1,23 +1,21 @@
 """
-Trains an encoder that takes an ECT and reconstructs a pointcloud for various 
+Trains an encoder that takes an ECT and reconstructs a pointcloud for various
 datasets.
 """
 
 import argparse
-import json
 from types import SimpleNamespace
-import torch
+
 import lightning as L
+import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
-import yaml
 from loaders import (
-    load_datamodule,
-    load_model,
     load_config,
+    load_datamodule,
     load_logger,
+    load_model,
     validate_configuration,
 )
-
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -27,7 +25,7 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
     """
     Method to train models.
     """
-    dm = load_datamodule(config.data)
+    dm = load_datamodule(config.data, debug=debug)
 
     if resume:
         model = load_model(

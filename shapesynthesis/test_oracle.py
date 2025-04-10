@@ -1,10 +1,7 @@
 import json
-import torch
-import pyvista as pv
-import torch
+
 import torch
 import torch.utils.data
-
 from datasets.shapenet_data_pc import ShapeNet15kPointClouds
 from metrics.evaluation import EMD_CD
 

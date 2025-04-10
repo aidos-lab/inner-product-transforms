@@ -2,24 +2,23 @@
 All transforms for the datasets.
 """
 
-from typing import Tuple, Union
 import math
 import random
+from typing import Tuple, Union
+
+import numpy as np
 import torch
 import torchvision
-import numpy as np
-
 from torch_geometric.data import Batch, Data
 from torch_geometric.transforms import (
     BaseTransform,
-    LinearTransformation,
     KNNGraph,
+    LinearTransformation,
     RandomJitter,
 )
 
-
-from layers.directions import generate_uniform_directions
-from layers.ect import EctLayer, EctConfig
+from shapesynthesis.layers.directions import generate_uniform_directions
+from shapesynthesis.layers.ect import EctConfig, EctLayer
 
 
 class RandomScale:
@@ -111,6 +110,8 @@ class CenterTransform(object):
     def __call__(self, data):
         data.x -= data.x.mean(axis=0)
         data.x /= data.x.pow(2).sum(axis=1).sqrt().max()
+        data.mean = torch.tensor([0, 0, 0.0])
+        data.std = torch.tensor([0.0])
         return data
 
 

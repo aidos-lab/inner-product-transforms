@@ -19,7 +19,6 @@ ectlossconfig: &ref-ectlossconfig
   ambient_dimension: 3
   normalized: True
 
-
 data: 
   module: datasets.shapenetcore
   root: ./data/shapenet

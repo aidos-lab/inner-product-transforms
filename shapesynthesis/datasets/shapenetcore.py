@@ -4,11 +4,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import torch
-from datasets.base_dataset import BaseConfig, BaseModule
-from datasets.transforms import EctTransform
-from layers.ect import EctConfig
 from torch.utils.data import Dataset
 from torch_geometric.data import Data, InMemoryDataset
+
+from shapesynthesis.datasets.base_dataset import BaseConfig, BaseModule
+from shapesynthesis.datasets.transforms import EctTransform
+from shapesynthesis.layers.ect import EctConfig
 
 # taken from https://github.com/optas/latent_3d_points/blob/8e8f29f8124ed5fc59439e8551ba7ef7567c9a37/src/in_out.py
 synsetid_to_cate = {
@@ -204,15 +205,16 @@ class ShapeNetDataset(InMemoryDataset):
         if self.split == "train":
             ds = train_ds
             num_samples = 2
-        elif self.split == "test": 
+        elif self.split == "test":
             ds = test_ds
             num_samples = 1
-        else: 
+        else:
             raise ValueError("Split Not Correct")
 
         data_list = []
 
-
+        # Something is not perfectly correct yet.
+        # Now it returns twice the same point cloud.
         for idx, data in enumerate(ds):
             for _ in range(num_samples):
                 data_list.append(

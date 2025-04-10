@@ -35,12 +35,12 @@ trainer:
   max_epochs: 50 # Was 1000 before.
   log_every_n_steps: 1
   save_dir: ./trained_models 
-  model_name: vae_airplane.ckpt
+  model_name: vae_airplane_latent.ckpt
 
 loggers: 
   logger: wandb
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "vae_airplane"
+  experiment_name: "vae_airplane_latent"
   tags: []

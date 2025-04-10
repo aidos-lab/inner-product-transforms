@@ -3,11 +3,11 @@ import numpy as np
 import warnings
 from numpy.linalg import norm
 
-from metrics.PyTorchEMD.emd import earth_mover_distance as EMD
-from metrics.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D import (
+from shapesynthesis.metrics.PyTorchEMD.emd import earth_mover_distance as EMD
+from shapesynthesis.metrics.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D import (
     chamfer_3DDist,
 )
-from metrics.ChamferDistancePytorch.fscore import fscore
+from shapesynthesis.metrics.ChamferDistancePytorch.fscore import fscore
 from tqdm import tqdm
 
 # cham2D = chamfer_2DDist()
@@ -83,13 +83,9 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, accelerated_cd=True):
             sample_batch_exp = sample_batch_exp.contiguous()
 
             dl, dr, _, _ = cham3D(sample_batch_exp.cuda(), ref_batch.cuda())
-            cd_lst.append(
-                (dl.mean(dim=1) + dr.mean(dim=1)).view(1, -1).detach().cpu()
-            )
+            cd_lst.append((dl.mean(dim=1) + dr.mean(dim=1)).view(1, -1).detach().cpu())
 
-            emd_batch = EMD(
-                sample_batch_exp.cuda(), ref_batch.cuda(), transpose=False
-            )
+            emd_batch = EMD(sample_batch_exp.cuda(), ref_batch.cuda(), transpose=False)
             emd_lst.append(emd_batch.view(1, -1).detach().cpu())
 
         cd_lst = torch.cat(cd_lst, dim=1)
@@ -121,9 +117,7 @@ def knn(Mxx, Mxy, Myy, k, sqrt=False):
     count = torch.zeros(n0 + n1).to(Mxx)
     for i in range(0, k):
         count = count + label.index_select(0, idx[i])
-    pred = torch.ge(
-        count, (float(k) / 2) * torch.ones(n0 + n1).to(Mxx)
-    ).float()
+    pred = torch.ge(count, (float(k) / 2) * torch.ones(n0 + n1).to(Mxx)).float()
 
     s = {
         "tp": (pred * label).sum(),

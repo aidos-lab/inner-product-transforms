@@ -1,13 +1,11 @@
-import importlib
-from types import SimpleNamespace
-import yaml
-import json
-
-from lightning.pytorch.loggers import WandbLogger
-from lightning.pytorch.loggers import TensorBoardLogger
-
-import timeit
 import functools
+import importlib
+import json
+import timeit
+from types import SimpleNamespace
+
+import yaml
+from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
 
 
 def timeit_decorator(func):
@@ -22,10 +20,10 @@ def timeit_decorator(func):
 
 
 # @timeit_decorator
-def load_datamodule(config):
+def load_datamodule(config, debug: bool = False):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "DataModule")
-    return model_class(config)
+    return model_class(config, debug)
 
 
 # @timeit_decorator
