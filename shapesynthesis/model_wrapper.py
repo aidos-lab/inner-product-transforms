@@ -1,16 +1,14 @@
 """
-A wrapper to give our model the same signature as the 
+A wrapper to give our model the same signature as the
 one in pointflow and make it accept the same type of data.
-
 """
 
-from scipy import sparse
 import torch
-
 from layers.directions import generate_uniform_directions
 from layers.ect import EctLayer, compute_ect_point_cloud
 from models.encoder import BaseLightningModel as Encoder
 from models.vae_1d import BaseLightningModel as VAE
+from scipy import sparse
 
 DEVICE = "cuda:0"
 
@@ -71,7 +69,6 @@ class ModelWrapper:
                 batch.x.view(-1, pc_shape[0], pc_shape[1])
             )
 
-        reconstructed_ect = None
         if self.vae is not None:
             # print(self.vae)
             # Rescale to [-1,1] for the VAE
@@ -90,6 +87,7 @@ class ModelWrapper:
             pointcloud = self.encoder(batch.ect).view(
                 -1, self.encoder.config.num_pts, pc_shape[1]
             )
+            reconstructed_ect = batch.ect
 
         if normalized:
             pointcloud = pointcloud * batch_std + batch_means
@@ -115,7 +113,7 @@ class ModelNoOpWrapper:
 
         pointcloud = batch.x.view(-1, pc_shape[0], pc_shape[1])
 
-        return pointcloud, None
+        return pointcloud, batch.ect
 
 
 class ModelDownsampleWrapper:
@@ -216,6 +214,3 @@ class ModelCompletionWrapper:
         )
 
         return pointcloud, sparse_pointcloud
-
-
-# if __name__ == "__main__":

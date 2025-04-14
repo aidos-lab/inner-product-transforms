@@ -108,6 +108,9 @@ def load_logger(config):
             name=config.experiment_name,
             tags=config.tags,
         )
+        return logger
     elif config.logger == "tensorboard":
         logger = TensorBoardLogger("my_logs", name=f"{config.experiment_name}")
-    return logger
+        return logger
+    else:
+        raise ValueError()
