@@ -13,8 +13,6 @@ dependencies = [
     "kaolin",
     "tensorboard>=2.18.0,<3",
     "tensorboardx>=2.6.2.2,<3",
-    "emd-ext",
-    "chamfer-3d",
     "scikit-image>=0.25.0,<0.26",
     "pydantic>=2.10.4,<3",
     "wandb>=0.19.1,<0.20",
@@ -27,6 +25,8 @@ dependencies = [
     "ipywidgets>=8.1.5,<9",
     "ipykernel>=6.29.5,<7",
     "torch-fidelity>=0.3.0",
+    "chamfer3d",
+    "pytorchemd",
 ]
 
 [dependency-groups]
@@ -52,19 +52,21 @@ explicit = true
 
 [tool.uv.sources]
 kaolin = { url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl" }
-emd-ext = { path = "dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
-chamfer-3d = { path = "dist/chamfer_3D-0.0.0-cp310-cp310-linux_x86_64.whl" }
+chamfer3d = { workspace = true }
+pytorchemd = { workspace = true }
+
+[tool.uv.workspace]
+members = ["dependencies/PyTorchEMD", "dependencies/chamfer3D"]
+
+
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.poe.tasks]
-torch-cuda = "python -m pip install torch torchvision torchaudio"
-torch-cpu      = "python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
-pyg-cpu        = "pip install torch_geometric"
-lightning      = "python -m pip install lightning"
 
+[tool.hatch.build.targets.wheel]
+packages = ["shapesynthesis"]
 
 
 

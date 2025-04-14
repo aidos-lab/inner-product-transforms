@@ -217,6 +217,10 @@ class ShapeNetDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
+        if self.debug:
+            return [
+                f"{self.split}_{'_'.join(self.cates)}_normalized_debug.pt",
+            ]
         return [
             f"{self.split}_{'_'.join(self.cates)}_normalized.pt",
         ]
@@ -247,6 +251,8 @@ class ShapeNetDataset(InMemoryDataset):
                 break
 
             for _ in range(num_samples):
+                if self.debug:
+                    print("Std", data["std"], data["mean"])
                 data_list.append(
                     Data(
                         x=torch.tensor(data[f"{self.split}_points"].view(-1, 3)),

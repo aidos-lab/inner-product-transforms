@@ -1,0 +1,17 @@
+[project]
+name = "chamfer3d"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Ernst Röell", email = "ernstroell@gmail.com" }
+]
+requires-python = ">=3.10, <3.13"
+dependencies = []
+
+[project.scripts]
+chamfer3d = "chamfer3d:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
