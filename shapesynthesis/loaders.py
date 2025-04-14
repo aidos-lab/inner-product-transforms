@@ -20,10 +20,10 @@ def timeit_decorator(func):
 
 
 # @timeit_decorator
-def load_datamodule(config, debug: bool = False):
+def load_datamodule(config, dev: bool = False):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "DataModule")
-    return model_class(config, debug)
+    return model_class(config, dev)
 
 
 # @timeit_decorator

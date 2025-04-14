@@ -4,6 +4,7 @@ datasets.
 """
 
 import argparse
+import os
 from types import SimpleNamespace
 
 import lightning as L
@@ -21,11 +22,21 @@ from loaders import (
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
+def train(config: SimpleNamespace, resume=False, dev=False, prod=False):
     """
     Method to train models.
     """
-    dm = load_datamodule(config.data, debug=debug)
+
+    # Modify configs based on dev flag.
+    if dev:
+        config.loggers.tags.append("dev")
+        config.trainer.max_epochs = 1
+        config.trainer.save_dir += "_dev"
+
+    # Create trained models directory if it does not exist yet.
+    os.makedirs(config.trainer.save_dir, exist_ok=True)
+
+    dm = load_datamodule(config.data, dev=dev)
 
     if resume:
         model = load_model(
@@ -35,52 +46,32 @@ def train(config: SimpleNamespace, resume=False, debug=False, prod=False):
     else:
         model = load_model(config.modelconfig).to(DEVICE)
 
-    checkpoint_callback = ModelCheckpoint(
-        monitor="validation_loss",
-        dirpath="trained_models",
-        filename=f"{config.trainer.model_name}"
-        + "-epoch={epoch}-val_loss={validation_loss:.2f}",
-        auto_insert_metric_name=False,
-    )
-
-    if not prod:
-        config.loggers.tags.append("dev")
+    logger = load_logger(config.loggers)
 
     trainer = L.Trainer(
-        logger=None if debug else load_logger(config.loggers),
-        # callbacks=[checkpoint_callback],
+        logger=logger,
         accelerator=config.trainer.accelerator,
-        max_epochs=1 if debug else config.trainer.max_epochs,
+        max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
-        limit_train_batches=3 if debug else None,
-        limit_val_batches=3 if debug else None,
         enable_progress_bar=True,
         enable_checkpointing=False,
     )
-    # model.hparams.lr = 0.000005
 
     trainer.fit(model, dm)
-    if not debug:
-        print("SAVING TO:", f"./{config.trainer.save_dir}/{config.trainer.model_name}")
-        trainer.save_checkpoint(
-            f"./{config.trainer.save_dir}/{config.trainer.model_name}"
-        )
+
+    print("SAVING TO:", f"./{config.trainer.save_dir}/{config.trainer.model_name}")
+    trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.model_name}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("INPUT", type=str, help="Input configuration")
     parser.add_argument(
-        "--prod", default=False, action="store_true", help="Run a test batch"
-    )
-    parser.add_argument(
-        "--debug", default=False, action="store_true", help="Run a quick batch"
+        "--dev", default=False, action="store_true", help="Run a small subset."
     )
     parser.add_argument(
         "--resume", default=False, action="store_true", help="Resume training"
     )
     args = parser.parse_args()
-
     run_config, run_config_dict = load_config(args.INPUT)
-
-    train(run_config, resume=args.resume, debug=args.debug, prod=args.prod)
+    train(run_config, resume=args.resume, dev=args.dev)

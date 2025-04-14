@@ -9,13 +9,6 @@ resolution-markers = [
     "python_full_version >= '3.12' and sys_platform != 'linux'",
 ]
 
-[manifest]
-members = [
-    "chamfer3d",
-    "pytorchemd",
-    "shapesynthesis",
-]
-
 [[package]]
 name = "absl-py"
 version = "2.2.2"
@@ -322,9 +315,12 @@ wheels = [
 ]
 
 [[package]]
-name = "chamfer3d"
-version = "0.1.0"
-source = { editable = "dependencies/chamfer3D" }
+name = "chamfer-3d"
+version = "0.0.0"
+source = { path = "dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
+wheels = [
+    { filename = "chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:fd991140ec3e9230a1af70c42d57eaa67a16314c0a8ebaf3b8031f0cbdadc56a" },
+]
 
 [[package]]
 name = "charset-normalizer"
@@ -586,6 +582,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c5/e6/d1f6c00b7221e2d7c4b470132c931325c8b22c51ca62417e300f5ce16009/docker-pycreds-0.4.0.tar.gz", hash = "sha256:6ce3270bcaf404cc4c3e27e4b6c70d3521deae82fb508767870fdbf772d584d4", size = 8754 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f5/e8/f6bd1eee09314e7e6dee49cbe2c5e22314ccdb38db16c9fc72d2fa80d054/docker_pycreds-0.4.0-py2.py3-none-any.whl", hash = "sha256:7266112468627868005106ec19cd0d722702d2b7d5912a28e19b826c3d37af49", size = 8982 },
+]
+
+[[package]]
+name = "emd-ext"
+version = "0.0.0"
+source = { path = "shapesynthesis/metrics/PyTorchEMD/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+wheels = [
+    { filename = "emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:c281bbc3076a59da5b0db586790d7d6df83012b4fda206e86bdafc0af730b1c9" },
 ]
 
 [[package]]
@@ -2371,11 +2375,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytorchemd"
-version = "0.1.0"
-source = { editable = "dependencies/PyTorchEMD" }
-
-[[package]]
 name = "pytz"
 version = "2025.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2844,7 +2843,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "addict" },
-    { name = "chamfer3d" },
+    { name = "chamfer-3d" },
+    { name = "emd-ext" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "kaolin" },
@@ -2852,7 +2852,6 @@ dependencies = [
     { name = "matplotlib" },
     { name = "open3d" },
     { name = "pydantic" },
-    { name = "pytorchemd" },
     { name = "pyvista", extra = ["jupyter"] },
     { name = "scikit-image" },
     { name = "scikit-learn" },
@@ -2879,7 +2878,8 @@ vis = [
 [package.metadata]
 requires-dist = [
     { name = "addict", specifier = ">=2.4.0,<3" },
-    { name = "chamfer3d", editable = "dependencies/chamfer3D" },
+    { name = "chamfer-3d", path = "dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" },
+    { name = "emd-ext", path = "shapesynthesis/metrics/PyTorchEMD/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" },
     { name = "ipykernel", specifier = ">=6.29.5,<7" },
     { name = "ipywidgets", specifier = ">=8.1.5,<9" },
     { name = "kaolin", url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl" },
@@ -2887,7 +2887,6 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.0,<4" },
     { name = "open3d", specifier = ">=0.18.0,<0.19" },
     { name = "pydantic", specifier = ">=2.10.4,<3" },
-    { name = "pytorchemd", editable = "dependencies/PyTorchEMD" },
     { name = "pyvista", extras = ["jupyter"], specifier = ">=0.44.2,<0.45" },
     { name = "scikit-image", specifier = ">=0.25.0,<0.26" },
     { name = "scikit-learn", specifier = ">=1.6.0,<2" },
