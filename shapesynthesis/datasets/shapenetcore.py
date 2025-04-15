@@ -121,9 +121,9 @@ class DataModuleConfig(BaseConfig):
 
 
 class DataModule(BaseModule):
-    def __init__(self, config: DataModuleConfig):
+    def __init__(self, config: DataModuleConfig, debug: bool = False):
         self.config = config
-
+        self.debug = debug
         super().__init__()
 
     def prepare_data(self):
@@ -133,6 +133,7 @@ class DataModule(BaseModule):
             cates=self.config.cates,
             split="train",
             force_reload=self.config.force_reload,
+            debug=self.debug,
         )
         ShapeNetDataset(
             root=self.config.root,
@@ -140,6 +141,7 @@ class DataModule(BaseModule):
             cates=self.config.cates,
             split="test",
             force_reload=self.config.force_reload,
+            debug=self.debug,
         )
 
     def setup(self, **kwargs):
@@ -148,18 +150,21 @@ class DataModule(BaseModule):
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="train",
+            debug=self.debug,
         )
         self.test_ds = ShapeNetDataset(
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="test",
+            debug=self.debug,
         )
         self.val_ds = ShapeNetDataset(
             root=self.config.root,
             pre_transform=EctTransform(self.config.ectconfig),
             cates=self.config.cates,
             split="test",
+            debug=self.debug,
         )
 
 
@@ -173,10 +178,12 @@ class ShapeNetDataset(InMemoryDataset):
         pre_filter=None,
         cates: list = ["airplane"],
         force_reload: bool = False,
+        debug: bool = False,
     ):
         self.split = split
         self.root = root
         self.cates = cates
+        self.debug = debug
         super().__init__(
             root,
             transform,
@@ -192,6 +199,10 @@ class ShapeNetDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
+        if self.debug:
+            return [
+                f"{self.split}_{'_'.join(self.cates)}_debug.pt",
+            ]
         return [
             f"{self.split}_{'_'.join(self.cates)}.pt",
         ]
@@ -204,7 +215,7 @@ class ShapeNetDataset(InMemoryDataset):
 
         if self.split == "train":
             ds = train_ds
-            num_samples = 2
+            num_samples = 1
         elif self.split == "test":
             ds = test_ds
             num_samples = 1
@@ -216,12 +227,16 @@ class ShapeNetDataset(InMemoryDataset):
         # Something is not perfectly correct yet.
         # Now it returns twice the same point cloud.
         for idx, data in enumerate(ds):
+            # In debug only run a single sample.
+            if self.debug and idx == 10:
+                break
+
             for _ in range(num_samples):
                 data_list.append(
                     Data(
                         x=torch.tensor(data[f"{self.split}_points"].view(-1, 3)),
-                        mean=torch.tensor(data["mean"]),
-                        std=torch.tensor(data["std"]),
+                        mean=torch.tensor(data["mean"]).view(1, 1, 3),
+                        std=torch.tensor(data["std"]).view(1, 1, 1),
                     )
                 )
 

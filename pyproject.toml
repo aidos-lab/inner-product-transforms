@@ -27,6 +27,7 @@ dependencies = [
     "torch-fidelity>=0.3.0",
     "chamfer-3d",
     "emd-ext",
+    "seaborn>=0.13.2",
 ]
 
 

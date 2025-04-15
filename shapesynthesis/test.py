@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from pprint import pprint
 
 import torch
@@ -23,6 +24,8 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
         out_pc, reconstructed_ect = model.reconstruct(batch.to(DEVICE))
         pc_shape = batch[0].x.shape
         m, s = batch.mean, batch.std
+
+        breakpoint()
 
         te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
 
@@ -148,36 +151,44 @@ if __name__ == "__main__":
 
     pprint(results)
 
+    result_suffix = ""
+    if args.dev:
+        result_suffix = "_dev"
+
+    # Make sure folders exist
+    os.makedirs("./results", exist_ok=True)
+    os.makedirs("./results_dev", exist_ok=True)
+
     # Save the results in json format, {config name}.json
     # Example ./results/encoder_mnist.json
     with open(
-        f"./results/{model_name}/{model_name}{suffix}.json",
+        f"./results{result_suffix}/{model_name}/{model_name}{suffix}.json",
         "w",
         encoding="utf-8",
     ) as f:
         json.dump(results, f)
     torch.save(
         sample_pc,
-        f"./results/{model_name}/reconstructions{suffix}.pt",
+        f"./results{result_suffix}/{model_name}/reconstructions{suffix}.pt",
     )
     torch.save(
         ref_pc,
-        f"./results/{model_name}/references{suffix}.pt",
+        f"./results{result_suffix}/{model_name}/references{suffix}.pt",
     )
     torch.save(
         means,
-        f"./results/{model_name}/means.pt",
+        f"./results{result_suffix}/{model_name}/means.pt",
     )
     torch.save(
         stdevs,
-        f"./results/{model_name}/stdevs.pt",
+        f"./results{result_suffix}/{model_name}/stdevs.pt",
     )
     if torch.is_tensor(reconstructed_ect):
         torch.save(
             reconstructed_ect,
-            f"./results/{model_name}/reconstructed_ect.pt",
+            f"./results{result_suffix}/{model_name}/reconstructed_ect.pt",
         )
         torch.save(
             ect,
-            f"./results/{model_name}/ect.pt",
+            f"./results{result_suffix}/{model_name}/ect.pt",
         )
