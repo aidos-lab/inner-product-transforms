@@ -9,20 +9,13 @@ from types import SimpleNamespace
 
 import lightning as L
 import torch
-from lightning.pytorch.callbacks import ModelCheckpoint
-from loaders import (
-    load_config,
-    load_datamodule,
-    load_logger,
-    load_model,
-    validate_configuration,
-)
+from loaders import load_config, load_datamodule, load_logger, load_model
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def train(config: SimpleNamespace, resume=False, dev=False, prod=False):
+def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
     """
     Method to train models.
     """
@@ -32,6 +25,14 @@ def train(config: SimpleNamespace, resume=False, dev=False, prod=False):
         config.loggers.tags.append("dev")
         config.trainer.max_epochs = 1
         config.trainer.save_dir += "_dev"
+
+    print(80 * "=")
+    print(80 * "Config used (with mods):")
+    print(80 * "=")
+
+    print(config)
+
+    print(80 * "=")
 
     # Create trained models directory if it does not exist yet.
     os.makedirs(config.trainer.save_dir, exist_ok=True)
@@ -72,6 +73,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--resume", default=False, action="store_true", help="Resume training"
     )
+    parser.add_argument(
+        "--evaluate",
+        default=False,
+        action="store_true",
+        help="Evaluate the model after training.",
+    )
     args = parser.parse_args()
     run_config, run_config_dict = load_config(args.INPUT)
-    train(run_config, resume=args.resume, dev=args.dev)
+    train(run_config, resume=args.resume, dev=args.dev, evaluate=args.evaluate)
