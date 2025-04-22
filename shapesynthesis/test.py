@@ -25,8 +25,6 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
         pc_shape = batch[0].x.shape
         m, s = batch.mean, batch.std
 
-        breakpoint()
-
         te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
 
         out_pc = out_pc * s + m
