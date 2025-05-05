@@ -9,16 +9,6 @@ ectconfig: &ref-ectconfig
   ambient_dimension: 3
   normalized: True
 
-ectlossconfig: &ref-ectlossconfig 
-  num_thetas: 64
-  resolution: 64  
-  scale: 16
-  r: 7
-  ect_type: "points"
-  ambient_dimension: 3
-  normalized: True
-  seed: 2024
-
 data: 
   module: datasets.shapenet
   root_dir: ./data/shapenet
@@ -33,25 +23,21 @@ data:
   ectconfig: *ref-ectconfig
 
 modelconfig:
-  module: models.encoder_new
-  num_pts: 2048
-  learning_rate: 0.00005
-  ectlossconfig: *ref-ectlossconfig
+  module: models.vae_sigma
   ectconfig: *ref-ectconfig
 
+trainer:
+  accelerator: auto
+  max_epochs: 500 # Was 1000 before.
+  log_every_n_steps: 1
+  save_dir: ./trained_models 
+  model_name: vae_sigma_airplane.ckpt
+  results_dir: ./results
 
 loggers: 
   logger: wandb
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_new_airplane"
+  experiment_name: "vae_sigma_airplane"
   tags: []
-
-trainer:
-  accelerator: auto
-  max_epochs: 1000
-  log_every_n_steps: 1
-  save_dir: trained_models
-  model_name: encoder_new_airplane.ckpt
-  results_dir: ./results

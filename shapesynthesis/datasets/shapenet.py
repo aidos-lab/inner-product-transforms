@@ -145,4 +145,5 @@ if __name__ == "__main__":
         batch_size=32,
         module="",
     )
-    create_dataset(config)
+    create_dataset(config, dev=False)
+    create_dataset(config, dev=True)
