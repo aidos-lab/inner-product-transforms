@@ -1,15 +1,9 @@
 import os
 import random
-from dataclasses import dataclass, field
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from torch_geometric.data import Data, InMemoryDataset
-
-from shapesynthesis.datasets.base_dataset import BaseConfig, BaseModule
-from shapesynthesis.datasets.transforms import EctTransform
-from shapesynthesis.layers.ect import EctConfig
 
 # taken from https://github.com/optas/latent_3d_points/blob/8e8f29f8124ed5fc59439e8551ba7ef7567c9a37/src/in_out.py
 synsetid_to_cate = {
@@ -86,7 +80,7 @@ def get_datasets(cates, root_dir):
         normalize_std_per_axis=False,
         random_subsample=True,
     )
-    te_dataset = ShapeNet15kPointClouds(
+    val_dataset = ShapeNet15kPointClouds(
         categories=cates,
         split="val",
         tr_sample_size=2048,
@@ -98,152 +92,19 @@ def get_datasets(cates, root_dir):
         all_points_mean=tr_dataset.all_points_mean,
         all_points_std=tr_dataset.all_points_std,
     )
-    return tr_dataset, te_dataset
-
-
-@dataclass
-class DataModuleConfig(BaseConfig):
-    ectconfig: EctConfig = EctConfig(
-        num_thetas=64,
-        resolution=64,
-        ambient_dimension=3,
-        r=7,
-        scale=32,
-        ect_type="points",
-        normalized=True,
-        seed=2024,
+    te_dataset = ShapeNet15kPointClouds(
+        categories=cates,
+        split="test",
+        tr_sample_size=2048,
+        te_sample_size=2048,
+        scale=1,
+        root_dir=root_dir,
+        normalize_per_shape=False,
+        normalize_std_per_axis=False,
+        all_points_mean=tr_dataset.all_points_mean,
+        all_points_std=tr_dataset.all_points_std,
     )
-    cates: list = field(default_factory=lambda: ["airplane"])
-    root: str = "./data/shapenet"
-    module: str = "datasets.shapenetcore"
-    force_reload: bool = False
-    num_pts: int = 2048
-
-
-class DataModule(BaseModule):
-    def __init__(self, config: DataModuleConfig, debug: bool = False):
-        self.config = config
-        self.debug = debug
-        super().__init__()
-
-    def prepare_data(self):
-        ShapeNetDataset(
-            root=self.config.root,
-            pre_transform=EctTransform(self.config.ectconfig),
-            cates=self.config.cates,
-            split="train",
-            force_reload=self.config.force_reload,
-            debug=self.debug,
-        )
-        ShapeNetDataset(
-            root=self.config.root,
-            pre_transform=EctTransform(self.config.ectconfig),
-            cates=self.config.cates,
-            split="test",
-            force_reload=self.config.force_reload,
-            debug=self.debug,
-        )
-
-    def setup(self, **kwargs):
-        self.train_ds = ShapeNetDataset(
-            root=self.config.root,
-            pre_transform=EctTransform(self.config.ectconfig),
-            cates=self.config.cates,
-            split="train",
-            debug=self.debug,
-        )
-        self.test_ds = ShapeNetDataset(
-            root=self.config.root,
-            pre_transform=EctTransform(self.config.ectconfig),
-            cates=self.config.cates,
-            split="test",
-            debug=self.debug,
-        )
-        self.val_ds = ShapeNetDataset(
-            root=self.config.root,
-            pre_transform=EctTransform(self.config.ectconfig),
-            cates=self.config.cates,
-            split="test",
-            debug=self.debug,
-        )
-
-
-class ShapeNetDataset(InMemoryDataset):
-    def __init__(
-        self,
-        root,
-        transform=None,
-        pre_transform=None,
-        split="train",
-        pre_filter=None,
-        cates: list = ["airplane"],
-        force_reload: bool = False,
-        debug: bool = False,
-    ):
-        self.split = split
-        self.root = root
-        self.cates = cates
-        self.debug = debug
-        super().__init__(
-            root,
-            transform,
-            pre_transform,
-            pre_filter,
-            force_reload=force_reload,
-        )
-        self.load(self.processed_paths[0])
-
-    @property
-    def raw_file_names(self):
-        return ["ShapeNetCore.v2.PC15K"]
-
-    @property
-    def processed_file_names(self):
-        if self.debug:
-            return [
-                f"{self.split}_{'_'.join(self.cates)}_debug.pt",
-            ]
-        return [
-            f"{self.split}_{'_'.join(self.cates)}.pt",
-        ]
-
-    def process(self):
-
-        train_ds, test_ds = get_datasets(
-            self.cates, self.root + "/raw/ShapeNetCore.v2.PC15k"
-        )
-
-        if self.split == "train":
-            ds = train_ds
-            num_samples = 1
-        elif self.split == "test":
-            ds = test_ds
-            num_samples = 1
-        else:
-            raise ValueError("Split Not Correct")
-
-        data_list = []
-
-        # Something is not perfectly correct yet.
-        # Now it returns twice the same point cloud.
-        for idx, data in enumerate(ds):
-            # In debug only run a single sample.
-            if self.debug and idx == 10:
-                break
-
-            for _ in range(num_samples):
-                data_list.append(
-                    Data(
-                        x=torch.tensor(data[f"{self.split}_points"].view(-1, 3)),
-                        mean=torch.tensor(data["mean"]).view(1, 1, 3),
-                        std=torch.tensor(data["std"]).view(1, 1, 1),
-                    )
-                )
-
-        if self.pre_transform is not None:
-            data_list = [self.pre_transform(data) for data in data_list]
-
-        self.save(data_list, self.processed_paths[0])
+    return tr_dataset, val_dataset, te_dataset
 
 
 class Uniform15KPC(Dataset):
@@ -455,8 +316,3 @@ class ShapeNet15kPointClouds(Uniform15KPC):
             all_points_std=all_points_std,
             input_dim=3,
         )
-
-
-def init_np_seed(worker_id):
-    seed = torch.initial_seed()
-    np.random.seed(seed % 4294967296)

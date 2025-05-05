@@ -1,14 +1,15 @@
-import torch
-import numpy as np
 import warnings
-from numpy.linalg import norm
 
-from shapesynthesis.metrics.PyTorchEMD.emd import earth_mover_distance as EMD
+import numpy as np
+import torch
+from numpy.linalg import norm
+from tqdm import tqdm
+
 from shapesynthesis.metrics.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D import (
     chamfer_3DDist,
 )
 from shapesynthesis.metrics.ChamferDistancePytorch.fscore import fscore
-from tqdm import tqdm
+from shapesynthesis.metrics.PyTorchEMD.emd import earth_mover_distance as EMD
 
 # cham2D = chamfer_2DDist()
 cham3D = chamfer_3DDist()
@@ -57,8 +58,9 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True, accelerated_cd=None):
         cd = torch.cat(cd_lst)
         emd = torch.cat(emd_lst)
     fs_lst = torch.cat(fs_lst).mean()
-    results = {"MMD-CD": cd, "MMD-EMD": emd, "fscore": fs_lst}
-    return results
+    # results = {"MMD-CD": cd, "MMD-EMD": emd, "fscore": fs_lst}
+    # return results
+    return cd, emd
 
 
 def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, accelerated_cd=True):

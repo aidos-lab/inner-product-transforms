@@ -19,7 +19,8 @@ class EctBatch(Batch):
     ect: Tensor | None = None
 
 
-class EctConfig(BaseModel):
+@dataclass
+class EctConfig:
     """
     Config for initializing an ect layer.
     """
@@ -73,7 +74,7 @@ def compute_ect_point_cloud(
     nh = (x @ v).unsqueeze(1)
     ecc = torch.nn.functional.sigmoid(scale * torch.sub(lin, nh))
     ect = torch.sum(ecc, dim=2)
-    return ect
+    return 2 * ect / torch.amax(ect, dim=(-1, -2), keepdim=True) - 1
 
 
 def compute_ecc(nh, index, lin, scale):
@@ -92,7 +93,7 @@ def compute_ecc(nh, index, lin, scale):
     return torch.index_add(out, 1, index, ecc).movedim(0, 1)
 
 
-#@torch.compile
+# @torch.compile
 def compute_ect_points(x, index, v, lin, scale):
     """Compute the ECT of a set of points."""
     nh = x @ v

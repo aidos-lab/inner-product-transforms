@@ -146,12 +146,56 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
     pl.show()
 
 
-import networkx as nx
+def plot_grid(pcs, num_pc=5):
+
+    pl = pv.Plotter(
+        shape=(num_pc, num_pc),
+        window_size=[200 * num_pc, 200 * num_pc],
+        border=False,
+        polygon_smoothing=True,
+    )
+
+    for col in range(num_pc):
+        for row in range(num_pc):
+            # First plat
+            pl.subplot(row, col)
+            pl.add_points(
+                pcs[col + num_pc * row].reshape(-1, 3),
+                style="points",
+                emissive=False,
+                show_scalar_bar=False,
+                render_points_as_spheres=True,
+                color="lightgray",
+                point_size=2,
+                ambient=0.2,
+                diffuse=0.8,
+                specular=0.8,
+                specular_power=40,
+                smooth_shading=True,
+            )
+
+    pl.background_color = "w"
+    pl.link_views()
+    pl.camera_position = "xy"
+    pos = pl.camera.position
+    pl.camera.position = (pos[0], pos[1] + 3, pos[2])
+    pl.camera.position = (10, 0, 0)
+    pl.camera.azimuth = 45
+    pl.camera.elevation = 30
+    light = pv.Light(
+        position=(0, 0, 0), positional=True, cone_angle=50, exponent=20, intensity=0.2
+    )
+    pl.add_light(light)
+    pl.camera.zoom(0.7)
+    pl.show()
+
+
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
-import torch.nn.functional as F
-import torch.nn as nn
 import pyvista as pv
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 def plot_graph(x, edge_index, edge_weigths=None, ax=None):

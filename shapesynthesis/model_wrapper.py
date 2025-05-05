@@ -25,9 +25,10 @@ def normalize(pts):
 class ModelWrapper:
     def __init__(self, encoder: Encoder, vae: VAE | None = None) -> None:
         self.encoder = encoder
+        self.encoder.eval()
         self.vae = vae
-        if vae:
-            self.vae.eval()
+        if vae is not None:
+            self.vae.model.eval()
 
     @torch.no_grad()
     def sample(self, num_samples: int, num_points: int, ambient_dimension: int):
@@ -42,55 +43,17 @@ class ModelWrapper:
             num_samples=num_samples, device="cuda:0"
         ).squeeze()
 
-        # Rescale to 0,1
-        ect_samples = (ect_samples + 1) / 2
-
-        print(ect_samples.shape)
-
-        vae_pointcloud = self.encoder(ect_samples).view(
-            num_samples, self.encoder.config.num_pts, ambient_dimension
-        )
+        vae_pointcloud = self.encoder(ect_samples)
         return vae_pointcloud, ect_samples
 
     @torch.no_grad()
-    def reconstruct(self, batch, normalized=False):
-        """
-        Takes in a pointcloud of the form BxPxD
-        and does a full reconstruction into
-        a pointcloud of the form BxPxD using our model.
-
-        We follow the PointFlow signature to make it compatible with
-        their framework.
-        """
-        pc_shape = batch[0].x.shape
-
-        if normalized:
-            batch.x, batch_means, batch_std = normalize(
-                batch.x.view(-1, pc_shape[0], pc_shape[1])
-            )
-
+    def reconstruct(self, ect):
         if self.vae is not None:
-            # print(self.vae)
-            # Rescale to [-1,1] for the VAE
-            ect = 2 * batch.ect.unsqueeze(1) - 1
-            # print(ect.shape)
-            # [self.decode(z), input_tensor, mu, log_var]
             reconstructed_ect, _, _, _ = self.vae.model(ect)
-
-            # Rescale to 0,1
-            reconstructed_ect = (reconstructed_ect.squeeze() + 1) / 2
-            pointcloud = self.encoder(reconstructed_ect).view(
-                -1, self.encoder.config.num_pts, pc_shape[1]
-            )
-            # assert torch.allclose(reconstructed_ect, batch.ect)
+            pointcloud = self.encoder(reconstructed_ect).view(-1, 2048, 3)
         else:
-            pointcloud = self.encoder(batch.ect).view(
-                -1, self.encoder.config.num_pts, pc_shape[1]
-            )
-            reconstructed_ect = batch.ect
-
-        if normalized:
-            pointcloud = pointcloud * batch_std + batch_means
+            pointcloud = self.encoder(ect).view(-1, 2048, 3)
+            reconstructed_ect = ect
 
         return pointcloud, reconstructed_ect
 

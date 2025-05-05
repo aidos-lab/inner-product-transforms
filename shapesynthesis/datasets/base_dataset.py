@@ -6,8 +6,8 @@ from abc import abstractmethod
 from dataclasses import dataclass
 
 from lightning import LightningDataModule
-from torch_geometric.loader import DataLoader
 from torch_geometric.data import Dataset
+from torch_geometric.loader import DataLoader
 
 
 @dataclass
@@ -29,8 +29,6 @@ class BaseModule(LightningDataModule):
 
     def __init__(self):
         super().__init__()
-        self.prepare_data()
-        self.setup()
 
     @abstractmethod
     def setup(self):

@@ -2,120 +2,45 @@
 All transforms for the datasets.
 """
 
-import math
-import random
-from typing import Tuple, Union
+from functools import partial
 
 import numpy as np
 import torch
-import torchvision
-from torch_geometric.data import Batch, Data
-from torch_geometric.transforms import (
-    BaseTransform,
-    KNNGraph,
-    LinearTransformation,
-    RandomJitter,
-)
+from torchvision.transforms import Compose
 
 from shapesynthesis.layers.directions import generate_uniform_directions
-from shapesynthesis.layers.ect import EctConfig, EctLayer
-
-
-class RandomScale:
-    def __init__(self, scales: Tuple[float, float]) -> None:
-        assert isinstance(scales, (tuple, list)) and len(scales) == 2
-        self.scales = scales
-
-    def __call__(self, data: Data) -> Data:
-        assert data.x is not None
-
-        scale = random.uniform(*self.scales)
-
-        m = data.x.mean(dim=-2)
-        x = data.x - m
-        n = x.norm(dim=-1, keepdim=True)
-        x /= n
-        data.x = (x * scale) * n + m
-        return data
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.scales})"
-
-
-class FixedLength:
-    def __init__(self, length=128):
-        self.length = length
-
-    def __call__(self, data):
-        res = data.clone()
-        if data.x.shape[0] < self.length:
-            idx = torch.tensor(np.random.choice(len(data.x), self.length, replace=True))
-        else:
-            idx = torch.tensor(
-                np.random.choice(len(data.x), self.length, replace=False)
-            )
-        res.x = data.x[idx]
-        return res
+from shapesynthesis.layers.ect import EctConfig, compute_ect_point_cloud
 
 
 class EctTransform:
-    def __init__(self, ectconfig: EctConfig, normalized=True):
-        v = generate_uniform_directions(
-            num_thetas=ectconfig.num_thetas,
-            d=ectconfig.ambient_dimension,
-            seed=ectconfig.seed,
-        )
-        self.layer = EctLayer(config=ectconfig, v=v)
-        self.normalized = normalized
-
-    def __call__(self, data):
-        batch = Batch.from_data_list([data])
-        ect = self.layer(batch, batch.batch)
-        if self.normalized:
-            data.ect = (ect / ect.max()).cpu()
-            return data
-
-        data.ect = ect.cpu()
-        return data
-
-
-class Normalize(object):
-    def __call__(self, data):
-        mean = data.x.mean()
-        std = data.x.std()
-        data.x = (data.x - mean) / std
-        return data
-
-
-class MnistTransform:
-    def __init__(self):
-        xcoords = torch.linspace(-0.5, 0.5, 28)
-        ycoords = torch.linspace(-0.5, 0.5, 28)
-        self.X, self.Y = torch.meshgrid(xcoords, ycoords)
-        self.tr = torchvision.transforms.ToTensor()
-
-    def __call__(self, data: tuple) -> Data:
-        img, y = data
-        img = self.tr(img)
-        idx = torch.nonzero(img.squeeze(), as_tuple=True)
-
-        return Data(
-            x=torch.vstack([self.X[idx], self.Y[idx]]).T,
-            # face=torch.tensor(dly.cells(), dtype=torch.long).T,
-            y=torch.tensor(y, dtype=torch.long),
+    def __init__(self, config: EctConfig, device="cpu"):
+        self.config = config
+        self.v = generate_uniform_directions(
+            config.num_thetas, d=config.ambient_dimension, seed=config.seed
+        ).to(device)
+        self.ect_fn = torch.compile(
+            partial(
+                compute_ect_point_cloud,
+                v=self.v,
+                radius=self.config.r,
+                resolution=self.config.resolution,
+                scale=self.config.scale,
+            )
         )
 
-
-class CenterTransform(object):
-    def __call__(self, data):
-        data.x -= data.x.mean(axis=0)
-        data.x /= data.x.pow(2).sum(axis=1).sqrt().max()
-        data.mean = torch.zeros(size=(1, 1, data.x.shape[-1]))
-        data.std = torch.ones(size=(1, 1, 1))
-        return data
+    def __call__(self, x):
+        return self.ect_fn(x)
 
 
-class RandomRotate(BaseTransform):
+class RandomSamplePoints:
+    """Randomly Choose points"""
+
+    def __call__(self, x):
+        idx = np.random.choice(size=2048, replace=False)
+        return x[idx]
+
+
+class RandomRotate:
     r"""Rotates node positions around a specific axis by a randomly sampled
     factor within a given interval (functional name: :obj:`random_rotate`).
 
@@ -127,36 +52,42 @@ class RandomRotate(BaseTransform):
         axis (int, optional): The rotation axis. (default: :obj:`0`)
     """
 
-    def __init__(
-        self,
-        degrees: Union[Tuple[float, float], float],
-        axis: int = 0,
-    ) -> None:
-        if isinstance(degrees, (int, float)):
-            degrees = (-abs(degrees), abs(degrees))
-        assert isinstance(degrees, (tuple, list)) and len(degrees) == 2
-        self.degrees = degrees
+    def __init__(self, axis: int) -> None:
         self.axis = axis
 
-    def forward(self, data: Data) -> Data:
-        data.pos = data.x
-        degree = math.pi * random.uniform(*self.degrees) / 180.0
-        sin, cos = math.sin(degree), math.cos(degree)
+    def __call__(self, x):
+        # Max 45 degree rotation per axis
+        angles = 0.25 * torch.pi * torch.rand(size=(len(x),))
+        sin, cos = torch.sin(angles), torch.cos(angles)
+        vec_1 = torch.ones(size=(len(x),))
+        vec_0 = torch.zeros(size=(len(x),))
 
-        if data.x.size(-1) == 2:
-            matrix = [[cos, sin], [-sin, cos]]
+        if self.axis == 0:
+            matrix = torch.stack(
+                [
+                    torch.stack([vec_1, vec_0, vec_0]),
+                    torch.stack([vec_0, cos, sin]),
+                    torch.stack([vec_0, -sin, cos]),
+                ]
+            )
+        elif self.axis == 1:
+            matrix = torch.stack(
+                [
+                    torch.stack([cos, vec_0, -sin]),
+                    torch.stack([vec_0, vec_1, vec_0]),
+                    torch.stack([sin, vec_0, cos]),
+                ]
+            )
         else:
-            if self.axis == 0:
-                matrix = [[1, 0, 0], [0, cos, sin], [0, -sin, cos]]
-            elif self.axis == 1:
-                matrix = [[cos, 0, -sin], [0, 1, 0], [sin, 0, cos]]
-            else:
-                matrix = [[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]]
+            matrix = torch.stack(
+                [
+                    torch.stack([cos, sin, vec_0]),
+                    torch.stack([-sin, cos, vec_0]),
+                    torch.stack([vec_0, vec_0, vec_1]),
+                ]
+            )
 
-        data = LinearTransformation(torch.tensor(matrix))(data)
-        data.x = data.pos
-        data.pos = None
-        return data
+        return torch.bmm(x, matrix.movedim(0, -1).movedim(0, -2).cuda())
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.degrees}, " f"axis={self.axis})"
+        return f"{self.__class__.__name__}(axis={self.axis})"

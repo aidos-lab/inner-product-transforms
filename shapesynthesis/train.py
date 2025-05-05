@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import lightning as L
 import torch
+from lightning.pytorch.callbacks import LearningRateMonitor
 from loaders import load_config, load_datamodule, load_logger, load_model
 
 # Settings
@@ -25,17 +26,16 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         config.loggers.tags.append("dev")
         config.trainer.max_epochs = 1
         config.trainer.save_dir += "_dev"
+        config.trainer.results_dir += "_dev"
+
+    result_dir = f"{config.trainer.results_dir}/{config.loggers.experiment_name}"
+    os.makedirs(result_dir, exist_ok=True)
 
     print(80 * "=")
-    print(80 * "Config used (with mods):")
+    print("Config used (with mods):")
     print(80 * "=")
-
-    print(config)
-
+    print(config.modelconfig)
     print(80 * "=")
-
-    # Create trained models directory if it does not exist yet.
-    os.makedirs(config.trainer.save_dir, exist_ok=True)
 
     dm = load_datamodule(config.data, dev=dev)
 
@@ -49,8 +49,43 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
 
     logger = load_logger(config.loggers)
 
+    class SaveTestOutput(L.Callback):
+        def __init__(self, results_dir: str):
+            super().__init__()
+            self.results_dir = results_dir
+            self.ground_truth_batches = []
+            self.predicted_batches = []
+
+        def on_test_batch_end(
+            self,
+            trainer,
+            pl_module,
+            outputs: tuple,
+            batch,
+            batch_idx: int,
+            dataloader_idx: int = 0,
+        ) -> None:
+
+            self.ground_truth_batches.append(outputs[0])
+            self.predicted_batches.append(outputs[1])
+            return super().on_test_batch_end(
+                trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+            )
+
+        def on_test_end(self, trainer, pl_module):
+            print("RUN EPOCH END")
+            gt = torch.cat(self.ground_truth_batches)
+            pred = torch.cat(self.predicted_batches)
+            torch.save(gt, f"{self.results_dir}/ground_truth.pt")
+            torch.save(pred, f"{self.results_dir}/predictions.pt")
+            return super().on_test_end(trainer, pl_module)
+
     trainer = L.Trainer(
         logger=logger,
+        callbacks=[
+            SaveTestOutput(results_dir=result_dir),
+            LearningRateMonitor(logging_interval="epoch"),
+        ],
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
@@ -58,7 +93,10 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         enable_checkpointing=False,
     )
 
-    trainer.fit(model, dm)
+    trainer.fit(model, dm.train_dataloader)
+
+    # Set up for testing
+    trainer.test(model, dataloaders=dm.test_dataloader)
 
     print("SAVING TO:", f"./{config.trainer.save_dir}/{config.trainer.model_name}")
     trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.model_name}")
@@ -80,5 +118,6 @@ if __name__ == "__main__":
         help="Evaluate the model after training.",
     )
     args = parser.parse_args()
-    run_config, run_config_dict = load_config(args.INPUT)
+    run_config, _ = load_config(args.INPUT)
+
     train(run_config, resume=args.resume, dev=args.dev, evaluate=args.evaluate)

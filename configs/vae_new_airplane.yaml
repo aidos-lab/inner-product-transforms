@@ -1,3 +1,4 @@
+# Global ect config, referenced in modelconfig.
 ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 128
@@ -22,7 +23,7 @@ data:
   ectconfig: *ref-ectconfig
 
 modelconfig:
-  module: models.vae_1d
+  module: models.vae_new_1d
   # in_channels: 1
   latent_dim: 128
   beta_min: 0.00000001
@@ -36,12 +37,13 @@ trainer:
   max_epochs: 1000 # Was 1000 before.
   log_every_n_steps: 1
   save_dir: ./trained_models 
-  model_name: vae_airplane.ckpt
+  model_name: vae_new_airplane.ckpt
+  results_dir: ./results
 
 loggers: 
   logger: wandb
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "vae_airplane"
+  experiment_name: "vae_new_airplane"
   tags: []

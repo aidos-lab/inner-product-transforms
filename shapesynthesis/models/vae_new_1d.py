@@ -1,8 +1,3 @@
-if __name__ == "__main__":
-    import sys
-
-    sys.path.append("./shapesynthesis")
-
 from dataclasses import dataclass
 from typing import Literal
 
@@ -12,6 +7,9 @@ from layers.ect import EctConfig
 from metrics.loss import compute_mse_kld_loss_beta_annealing_fn
 from torch import nn
 from torchmetrics.regression import MeanSquaredError
+from torchvision.transforms import Compose
+
+from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
 
 
 @dataclass
@@ -198,6 +196,14 @@ class BaseLightningModel(L.LightningModule):
         self.model = VanillaVAE(config=self.config)
 
         self.visualization = []
+        self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
+        self.rotation_transform = Compose(
+            [
+                RandomRotate(axis=0),
+                RandomRotate(axis=1),
+                RandomRotate(axis=2),
+            ]
+        )
 
         self.save_hyperparameters()
 
@@ -211,20 +217,20 @@ class BaseLightningModel(L.LightningModule):
         x = self.model(batch)
         return x
 
-    def general_step(
-        self, batch, batch_idx, step: Literal["train", "test", "validation"]
-    ):
+    def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
+        batch_len = len(pcs_gt)
+        pcs_gt = self.rotation_transform(pcs_gt)
 
-        ect = batch.ect * 2 - 1
+        ect_gt = self.ect_transform(pcs_gt)
 
-        decoded, _, z_mean, z_log_var = self(ect)
+        decoded, _, z_mean, z_log_var = self(ect_gt)
 
         # loss = compute_mse_loss_fn(decoded, ect)
         loss_dict = compute_mse_kld_loss_beta_annealing_fn(
             decoded,
             z_mean,
             z_log_var,
-            ect,
+            ect_gt,
             self.current_epoch,
             period=self.config.beta_period,
             beta_min=self.config.beta_min,
@@ -235,19 +241,20 @@ class BaseLightningModel(L.LightningModule):
         self.log_dict(
             loss_dict,
             prog_bar=True,
-            batch_size=len(batch),
+            batch_size=batch_len,
             on_step=False,
             on_epoch=True,
         )
 
-        return loss_dict[f"{step}_loss"]
+        return ect_gt, decoded, loss_dict[f"{step}_loss"]
 
     def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
 
     def validation_step(self, batch, batch_idx):
-        loss = self.general_step(batch, batch_idx, "validation")
+        _, _, loss = self.general_step(batch, batch_idx, "validation")
         return loss
 
     def training_step(self, batch, batch_idx):
-        return self.general_step(batch, batch_idx, "train")
+        _, _, loss = self.general_step(batch, batch_idx, "train")
+        return loss

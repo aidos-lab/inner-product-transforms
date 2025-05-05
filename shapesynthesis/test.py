@@ -7,6 +7,7 @@ import torch
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
 from model_wrapper import ModelWrapper
+from plotting import plot_recon_3d
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -14,50 +15,40 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 @torch.no_grad()
 def evaluate_reconstruction(model: ModelWrapper, dm):
+    m = dm.m.view(1, 1, 3).cuda()
+    s = dm.s.squeeze().cuda()
+    print("STD", s.shape, s)
+    print("MEAN", m.shape)
+
     all_sample = []
     all_ref = []
-    all_means = []
-    all_std = []
     all_ects = []
     all_recon_ect = []
-    for _, batch in enumerate(dm.test_dataloader()):
-        out_pc, reconstructed_ect = model.reconstruct(batch.to(DEVICE))
-        pc_shape = batch[0].x.shape
-        m, s = batch.mean, batch.std
-
-        te_pc = batch.x.view(-1, pc_shape[0], pc_shape[1])
+    for idx, pcs in enumerate(dm.val_dataloader):
+        ect_gt = model.encoder.ect_transform(pcs.cuda())
+        out_pc, reconstructed_ect = model.reconstruct(ect_gt)
 
         out_pc = out_pc * s + m
-        te_pc = te_pc * s + m
-
+        pcs = pcs * dm.s + dm.m
         all_sample.append(out_pc)
-        all_ref.append(te_pc)
-        all_means.append(m)
-        all_std.append(s)
-        all_ects.append(batch.ect)
+        all_ref.append(pcs)
+        all_ects.append(ect_gt)
         all_recon_ect.append(reconstructed_ect)
 
     sample_pcs = torch.cat(all_sample, dim=0)
     ref_pcs = torch.cat(all_ref, dim=0)
-    means = torch.cat(all_means, dim=0)
-    stdevs = torch.cat(all_std, dim=0)
     reconstructed_ect = torch.cat(all_recon_ect)
     ects = torch.cat(all_ects)
 
     results = EMD_CD(
         sample_pcs,
         ref_pcs,
-        batch_size=8,
+        batch_size=100,
         reduced=True,
         accelerated_cd=True,
     )
 
-    results = {
-        ("%s" % k): (v if isinstance(v, float) else v.item())
-        for k, v in results.items()
-    }
-
-    return results, sample_pcs, ref_pcs, reconstructed_ect, ects, means, stdevs
+    return results, sample_pcs, ref_pcs, reconstructed_ect, ects
 
 
 if __name__ == "__main__":
@@ -136,8 +127,8 @@ if __name__ == "__main__":
     results = []
     for _ in range(args.num_reruns):
         # Evaluate reconstruction
-        result, sample_pc, ref_pc, reconstructed_ect, ect, means, stdevs = (
-            evaluate_reconstruction(model, dm)
+        result, sample_pc, ref_pc, reconstructed_ect, ect = evaluate_reconstruction(
+            model, dm
         )
 
         suffix = ""
@@ -147,46 +138,48 @@ if __name__ == "__main__":
     ### Saving and printing
     #####################################################
 
-    pprint(results)
+    print(result)
+    print(result[0].item(), result[1].item())
+    plot_recon_3d(sample_pc.cpu().numpy(), ref_pc.cpu().numpy(), num_pc=20)
 
-    result_suffix = ""
-    if args.dev:
-        result_suffix = "_dev"
+    # result_suffix = ""
+    # if args.dev:
+    #     result_suffix = "_dev"
+    #
+    # # Make sure folders exist
+    # os.makedirs("./results", exist_ok=True)
+    # os.makedirs("./results_dev", exist_ok=True)
 
-    # Make sure folders exist
-    os.makedirs("./results", exist_ok=True)
-    os.makedirs("./results_dev", exist_ok=True)
-
-    # Save the results in json format, {config name}.json
-    # Example ./results/encoder_mnist.json
-    with open(
-        f"./results{result_suffix}/{model_name}/{model_name}{suffix}.json",
-        "w",
-        encoding="utf-8",
-    ) as f:
-        json.dump(results, f)
-    torch.save(
-        sample_pc,
-        f"./results{result_suffix}/{model_name}/reconstructions{suffix}.pt",
-    )
-    torch.save(
-        ref_pc,
-        f"./results{result_suffix}/{model_name}/references{suffix}.pt",
-    )
-    torch.save(
-        means,
-        f"./results{result_suffix}/{model_name}/means.pt",
-    )
-    torch.save(
-        stdevs,
-        f"./results{result_suffix}/{model_name}/stdevs.pt",
-    )
-    if torch.is_tensor(reconstructed_ect):
-        torch.save(
-            reconstructed_ect,
-            f"./results{result_suffix}/{model_name}/reconstructed_ect.pt",
-        )
-        torch.save(
-            ect,
-            f"./results{result_suffix}/{model_name}/ect.pt",
-        )
+    # # Save the results in json format, {config name}.json
+    # # Example ./results/encoder_mnist.json
+    # with open(
+    #     f"./results{result_suffix}/{model_name}/{model_name}{suffix}.json",
+    #     "w",
+    #     encoding="utf-8",
+    # ) as f:
+    #     json.dump(results, f)
+    # torch.save(
+    #     sample_pc,
+    #     f"./results{result_suffix}/{model_name}/reconstructions{suffix}.pt",
+    # )
+    # torch.save(
+    #     ref_pc,
+    #     f"./results{result_suffix}/{model_name}/references{suffix}.pt",
+    # )
+    # torch.save(
+    #     means,
+    #     f"./results{result_suffix}/{model_name}/means.pt",
+    # )
+    # torch.save(
+    #     stdevs,
+    #     f"./results{result_suffix}/{model_name}/stdevs.pt",
+    # )
+    # if torch.is_tensor(reconstructed_ect):
+    #     torch.save(
+    #         reconstructed_ect,
+    #         f"./results{result_suffix}/{model_name}/reconstructed_ect.pt",
+    #     )
+    #     torch.save(
+    #         ect,
+    #         f"./results{result_suffix}/{model_name}/ect.pt",
+    #     )

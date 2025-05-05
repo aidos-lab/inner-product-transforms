@@ -19,32 +19,37 @@ def timeit_decorator(func):
     return wrapper
 
 
-# @timeit_decorator
 def load_datamodule(config, dev: bool = False):
     module = importlib.import_module(config.module)
-    model_class = getattr(module, "DataModule")
-    return model_class(config, dev)
+    train_dl, val_dl, test_dl, m, s = module.get_all_dataloaders(config, dev=dev)
+    return SimpleNamespace(
+        train_dataloader=train_dl,
+        val_dataloader=val_dl,
+        test_dataloader=test_dl,
+        m=m,
+        s=s,
+    )
 
 
 # @timeit_decorator
 def load_model(config, model_path=None):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "BaseLightningModel")
-    config_class = getattr(module, "ModelConfig")
 
     if model_path:
         model = model_class.load_from_checkpoint(model_path)
     else:
-        print(config.__dict__)
         config_dict = json.loads(json.dumps(config, default=lambda s: vars(s)))
-        config = config_class(**config_dict)
         model = model_class(config)
     return model
 
 
 # @timeit_decorator
-def load_object(dct):
-    return SimpleNamespace(**dct)
+def load_object(obj):
+    if isinstance(obj, dict):
+        return SimpleNamespace(**obj)
+    else:
+        return obj
 
 
 # @timeit_decorator
