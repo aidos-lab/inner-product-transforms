@@ -31,7 +31,7 @@ class ModelWrapper:
             self.vae.model.eval()
 
     @torch.no_grad()
-    def sample(self, num_samples: int, num_points: int, ambient_dimension: int):
+    def sample(self, num_samples: int):
         """
         out_pc, sample_ect = model.sample(len(batch), pc_shape)
         The way we expect the input
@@ -39,11 +39,9 @@ class ModelWrapper:
         N is the number of points per cloud.
         _, out_pc = model.sample(B, N)
         """
-        ect_samples = self.vae.model.sample(
-            num_samples=num_samples, device="cuda:0"
-        ).squeeze()
+        ect_samples = self.vae.model.sample(n=num_samples)
 
-        vae_pointcloud = self.encoder(ect_samples)
+        vae_pointcloud = self.encoder(ect_samples).view(-1, 2048, 3)
         return vae_pointcloud, ect_samples
 
     @torch.no_grad()

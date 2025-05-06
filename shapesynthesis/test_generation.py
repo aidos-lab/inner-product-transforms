@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD, compute_all_metrics
 from model_wrapper import ModelWrapper
+from plotting import plot_ect, plot_recon_3d
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -33,30 +34,28 @@ def get_means(batch) -> tuple[Tensor, Tensor]:
 
 
 @torch.no_grad()
-def evaluate_gen(model: ModelWrapper, dm, fast_run: bool):
+def evaluate_gen(model: ModelWrapper, dm, dev: bool):
+    m = dm.m.view(1, 1, 3).cuda()
+    s = dm.s.squeeze().cuda()
     all_sample = []
     all_ref = []
     all_sample_ect = []
     all_ects = []
-    for i, batch in enumerate(dm.test_dataloader()):
-        pc_shape = batch[0].x.shape
-        ref_pc = batch.x.view(-1, pc_shape[0], pc_shape[1]).cuda()
+    for i, pcs_gt in enumerate(dm.val_dataloader):
 
-        # Sample from the model
-        out_pc, sample_ect = model.sample(len(batch), pc_shape[0], pc_shape[1])
-
-        m, s = get_means(batch)
+        ect_gt = model.encoder.ect_transform(pcs_gt.cuda())
+        out_pc, sample_ect = model.sample(len(pcs_gt))
 
         # Scale and translate
         out_pc = out_pc * s + m
-        te_pc = ref_pc * s + m
+        pcs_gt = pcs_gt.cuda() * s + m
 
         all_sample.append(out_pc)
-        all_ref.append(te_pc)
-        all_ects.append(batch.ect)
+        all_ref.append(pcs_gt)
+        all_ects.append(ect_gt)
         all_sample_ect.append(sample_ect)
 
-        if fast_run and i == 2:
+        if dev and i == 0:
             break
 
     sample_pcs = torch.cat(all_sample, dim=0)
@@ -64,24 +63,34 @@ def evaluate_gen(model: ModelWrapper, dm, fast_run: bool):
     sample_ects = torch.cat(all_sample_ect)
     ects = torch.cat(all_ects)
 
-    # MNIST is 2D, pad to 3D for compat with EMD and CD.
-    if pc_shape[1] == 2:
-        sample_pcs = F.pad(
-            input=sample_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0
-        )
-        ref_pcs = F.pad(input=ref_pcs, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
+    print("ECT", ects.min(), ects.max(), ects.shape)
+    print("ECT SAMPLE", sample_ects.min(), sample_ects.max(), sample_ects.shape)
 
-    # Compute metrics
+    result_suffix = ""
+    if args.dev:
+        result_suffix = "_dev"
+
+    plot_ect(
+        ects,
+        sample_ects,
+        num_ects=2,
+        filename=f"./results{result_suffix}/{model_name}/ect.png",
+    )
+    plot_recon_3d(
+        ref_pcs.cpu().numpy(),
+        sample_pcs.cpu().numpy(),
+        filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+    )
+
+    # Compute metric
     results = compute_all_metrics(sample_pcs, ref_pcs, 100, accelerated_cd=True)
     results = {
         k: (v.cpu().detach().item() if not isinstance(v, float) else v)
         for k, v in results.items()
     }
 
-    # Remove the extra padding for MNIST.
-    if pc_shape[1] == 2:
-        sample_pcs = sample_pcs[:, :, :2]
-        ref_pcs = ref_pcs[:, :, :2]
+    pprint(results)
+
     return results, sample_pcs, ref_pcs, sample_ects, ects
 
 
@@ -119,7 +128,7 @@ if __name__ == "__main__":
         help="Normalize data before passing it to the model.",
     )
     parser.add_argument(
-        "--fast_run",
+        "--dev",
         default=False,
         action="store_true",
         help="Only evaluate on the first batch.",
@@ -161,9 +170,7 @@ if __name__ == "__main__":
     results = []
     for _ in range(args.num_reruns):
         # Evaluate reconstruction
-        result, sample_pc, ref_pc, sample_ect, ect = evaluate_gen(
-            model, dm, args.fast_run
-        )
+        result, sample_pc, ref_pc, sample_ect, ect = evaluate_gen(model, dm, args.dev)
         result["normalized"] = args.normalize
         result["model"] = model_name
 

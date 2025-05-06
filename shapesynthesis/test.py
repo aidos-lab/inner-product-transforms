@@ -7,7 +7,7 @@ import torch
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
 from model_wrapper import ModelWrapper
-from plotting import plot_recon_3d
+from plotting import plot_ect, plot_recon_3d
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -40,6 +40,7 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     reconstructed_ect = torch.cat(all_recon_ect)
     ects = torch.cat(all_ects)
 
+    plot_ect(ects, reconstructed_ect, num_ects=2)
     results = EMD_CD(
         sample_pcs,
         ref_pcs,
@@ -138,13 +139,19 @@ if __name__ == "__main__":
     ### Saving and printing
     #####################################################
 
+    result_suffix = ""
+    if args.dev:
+        result_suffix = "_dev"
+
     print(result)
     print(result[0].item(), result[1].item())
-    plot_recon_3d(sample_pc.cpu().numpy(), ref_pc.cpu().numpy(), num_pc=20)
+    plot_recon_3d(
+        sample_pc.cpu().numpy(),
+        ref_pc.cpu().numpy(),
+        num_pc=20,
+        filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+    )
 
-    # result_suffix = ""
-    # if args.dev:
-    #     result_suffix = "_dev"
     #
     # # Make sure folders exist
     # os.makedirs("./results", exist_ok=True)

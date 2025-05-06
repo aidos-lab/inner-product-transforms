@@ -75,7 +75,7 @@ class ConvVAE(nn.Module):
         super().__init__()
         self.batch_size = 64
         self.device = device
-        self.z_dim = 20
+        self.z_dim = 64
         self.img_channels = img_channels
         self.model = "optimal_sigma_vae"
         img_size = 128

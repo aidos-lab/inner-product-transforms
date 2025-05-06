@@ -57,13 +57,14 @@ def plot_recon_2d(recon_pcs, ref_pcs, jnt_pcs=None, num_pc=5):
     return fig
 
 
-def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
+def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename="./airplane.png"):
 
     pl = pv.Plotter(
         shape=(3, num_pc),
         window_size=[200 * num_pc, 600],
         border=False,
         polygon_smoothing=True,
+        off_screen=True,
     )
 
     for col in range(num_pc):
@@ -143,11 +144,10 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0):
     )
     pl.add_light(light)
     pl.camera.zoom(0.7)
-    pl.show()
+    pl.show(screenshot=filename)
 
 
 def plot_grid(pcs, num_pc=5):
-
     pl = pv.Plotter(
         shape=(num_pc, num_pc),
         window_size=[200 * num_pc, 200 * num_pc],
@@ -233,6 +233,21 @@ def plot_graph(x, edge_index, edge_weigths=None, ax=None):
     ax.set_xlim([-1, 1])
     ax.set_ylim([-1, 1])
     return ax
+
+
+def plot_ect(ect_gt, ect_pred, num_ects=5, filename="ect.png"):
+
+    fig, axes = plt.subplots(nrows=2, ncols=num_ects, figsize=(10, 5 * num_ects))
+    for ax, gt, pred in zip(axes.T, ect_gt, ect_pred):
+
+        ax[0].imshow(pred.cpu().detach().squeeze().numpy())
+        ax[0].axis("off")
+
+        ax[1].imshow(gt.cpu().squeeze().numpy())
+        ax[1].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(filename)
 
 
 def plot_epoch_ect(x, x_gt, layer_truth, ect_pred, ect_truth):
