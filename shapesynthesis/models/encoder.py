@@ -1,15 +1,14 @@
 import functools
 import operator
-from typing import TypeAlias, Literal
-from pydantic import BaseModel
-import torch
-from torch import nn
+from typing import Literal, TypeAlias
+
 import lightning as L
-
-from metrics.loss import chamfer2DECT, chamfer3DECT
-from layers.ect import EctLayer, EctConfig
+import torch
 from layers.directions import generate_uniform_directions
-
+from layers.ect import EctConfig, EctLayer
+from metrics.loss import chamfer2DECT, chamfer3DECT
+from pydantic import BaseModel
+from torch import nn
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -117,7 +116,6 @@ class Model(nn.Module):
         activation function at the end ensures that the models output is
         relatively bounded.
         """
-        ect = 2 * ect - 1
         ect = ect.movedim(-1, -2)
         x = self.conv(ect)
         x = self.layer(x.flatten(start_dim=1))

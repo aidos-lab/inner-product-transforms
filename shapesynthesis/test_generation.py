@@ -70,17 +70,28 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
     if args.dev:
         result_suffix = "_dev"
 
-    plot_ect(
-        ects,
-        sample_ects,
-        num_ects=2,
-        filename=f"./results{result_suffix}/{model_name}/ect.png",
-    )
-    plot_recon_3d(
-        ref_pcs.cpu().numpy(),
-        sample_pcs.cpu().numpy(),
-        filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
-    )
+    if args.dev:
+        plot_ect(
+            ects,
+            sample_ects,
+            num_ects=2,
+        )
+        plot_recon_3d(
+            ref_pcs.cpu().numpy(),
+            sample_pcs.cpu().numpy(),
+        )
+    else:
+        plot_ect(
+            ects,
+            sample_ects,
+            num_ects=2,
+            filename=f"./results{result_suffix}/{model_name}/ect.png",
+        )
+        plot_recon_3d(
+            ref_pcs.cpu().numpy(),
+            sample_pcs.cpu().numpy(),
+            filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+        )
 
     # Compute metric
     results = compute_all_metrics(sample_pcs, ref_pcs, 100, accelerated_cd=True)

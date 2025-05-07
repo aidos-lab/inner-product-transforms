@@ -35,17 +35,16 @@ class ModelConfig:
     device: str = "cuda"
     model_type: str = "sigma_vae"
     img_channels: int = 3
-    img_size: int = 256
+    img_size: int = 128
     z_dim: int = 64
     filters_m: int = 32
 
 
-def gaussian_nll_new(mu, log_sigma, x):
-    return (
-        0.5 * torch.pow((x - mu) / log_sigma.exp(), 2)
-        + log_sigma
-        + 0.5 * np.log(2 * np.pi)
-    )
+import numpy as np
+import torch
+import torch.nn.functional as F
+import torch.utils.data
+from torch import nn
 
 
 def softclip(tensor, min):
@@ -66,18 +65,18 @@ class UnFlatten(nn.Module):
         self.n_channels = n_channels
 
     def forward(self, input):
-        size = int((input.size(1) // self.n_channels) ** 0.5)
-        return input.view(input.size(0), self.n_channels, size, size)
+        size = int((input.size(1) // self.n_channels))
+        return input.view(input.size(0), self.n_channels, size)
 
 
 class ConvVAE(nn.Module):
-    def __init__(self, device="cuda", img_channels=1, args=None):
+    def __init__(self):
         super().__init__()
-        self.batch_size = 64
-        self.device = device
+        self.batch_size = 128
+        self.device = "cuda"
         self.z_dim = 64
-        self.img_channels = img_channels
-        self.model = "optimal_sigma_vae"
+        self.img_channels = 128
+        self.model = "sigma_vae"
         img_size = 128
         filters_m = 32
 
@@ -85,7 +84,7 @@ class ConvVAE(nn.Module):
         self.encoder = self.get_encoder(self.img_channels, filters_m)
 
         # output size depends on input image size, compute the output size
-        demo_input = torch.ones([1, self.img_channels, img_size, img_size])
+        demo_input = torch.ones([1, self.img_channels, img_size])
         h_dim = self.encoder(demo_input).shape[1]
         print("h_dim", h_dim)
 
@@ -101,17 +100,24 @@ class ConvVAE(nn.Module):
         if self.model == "sigma_vae":
             ## Sigma VAE
             self.log_sigma = torch.nn.Parameter(
-                torch.full((1,), 0)[0], requires_grad=args.model == "sigma_vae"
+                torch.full((1,), 0, dtype=torch.float32)[0],
+                requires_grad=True,
             )
 
     @staticmethod
     def get_encoder(img_channels, filters_m):
         return nn.Sequential(
-            nn.Conv2d(img_channels, filters_m, 13, stride=1, padding=1),
+            nn.Conv1d(img_channels, filters_m, 7, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(filters_m, 2 * filters_m, 13, stride=2, padding=1),
+            nn.Conv1d(filters_m, 2 * filters_m, 23, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(2 * filters_m, 4 * filters_m, 13, stride=2, padding=2),
+            nn.Conv1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(2 * filters_m, 4 * filters_m, 27, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(4 * filters_m, 8 * filters_m, 33, stride=1, padding=1),
             nn.ReLU(),
             Flatten(),
         )
@@ -119,18 +125,23 @@ class ConvVAE(nn.Module):
     @staticmethod
     def get_decoder(filters_m, out_channels):
         return nn.Sequential(
-            UnFlatten(4 * filters_m),
-            nn.ConvTranspose2d(4 * filters_m, 2 * filters_m, 14, stride=2, padding=2),
+            UnFlatten(8 * filters_m),
+            nn.ConvTranspose1d(8 * filters_m, 4 * filters_m, 33, stride=1, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(2 * filters_m, filters_m, 14, stride=2, padding=2),
+            nn.ConvTranspose1d(4 * filters_m, 2 * filters_m, 27, stride=1, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(filters_m, out_channels, 17, stride=1, padding=2),
+            nn.ConvTranspose1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(2 * filters_m, filters_m, 23, stride=1, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose1d(filters_m, out_channels, 7, stride=1, padding=1),
             nn.Sigmoid(),
         )
 
     def encode(self, x):
-        x = (x + 1) / 2
-        h = self.encoder(x.unsqueeze(1))
+        h = self.encoder(x)
         return self.fc11(h), self.fc12(h)
 
     def reparameterize(self, mu, logvar):
@@ -139,7 +150,7 @@ class ConvVAE(nn.Module):
         return mu + eps * std
 
     def decode(self, z):
-        return 2 * self.decoder(self.fc2(z)).squeeze() - 1
+        return self.decoder(self.fc2(z))
 
     def forward(self, x):
         mu, logvar = self.encode(x)
@@ -155,31 +166,33 @@ class ConvVAE(nn.Module):
         in this case using a Gaussian distribution with mean predicted by the neural network and variance = 1
         """
 
-        log_sigma = (
-            ((x.unsqueeze(1) - x_hat.unsqueeze(1)) ** 2)
-            .mean([0, 1, 2, 3], keepdim=True)
-            .sqrt()
-            .log()
-        )
-        self.log_sigma = log_sigma.item()
+        if self.model == "gaussian_vae":
+            # Naive gaussian VAE uses a constant variance
+            log_sigma = torch.zeros([], device=x_hat.device)
+        elif self.model == "sigma_vae":
+            # Sigma VAE learns the variance of the decoder as another parameter
+            log_sigma = self.log_sigma
+        elif self.model == "optimal_sigma_vae":
+            log_sigma = ((x - x_hat) ** 2).mean([0, 1, 2], keepdim=True).sqrt().log()
+            self.log_sigma = log_sigma.item()
+        else:
+            raise NotImplementedError
 
         # Learning the variance can become unstable in some cases. Softly limiting log_sigma to a minimum of -6
         # ensures stable training.
         log_sigma = softclip(log_sigma, -6)
 
-        rec = gaussian_nll_new(x_hat, log_sigma, x).sum()
+        rec = gaussian_nll(x_hat, log_sigma, x).sum()
 
         return rec
 
     def loss_function(self, recon_x, x, mu, logvar):
-
-        # Transform both back to the domain [0,1]
-        recon_x = (recon_x + 1) / 2
-        x = (x + 1) / 2
-
         # Important: both reconstruction and KL divergence loss have to be summed over all element!
         # Here we also sum the over batch and divide by the number of elements in the data later
-        rec = self.reconstruction_loss(recon_x, x)
+        if self.model == "mse_vae":
+            rec = torch.nn.MSELoss()(recon_x, x)
+        else:
+            rec = self.reconstruction_loss(recon_x, x)
 
         # see Appendix B from VAE paper:
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -190,6 +203,19 @@ class ConvVAE(nn.Module):
         return rec, kl
 
 
+def gaussian_nll(mu, log_sigma, x):
+    return (
+        0.5 * torch.pow((x - mu) / log_sigma.exp(), 2)
+        + log_sigma
+        + 0.5 * np.log(2 * np.pi)
+    )
+
+
+###################################################
+###  Lightning
+###################################################
+
+
 class BaseLightningModel(L.LightningModule):
     """Base model for VAE models"""
 
@@ -197,18 +223,18 @@ class BaseLightningModel(L.LightningModule):
         self.config = config
         super().__init__()
         self.model = ConvVAE()
-        # self.rotation_transform = Compose(
-        #     [
-        #         RandomRotate(axis=0),
-        #         RandomRotate(axis=1),
-        #         RandomRotate(axis=2),
-        #     ]
-        # )
+        self.rotation_transform = Compose(
+            [
+                RandomRotate(axis=0),
+                RandomRotate(axis=1),
+                RandomRotate(axis=2),
+            ]
+        )
         self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
         self.save_hyperparameters()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
         return optimizer
 
     def forward(self, batch):  # pylint: disable=arguments-differ
@@ -216,13 +242,15 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
-        # batch_len = len(pcs_gt)
+        batch_len = len(pcs_gt)
         # pcs_gt = self.rotation_transform(pcs_gt)
 
         ect_gt = self.ect_transform(pcs_gt)
+        ect_gt = (ect_gt.movedim(-1, -2) + 1) / 2
 
         recon_batch, _, mu, logvar = self(ect_gt)
         # Compute loss
+
         rec, kl = self.model.loss_function(recon_batch, ect_gt, mu, logvar)
 
         total_loss = rec + kl

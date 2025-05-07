@@ -24,7 +24,7 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
     # Modify configs based on dev flag.
     if dev:
         config.loggers.tags.append("dev")
-        config.trainer.max_epochs = 1
+        # config.trainer.max_epochs = 1
         config.trainer.save_dir += "_dev"
         config.trainer.results_dir += "_dev"
 

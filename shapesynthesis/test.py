@@ -87,6 +87,9 @@ if __name__ == "__main__":
     if args.dev:
         encoder_config.trainer.save_dir += "_dev"
 
+    print(
+        f"Loading model from ./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}"
+    )
     encoder_model = load_model(
         encoder_config.modelconfig,
         f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
@@ -149,7 +152,7 @@ if __name__ == "__main__":
         sample_pc.cpu().numpy(),
         ref_pc.cpu().numpy(),
         num_pc=20,
-        filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+        #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
     )
 
     #

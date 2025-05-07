@@ -159,12 +159,13 @@ class BaseLightningModel(L.LightningModule):
         )
         # Define the learning rate scheduler
         # scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.2, patience=3)
-        scheduler = StepLR(optimizer, step_size=100, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=800, gamma=0.5)
 
         # return [optimizer], [
         #     {"scheduler": scheduler, "interval": "step", "monitor": "lr-Adam"}
         # ]
         return [optimizer], [scheduler]
+        # return optimizer
 
     def forward(self, batch):
         x = self.model(batch)
@@ -172,7 +173,7 @@ class BaseLightningModel(L.LightningModule):
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
         batch_len = len(pcs_gt)
-        pcs_gt = self.rotation_transform(pcs_gt)
+        # pcs_gt = self.rotation_transform(pcs_gt)
 
         ect_gt = self.ect_transform(pcs_gt)
         pcs_pred = self(ect_gt).reshape(batch_len, 2048, 3)
