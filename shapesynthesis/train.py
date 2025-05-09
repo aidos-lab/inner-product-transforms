@@ -65,7 +65,6 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
             batch_idx: int,
             dataloader_idx: int = 0,
         ) -> None:
-
             self.ground_truth_batches.append(outputs[0])
             self.predicted_batches.append(outputs[1])
             return super().on_test_batch_end(
@@ -83,7 +82,7 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
     trainer = L.Trainer(
         logger=logger,
         callbacks=[
-            SaveTestOutput(results_dir=result_dir),
+            # SaveTestOutput(results_dir=result_dir),
             LearningRateMonitor(logging_interval="epoch"),
         ],
         accelerator=config.trainer.accelerator,

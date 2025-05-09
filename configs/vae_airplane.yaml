@@ -33,10 +33,11 @@ modelconfig:
 
 trainer:
   accelerator: auto
-  max_epochs: 1000 # Was 1000 before.
+  max_epochs: 100 # Was 1000 before.
   log_every_n_steps: 1
   save_dir: ./trained_models 
   model_name: vae_airplane.ckpt
+  results_dir: ./results
 
 loggers: 
   logger: wandb

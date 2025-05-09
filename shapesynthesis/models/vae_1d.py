@@ -9,9 +9,14 @@ from typing import Literal
 import lightning as L
 import torch
 from layers.ect import EctConfig
-from metrics.loss import compute_mse_kld_loss_beta_annealing_fn
+from metrics.loss import compute_mse_kld_loss_fn
 from torch import nn
+from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
+from torchvision.transforms import Compose
+
+from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
+from shapesynthesis.layers import ect
 
 
 @dataclass
@@ -194,6 +199,17 @@ class BaseLightningModel(L.LightningModule):
         self.training_accuracy = MeanSquaredError()
         self.validation_accuracy = MeanSquaredError()
         self.test_accuracy = MeanSquaredError()
+        self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
+        # Metrics
+        self.train_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
+        self.val_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
+        self.sample_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
 
         self.model = VanillaVAE(config=self.config)
 
@@ -211,43 +227,104 @@ class BaseLightningModel(L.LightningModule):
         x = self.model(batch)
         return x
 
-    def general_step(
-        self, batch, batch_idx, step: Literal["train", "test", "validation"]
-    ):
+    def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
+        batch_len = len(pcs_gt)
+        ect_gt = self.ect_transform(pcs_gt)
 
-        ect = batch.ect * 2 - 1
+        recon_batch, _, mu, logvar = self(ect_gt)
 
-        decoded, _, z_mean, z_log_var = self(ect)
-
-        # loss = compute_mse_loss_fn(decoded, ect)
-        loss_dict = compute_mse_kld_loss_beta_annealing_fn(
-            decoded,
-            z_mean,
-            z_log_var,
-            ect,
-            self.current_epoch,
-            period=self.config.beta_period,
-            beta_min=self.config.beta_min,
-            beta_max=self.config.beta_max,
-            prefix=step + "_",
+        total_loss, kl_loss, mse_loss = compute_mse_kld_loss_fn(
+            recon_batch, mu, logvar, ect_gt, beta=0.001
         )
+
+        ###############################################################
+        ### Metrics
+        ###############################################################
+
+        if step == "train":
+            self.train_fid.update(
+                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.train_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+            fid = self.train_fid
+            sample_fid = torch.tensor(0.0)
+        elif step == "validation":
+            self.val_fid.update(
+                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.val_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+
+            samples = self.model.sample(num_samples=batch_len, device="cuda")
+            self.sample_fid.update(
+                (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.sample_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+            fid = self.val_fid
+            sample_fid = self.sample_fid
+        else:
+            fid = torch.tensor(0.0)
+            sample_fid = torch.tensor(0.0)
+
+        loss_dict = {
+            f"{step}_kl_loss": kl_loss,
+            f"{step}_mse_loss": mse_loss,
+            f"{step}_fid": fid,
+            f"{step}_sample_fid": sample_fid,
+            "loss": total_loss,
+        }
 
         self.log_dict(
             loss_dict,
             prog_bar=True,
-            batch_size=len(batch),
+            batch_size=len(pcs_gt),
             on_step=False,
             on_epoch=True,
         )
 
-        return loss_dict[f"{step}_loss"]
+        # return recon_batch, ect_gt, total_loss
+        return total_loss
+
+    # def general_step(
+    #     self, batch, batch_idx, step: Literal["train", "test", "validation"]
+    # ):
+    #
+    #
+    #     decoded, _, z_mean, z_log_var = self(ect)
+    #
+    #     # loss = compute_mse_loss_fn(decoded, ect)
+    #     loss_dict = compute_mse_kld_loss_beta_annealing_fn(
+    #         decoded,
+    #         z_mean,
+    #         z_log_var,
+    #         ect,
+    #         self.current_epoch,
+    #         period=self.config.beta_period,
+    #         beta_min=self.config.beta_min,
+    #         beta_max=self.config.beta_max,
+    #         prefix=step + "_",
+    #     )
+    #
+    #     self.log_dict(
+    #         loss_dict,
+    #         prog_bar=True,
+    #         batch_size=len(batch),
+    #         on_step=False,
+    #         on_epoch=True,
+    #     )
+    #
+    #     return loss_dict[f"{step}_loss"]
 
     def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
 
     def validation_step(self, batch, batch_idx):
-        loss = self.general_step(batch, batch_idx, "validation")
-        return loss
+        return self.general_step(batch, batch_idx, "validation")
 
     def training_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "train")
