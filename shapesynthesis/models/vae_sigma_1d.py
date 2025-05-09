@@ -8,10 +8,14 @@ import torch.utils.data
 from layers.ect import EctConfig
 from metrics.loss import compute_mse_kld_loss_beta_annealing_fn
 from torch import nn
+from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
 from torchvision.transforms import Compose
 
 from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
+from shapesynthesis.layers import ect
+
+torch.set_float32_matmul_precision("high")
 
 
 class ModelConfig:
@@ -74,7 +78,7 @@ class ConvVAE(nn.Module):
         super().__init__()
         self.batch_size = 128
         self.device = "cuda"
-        self.z_dim = 64
+        self.z_dim = 32
         self.img_channels = 128
         self.model = "sigma_vae"
         img_size = 128
@@ -108,17 +112,17 @@ class ConvVAE(nn.Module):
     def get_encoder(img_channels, filters_m):
         return nn.Sequential(
             nn.Conv1d(img_channels, filters_m, 7, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv1d(filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv1d(2 * filters_m, 4 * filters_m, 27, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv1d(4 * filters_m, 8 * filters_m, 33, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             Flatten(),
         )
 
@@ -127,20 +131,21 @@ class ConvVAE(nn.Module):
         return nn.Sequential(
             UnFlatten(8 * filters_m),
             nn.ConvTranspose1d(8 * filters_m, 4 * filters_m, 33, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose1d(4 * filters_m, 2 * filters_m, 27, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose1d(2 * filters_m, filters_m, 23, stride=1, padding=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose1d(filters_m, out_channels, 7, stride=1, padding=1),
             nn.Sigmoid(),
         )
 
     def encode(self, x):
+        x = (x.movedim(-1, -2) + 1) / 2
         h = self.encoder(x)
         return self.fc11(h), self.fc12(h)
 
@@ -150,7 +155,7 @@ class ConvVAE(nn.Module):
         return mu + eps * std
 
     def decode(self, z):
-        return self.decoder(self.fc2(z))
+        return 2 * self.decoder(self.fc2(z)).movedim(-1, -2) - 1
 
     def forward(self, x):
         mu, logvar = self.encode(x)
@@ -187,6 +192,10 @@ class ConvVAE(nn.Module):
         return rec
 
     def loss_function(self, recon_x, x, mu, logvar):
+
+        x = (x.movedim(-1, -2) + 1) / 2
+        recon_x = (recon_x.movedim(-1, -2) + 1) / 2
+
         # Important: both reconstruction and KL divergence loss have to be summed over all element!
         # Here we also sum the over batch and divide by the number of elements in the data later
         if self.model == "mse_vae":
@@ -231,6 +240,16 @@ class BaseLightningModel(L.LightningModule):
             ]
         )
         self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
+        # Metrics
+        self.train_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
+        self.val_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
+        self.sample_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
         self.save_hyperparameters()
 
     def configure_optimizers(self):
@@ -246,19 +265,56 @@ class BaseLightningModel(L.LightningModule):
         # pcs_gt = self.rotation_transform(pcs_gt)
 
         ect_gt = self.ect_transform(pcs_gt)
-        ect_gt = (ect_gt.movedim(-1, -2) + 1) / 2
 
         recon_batch, _, mu, logvar = self(ect_gt)
+
         # Compute loss
-
         rec, kl = self.model.loss_function(recon_batch, ect_gt, mu, logvar)
-
         total_loss = rec + kl
+
+        ###############################################################
+        ### Metrics
+        ###############################################################
+
+        mse_loss = F.mse_loss(recon_batch, ect_gt)
+
+        if step == "train":
+            self.train_fid.update(
+                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.train_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+            fid = self.train_fid
+            sample_fid = torch.tensor(0.0)
+        elif step == "validation":
+            self.val_fid.update(
+                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.val_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+
+            samples = self.model.sample(n=batch_len)
+            self.sample_fid.update(
+                (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.sample_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+            fid = self.val_fid
+            sample_fid = self.sample_fid
+        else:
+            fid = torch.tensor(0.0)
+            sample_fid = torch.tensor(0.0)
 
         loss_dict = {
             f"{step}_rec_loss": rec,
             f"{step}_kl_loss": kl,
-            f"loss": total_loss,
+            f"{step}_mse_loss": mse_loss,
+            f"{step}_fid": fid,
+            f"{step}_sample_fid": sample_fid,
+            "loss": total_loss,
         }
 
         self.log_dict(
@@ -275,8 +331,7 @@ class BaseLightningModel(L.LightningModule):
         return self.general_step(batch, batch_idx, "test")
 
     def validation_step(self, batch, batch_idx):
-        _, _, loss = self.general_step(batch, batch_idx, "validation")
-        return loss
+        return self.general_step(batch, batch_idx, "validation")
 
     def training_step(self, batch, batch_idx):
         _, _, loss = self.general_step(batch, batch_idx, "train")

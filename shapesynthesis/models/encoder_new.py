@@ -37,37 +37,35 @@ class Model(nn.Module):
             nn.Conv1d(
                 config.ectconfig.num_thetas,
                 2 * config.ectconfig.num_thetas,
-                kernel_size=3,
+                kernel_size=7,
                 stride=1,
             ),
             nn.BatchNorm1d(num_features=2 * config.ectconfig.num_thetas),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.MaxPool1d(kernel_size=2),
-            #
             nn.Conv1d(
                 2 * config.ectconfig.num_thetas,
-                2 * config.ectconfig.num_thetas,
-                kernel_size=3,
+                4 * config.ectconfig.num_thetas,
+                kernel_size=7,
                 stride=1,
             ),
-            nn.BatchNorm1d(num_features=2 * config.ectconfig.num_thetas),
-            nn.ReLU(),
+            nn.BatchNorm1d(num_features=4 * config.ectconfig.num_thetas),
+            nn.SiLU(),
             nn.MaxPool1d(kernel_size=2),
             #
             nn.Conv1d(
-                2 * config.ectconfig.num_thetas,
-                2 * config.ectconfig.num_thetas,
-                kernel_size=3,
+                4 * config.ectconfig.num_thetas,
+                8 * config.ectconfig.num_thetas,
+                kernel_size=7,
                 stride=1,
             ),
-            nn.BatchNorm1d(num_features=2 * config.ectconfig.num_thetas),
-            nn.ReLU(),
+            nn.BatchNorm1d(num_features=8 * config.ectconfig.num_thetas),
+            nn.SiLU(),
             nn.MaxPool1d(kernel_size=2),
-            #
             nn.Conv1d(
-                2 * config.ectconfig.num_thetas,
-                config.ectconfig.num_thetas,
-                kernel_size=3,
+                8 * config.ectconfig.num_thetas,
+                8 * config.ectconfig.num_thetas,
+                kernel_size=7,
                 stride=1,
             ),
         )
@@ -159,7 +157,7 @@ class BaseLightningModel(L.LightningModule):
         )
         # Define the learning rate scheduler
         # scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.2, patience=3)
-        scheduler = StepLR(optimizer, step_size=800, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=500, gamma=0.5)
 
         # return [optimizer], [
         #     {"scheduler": scheduler, "interval": "step", "monitor": "lr-Adam"}

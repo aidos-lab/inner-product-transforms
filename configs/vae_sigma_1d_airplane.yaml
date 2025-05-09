@@ -28,7 +28,7 @@ modelconfig:
 
 trainer:
   accelerator: auto
-  max_epochs: 100
+  max_epochs: 3000
   log_every_n_steps: 1
   save_dir: ./trained_models 
   model_name: vae_sigma_1d_airplane.ckpt

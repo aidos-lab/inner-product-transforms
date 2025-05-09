@@ -47,8 +47,8 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
         out_pc, sample_ect = model.sample(len(pcs_gt))
 
         # Scale and translate
-        out_pc = out_pc * s + m
-        pcs_gt = pcs_gt.cuda() * s + m
+        # out_pc = out_pc * s + m
+        pcs_gt = pcs_gt.cuda()  # * s + m
 
         all_sample.append(out_pc)
         all_ref.append(pcs_gt)
@@ -79,6 +79,7 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
         plot_recon_3d(
             ref_pcs.cpu().numpy(),
             sample_pcs.cpu().numpy(),
+            num_pc=20,
         )
     else:
         plot_ect(

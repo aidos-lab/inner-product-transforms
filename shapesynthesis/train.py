@@ -89,11 +89,14 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
+        check_val_every_n_epoch=5,
         enable_progress_bar=True,
         enable_checkpointing=False,
     )
 
-    trainer.fit(model, dm.train_dataloader)
+    trainer.fit(
+        model, train_dataloaders=dm.train_dataloader, val_dataloaders=dm.val_dataloader
+    )
 
     # Set up for testing
     trainer.test(model, dataloaders=dm.test_dataloader)

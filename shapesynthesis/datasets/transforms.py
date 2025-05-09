@@ -57,7 +57,7 @@ class RandomRotate:
 
     def __call__(self, x):
         # Max 45 degree rotation per axis
-        angles = 0.25 * torch.pi * torch.rand(size=(len(x),))
+        angles = 0.15 * torch.pi * torch.rand(size=(len(x),))
         sin, cos = torch.sin(angles), torch.cos(angles)
         vec_1 = torch.ones(size=(len(x),))
         vec_0 = torch.zeros(size=(len(x),))

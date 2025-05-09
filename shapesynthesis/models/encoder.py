@@ -116,6 +116,7 @@ class Model(nn.Module):
         activation function at the end ensures that the models output is
         relatively bounded.
         """
+        ect = 2 * ect - 1
         ect = ect.movedim(-1, -2)
         x = self.conv(ect)
         x = self.layer(x.flatten(start_dim=1))

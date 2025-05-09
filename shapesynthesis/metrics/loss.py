@@ -1,10 +1,10 @@
+from dataclasses import dataclass
 from typing import TypeAlias
+
 import torch
 import torch.nn.functional as F
-from torchmetrics.regression import KLDivergence
 from kaolin.metrics.pointcloud import chamfer_distance
-from dataclasses import dataclass
-
+from torchmetrics.regression import KLDivergence
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -79,7 +79,7 @@ def chamfer2D(pred_pc, ref_pc):
 def chamfer3DECT(pred_pc, ref_pc, ect_pred, ect):
     ch_loss = chamfer3D(pred_pc, ref_pc)
     mse_loss = F.mse_loss(ect_pred, ect)
-    return ch_loss + 10 * mse_loss, mse_loss, ch_loss
+    return 100 * (ch_loss + 10 * mse_loss), mse_loss, ch_loss
 
 
 def chamfer2DECT(pred_pc, ref_pc, ect_pred, ect):

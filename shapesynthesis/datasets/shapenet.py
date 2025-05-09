@@ -141,7 +141,7 @@ if __name__ == "__main__":
     config = DataConfig(
         root_dir="./data/shapenet",
         raw_dir="./data/shapenet/raw/ShapeNetCore.v2.PC15k",
-        cates=["airplane"],
+        cates=["chair"],
         batch_size=32,
         module="",
     )
