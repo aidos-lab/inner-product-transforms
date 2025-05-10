@@ -39,7 +39,7 @@ def compute_mse_kld_loss_beta_annealing_fn(
         beta = beta_min
 
     # # beta = 0.0005
-    beta = 0.00001
+    beta = 0.01
 
     kld_loss = torch.mean(
         -0.5 * torch.sum(1 + z_log_var - z_mean**2 - z_log_var.exp(), dim=1), dim=0

@@ -55,7 +55,7 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
         all_ects.append(ect_gt)
         all_sample_ect.append(sample_ect)
 
-        if dev and i == 0:
+        if dev and i == 1:
             break
 
     sample_pcs = torch.cat(all_sample, dim=0)

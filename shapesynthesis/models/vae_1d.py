@@ -56,7 +56,7 @@ class VanillaVAE(nn.Module):
                     nn.Conv1d(
                         in_channels,
                         out_channels=h_dim,
-                        kernel_size=3,
+                        kernel_size=11,
                         stride=2,
                         padding=1,
                     ),
@@ -96,7 +96,7 @@ class VanillaVAE(nn.Module):
                     nn.ConvTranspose1d(
                         hidden_dims[i],
                         hidden_dims[i + 1],
-                        kernel_size=3,
+                        kernel_size=11,
                         stride=2,
                         padding=1,
                         output_padding=1,
@@ -111,7 +111,7 @@ class VanillaVAE(nn.Module):
             nn.ConvTranspose1d(
                 hidden_dims[-1],
                 hidden_dims[-1],
-                kernel_size=3,
+                kernel_size=11,
                 stride=2,
                 padding=1,
                 output_padding=1,
@@ -121,7 +121,7 @@ class VanillaVAE(nn.Module):
             nn.Conv1d(
                 hidden_dims[-1],
                 out_channels=self.config.ectconfig.num_thetas,
-                kernel_size=3,
+                kernel_size=11,
                 padding=1,
             ),
             nn.Tanh(),
@@ -176,7 +176,7 @@ class VanillaVAE(nn.Module):
         z = self.reparameterize(mu, log_var)
         return [self.decode(z).movedim(-1, -2), input_tensor, mu, log_var]
 
-    def sample(self, num_samples: int, device: str):
+    def sample(self, n: int, device: str = "cuda"):
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -184,7 +184,7 @@ class VanillaVAE(nn.Module):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples, self.latent_dim, device=device)
+        z = torch.randn(n, self.latent_dim, device=device)
 
         samples = self.decode(z).movedim(-1, -2)
         return samples
@@ -234,7 +234,7 @@ class BaseLightningModel(L.LightningModule):
         recon_batch, _, mu, logvar = self(ect_gt)
 
         total_loss, kl_loss, mse_loss = compute_mse_kld_loss_fn(
-            recon_batch, mu, logvar, ect_gt, beta=0.001
+            recon_batch, mu, logvar, ect_gt, beta=0.0001
         )
 
         ###############################################################
@@ -258,7 +258,7 @@ class BaseLightningModel(L.LightningModule):
                 (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
             )
 
-            samples = self.model.sample(num_samples=batch_len, device="cuda")
+            samples = self.model.sample(n=batch_len, device="cuda")
             self.sample_fid.update(
                 (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
             )
