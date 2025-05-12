@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.utils.data
 from layers.ect import EctConfig
 from metrics.loss import compute_mse_kld_loss_beta_annealing_fn
+from pyvista import filters
 from torch import nn
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
@@ -63,14 +64,29 @@ class Flatten(nn.Module):
         return input.view(input.size(0), -1)
 
 
+# class UnFlatten(nn.Module):
+#     def __init__(self, n_channels):
+#         super(UnFlatten, self).__init__()
+#         # self.n_channels = n_channels
+#
+#     def forward(self, input):
+#         # size = int((input.size(1) // self.n_channels))
+#         # return input.view(input.size(0), self.n_channels, size)
+#
+#         # (B, 2 * W) -> (B, 8, W / 4)
+#         # (B,4*C,W/4) -> (B,32,W/4)
+#         return input.view(-1, 32, 32, 32)
+
+
 class UnFlatten(nn.Module):
     def __init__(self, n_channels):
         super(UnFlatten, self).__init__()
         self.n_channels = n_channels
 
     def forward(self, input):
-        size = int((input.size(1) // self.n_channels))
-        return input.view(input.size(0), self.n_channels, size)
+        size = int((input.size(1) // self.n_channels) ** 0.5)
+        out = input.view(input.size(0), self.n_channels, size, size)
+        return out
 
 
 class ConvVAE(nn.Module):
@@ -78,18 +94,20 @@ class ConvVAE(nn.Module):
         super().__init__()
         self.batch_size = 128
         self.device = "cuda"
-        self.z_dim = 32
-        self.img_channels = 128
+        self.z_dim = 64
+        self.img_channels = 1
         self.model = "sigma_vae"
         img_size = 128
-        filters_m = 32
+        filters_m = 64
 
         ## Build network
         self.encoder = self.get_encoder(self.img_channels, filters_m)
 
         # output size depends on input image size, compute the output size
-        demo_input = torch.ones([1, self.img_channels, img_size])
+        demo_input = torch.ones([1, 1, 128, 128])
+        print(self.encoder(demo_input).shape)
         h_dim = self.encoder(demo_input).shape[1]
+
         print("h_dim", h_dim)
 
         # map to latent z
@@ -111,41 +129,96 @@ class ConvVAE(nn.Module):
     @staticmethod
     def get_encoder(img_channels, filters_m):
         return nn.Sequential(
-            nn.Conv1d(img_channels, filters_m, 7, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv1d(filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv1d(2 * filters_m, 4 * filters_m, 27, stride=1, padding=1),
-            nn.SiLU(),
-            nn.Conv1d(4 * filters_m, 8 * filters_m, 33, stride=1, padding=1),
-            nn.SiLU(),
-            Flatten(),
+            nn.Conv2d(1, filters_m, 3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(filters_m, 2 * filters_m, 4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(2 * filters_m, 4 * filters_m, 5, stride=2, padding=2),
+            nn.ReLU(),
+            nn.Conv2d(4 * filters_m, 4 * filters_m, 5, stride=2, padding=2),
+            nn.ReLU(),
+            nn.Conv2d(4 * filters_m, 4 * filters_m, 5, stride=2, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
         )
 
     @staticmethod
     def get_decoder(filters_m, out_channels):
         return nn.Sequential(
-            UnFlatten(8 * filters_m),
-            nn.ConvTranspose1d(8 * filters_m, 4 * filters_m, 33, stride=1, padding=1),
-            nn.SiLU(),
-            nn.ConvTranspose1d(4 * filters_m, 2 * filters_m, 27, stride=1, padding=1),
-            nn.SiLU(),
-            nn.ConvTranspose1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.SiLU(),
-            nn.ConvTranspose1d(2 * filters_m, 2 * filters_m, 23, stride=1, padding=1),
-            nn.SiLU(),
-            nn.ConvTranspose1d(2 * filters_m, filters_m, 23, stride=1, padding=1),
-            nn.SiLU(),
-            nn.ConvTranspose1d(filters_m, out_channels, 7, stride=1, padding=1),
+            UnFlatten(4 * filters_m),
+            nn.ConvTranspose2d(4 * filters_m, 4 * filters_m, 6, stride=2, padding=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(4 * filters_m, 4 * filters_m, 6, stride=2, padding=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(4 * filters_m, 2 * filters_m, 6, stride=2, padding=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(2 * filters_m, filters_m, 6, stride=2, padding=2),
+            nn.ReLU(),
+            nn.ConvTranspose2d(filters_m, 1, 5, stride=1, padding=2),
             nn.Sigmoid(),
         )
 
+    # @staticmethod
+    # def get_encoder(img_channels, filters_m):
+    #     return nn.Sequential(
+    #         # Input is ECT with W=128 and C=128.
+    #         # (B,C,W) -> (B,2*C,W)
+    #         nn.Conv1d(img_channels, 2 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         # (B,2*C,W) -> (B,2*C,W)
+    #         nn.Conv1d(2 * filters_m, 2 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         # (B, 2*C, W) -> (B,2*C,W / 2)
+    #         nn.Conv1d(2 * filters_m, 2 * filters_m, 3, stride=2, padding=1),
+    #         nn.SiLU(),
+    #         # (B, 2*C, W/2) -> (B, 4*C,W / 2)
+    #         nn.Conv1d(2 * filters_m, 4 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         # (B, 4*C, W/2) -> (B, 4*C,W / 2)
+    #         nn.Conv1d(4 * filters_m, 4 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         # (B, 4*C, W/2) -> (B, 4*C,W / 4)
+    #         nn.Conv1d(4 * filters_m, 4 * filters_m, 3, stride=2, padding=1),
+    #         nn.SiLU(),
+    #         # (B, 4*C, W / 4 ) -> (B, 8*C, W/4)
+    #         nn.Conv1d(4 * filters_m, 8 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Conv1d(8 * filters_m, 8 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         # (B, 8*C, W/4) -> (B, 8, W / 4)
+    #         nn.Conv1d(8 * filters_m, 32, 3, stride=1, padding=1),
+    #         # (B, 8, W / 4) -> (B, 2 * W)
+    #         Flatten(),
+    #     )
+    #
+    # @staticmethod
+    # def get_decoder(filters_m, out_channels):
+    #     return nn.Sequential(
+    #         # (B, 2 * W) -> (B, 8, W / 4)
+    #         UnFlatten(32),
+    #         nn.Conv1d(32, 8 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Conv1d(8 * filters_m, 8 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Conv1d(8 * filters_m, 4 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Conv1d(4 * filters_m, 4 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Upsample(scale_factor=2),
+    #         nn.Conv1d(4 * filters_m, 2 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Conv1d(2 * filters_m, 2 * filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Upsample(scale_factor=2),
+    #         nn.Conv1d(2 * filters_m, filters_m, 3, stride=1, padding=1),
+    #         nn.SiLU(),
+    #         nn.Conv1d(filters_m, filters_m, 3, stride=1, padding=1),
+    #         nn.Sigmoid(),
+    #     )
+
     def encode(self, x):
-        x = (x.movedim(-1, -2) + 1) / 2
+        # x = (x.movedim(-1, -2) + 1) / 2
+        x = (x.unsqueeze(1) + 1) / 2
         h = self.encoder(x)
         return self.fc11(h), self.fc12(h)
 
@@ -155,7 +228,9 @@ class ConvVAE(nn.Module):
         return mu + eps * std
 
     def decode(self, z):
-        return 2 * self.decoder(self.fc2(z)).movedim(-1, -2) - 1
+        # return 2 * self.decoder(self.fc2(z)).movedim(-1, -2) - 1
+        out = 2 * self.decoder(self.fc2(z)).squeeze() - 1
+        return out
 
     def forward(self, x):
         mu, logvar = self.encode(x)
@@ -178,7 +253,7 @@ class ConvVAE(nn.Module):
             # Sigma VAE learns the variance of the decoder as another parameter
             log_sigma = self.log_sigma
         elif self.model == "optimal_sigma_vae":
-            log_sigma = ((x - x_hat) ** 2).mean([0, 1, 2], keepdim=True).sqrt().log()
+            log_sigma = ((x - x_hat) ** 2).mean([0, 1, 2, 3], keepdim=True).sqrt().log()
             self.log_sigma = log_sigma.item()
         else:
             raise NotImplementedError
@@ -193,8 +268,15 @@ class ConvVAE(nn.Module):
 
     def loss_function(self, recon_x, x, mu, logvar):
 
-        x = (x.movedim(-1, -2) + 1) / 2
-        recon_x = (recon_x.movedim(-1, -2) + 1) / 2
+        # print("########################")
+        # print(recon_x.shape)
+        # print(x.shape)
+        # print("########################")
+
+        # x = (x.movedim(-1, -2) + 1) / 2
+        # recon_x = (recon_x.movedim(-1, -2) + 1) / 2
+        x = (x.unsqueeze(1) + 1) / 2
+        recon_x = (recon_x.unsqueeze(1) + 1) / 2
 
         # Important: both reconstruction and KL divergence loss have to be summed over all element!
         # Here we also sum the over batch and divide by the number of elements in the data later
@@ -232,28 +314,28 @@ class BaseLightningModel(L.LightningModule):
         self.config = config
         super().__init__()
         self.model = ConvVAE()
-        self.rotation_transform = Compose(
-            [
-                RandomRotate(axis=0),
-                RandomRotate(axis=1),
-                RandomRotate(axis=2),
-            ]
-        )
+        # self.rotation_transform = Compose(
+        #     [
+        #         RandomRotate(axis=0),
+        #         RandomRotate(axis=1),
+        #         RandomRotate(axis=2),
+        #     ]
+        # )
         self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
         # Metrics
-        self.train_fid = FrechetInceptionDistance(
-            feature=64, normalize=True, input_img_size=(1, 128, 128)
-        )
-        self.val_fid = FrechetInceptionDistance(
-            feature=64, normalize=True, input_img_size=(1, 128, 128)
-        )
-        self.sample_fid = FrechetInceptionDistance(
-            feature=64, normalize=True, input_img_size=(1, 128, 128)
-        )
+        # self.train_fid = FrechetInceptionDistance(
+        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
+        # )
+        # self.val_fid = FrechetInceptionDistance(
+        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
+        # )
+        # self.sample_fid = FrechetInceptionDistance(
+        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
+        # )
         self.save_hyperparameters()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-5)
         return optimizer
 
     def forward(self, batch):  # pylint: disable=arguments-differ
@@ -278,35 +360,41 @@ class BaseLightningModel(L.LightningModule):
 
         mse_loss = F.mse_loss(recon_batch, ect_gt)
 
-        if step == "train":
-            self.train_fid.update(
-                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-            )
-            self.train_fid.update(
-                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-            )
-            fid = self.train_fid
-            sample_fid = torch.tensor(0.0)
-        elif step == "validation":
-            self.val_fid.update(
-                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-            )
-            self.val_fid.update(
-                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-            )
-
-            samples = self.model.sample(n=batch_len)
-            self.sample_fid.update(
-                (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-            )
-            self.sample_fid.update(
-                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-            )
-            fid = self.val_fid
-            sample_fid = self.sample_fid
-        else:
-            fid = torch.tensor(0.0)
-            sample_fid = torch.tensor(0.0)
+        # if step == "train":
+        #     # self.train_fid.update(
+        #     #     (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     # )
+        #     # self.train_fid.update(
+        #     #     (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     # )
+        #     self.train_fid.update(
+        #         (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     )
+        #     self.train_fid.update(
+        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     )
+        #     fid = self.train_fid
+        #     sample_fid = torch.tensor(0.0)
+        # elif step == "validation":
+        #     self.val_fid.update(
+        #         (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     )
+        #     self.val_fid.update(
+        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     )
+        #
+        #     samples = self.model.sample(n=batch_len)
+        #     self.sample_fid.update(
+        #         (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     )
+        #     self.sample_fid.update(
+        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     )
+        #     fid = self.val_fid
+        #     sample_fid = self.sample_fid
+        # else:
+        fid = torch.tensor(0.0)
+        sample_fid = torch.tensor(0.0)
 
         loss_dict = {
             f"{step}_rec_loss": rec,

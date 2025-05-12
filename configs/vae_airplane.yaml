@@ -24,7 +24,7 @@ data:
 modelconfig:
   module: models.vae_1d
   # in_channels: 1
-  latent_dim: 32
+  latent_dim: 64
   beta_min: 0.00000001
   beta_max: 0.001
   beta_period: 400
@@ -33,7 +33,7 @@ modelconfig:
 
 trainer:
   accelerator: auto
-  max_epochs: 100 # Was 1000 before.
+  max_epochs: 10000 # Was 1000 before.
   log_every_n_steps: 1
   save_dir: ./trained_models 
   model_name: vae_airplane.ckpt

@@ -242,7 +242,7 @@ def plot_graph(x, edge_index, edge_weigths=None, ax=None):
 
 def plot_ect(ect_gt, ect_pred, num_ects=5, filename=None):
 
-    fig, axes = plt.subplots(nrows=2, ncols=num_ects, figsize=(10, 5 * num_ects))
+    fig, axes = plt.subplots(nrows=2, ncols=num_ects, figsize=(3 * num_ects, 6))
     for ax, gt, pred in zip(axes.T, ect_gt, ect_pred):
 
         ax[0].imshow(pred.cpu().detach().squeeze().numpy())

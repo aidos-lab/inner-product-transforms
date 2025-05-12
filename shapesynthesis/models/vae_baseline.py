@@ -1,8 +1,3 @@
-if __name__ == "__main__":
-    import sys
-
-    sys.path.append("./shapesynthesis")
-
 from dataclasses import dataclass
 from typing import Literal
 
@@ -13,10 +8,8 @@ from metrics.loss import compute_mse_kld_loss_fn
 from torch import nn
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
-from torchvision.transforms import Compose
 
-from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
-from shapesynthesis.layers import ect
+from shapesynthesis.datasets.transforms import EctTransform
 
 
 @dataclass

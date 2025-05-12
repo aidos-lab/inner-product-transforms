@@ -12,6 +12,9 @@ import torch
 from lightning.pytorch.callbacks import LearningRateMonitor
 from loaders import load_config, load_datamodule, load_logger, load_model
 
+# Set fixed seeds.
+L.seed_everything(seed=2013)
+
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -88,7 +91,7 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=100,
         enable_progress_bar=True,
         enable_checkpointing=False,
     )

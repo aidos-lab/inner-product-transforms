@@ -24,7 +24,7 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     all_ref = []
     all_ects = []
     all_recon_ect = []
-    for idx, pcs in enumerate(dm.val_dataloader):
+    for idx, pcs in enumerate(dm.train_dataloader):
         ect_gt = model.encoder.ect_transform(pcs.cuda())
         out_pc, reconstructed_ect = model.reconstruct(ect_gt)
 
@@ -40,7 +40,7 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     reconstructed_ect = torch.cat(all_recon_ect)
     ects = torch.cat(all_ects)
 
-    plot_ect(ects, reconstructed_ect, num_ects=2)
+    plot_ect(ects, reconstructed_ect, num_ects=5)
     results = EMD_CD(
         sample_pcs,
         ref_pcs,

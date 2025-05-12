@@ -72,9 +72,9 @@ def create_dataset(config: DataConfig, dev: bool = False):
     if dev:
         m = torch.tensor(tr_ds.all_points_mean.reshape(1, -1))
         s = torch.tensor(tr_ds.all_points_std.reshape(1, -1))
-        tr_ds = torch.tensor(tr_ds.all_points[:100])
-        vl_ds = torch.tensor(vl_ds.all_points[:100])
-        te_ds = torch.tensor(te_ds.all_points[:100])
+        tr_ds = torch.tensor(tr_ds.all_points[:64])
+        vl_ds = torch.tensor(vl_ds.all_points[:64])
+        te_ds = torch.tensor(te_ds.all_points[:64])
     else:
         m = torch.tensor(tr_ds.all_points_mean.reshape(1, -1))
         s = torch.tensor(tr_ds.all_points_std.reshape(1, -1))
@@ -112,7 +112,10 @@ def get_dataloader(config: DataConfig, split: str, dev: bool):
     s = torch.load(dataset_std, weights_only=False)
 
     shuffle = False if split in ["test", "val"] else True
-    drop_last = True if split in ["train"] else False
+    if dev:
+        drop_last = False
+    else:
+        drop_last = True if split in ["train"] else False
 
     dataset = ShapnetDataset(ds)
 
@@ -141,7 +144,21 @@ if __name__ == "__main__":
     config = DataConfig(
         root_dir="./data/shapenet",
         raw_dir="./data/shapenet/raw/ShapeNetCore.v2.PC15k",
-        cates=["chair"],
+        cates=[
+            "airplane",
+            # "car",
+            # "chair",
+            # "lamp",
+            # "table",
+            # "sofa",
+            # "cabinet",
+            # "bench",
+            # "telephone",
+            # "speaker",
+            # "monitor",
+            # "vessel",
+            # "rifle",
+        ],
         batch_size=32,
         module="",
     )

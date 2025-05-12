@@ -55,7 +55,7 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
         all_ects.append(ect_gt)
         all_sample_ect.append(sample_ect)
 
-        if dev and i == 1:
+        if dev and i == 0:
             break
 
     sample_pcs = torch.cat(all_sample, dim=0)
@@ -168,6 +168,9 @@ if __name__ == "__main__":
     print(vae_config)
     # Check that the configs are equal for the ECT.
     assert vae_config.ectconfig == encoder_config.ectconfig
+
+    if args.dev:
+        vae_config.trainer.save_dir += "_dev"
 
     print("LOADING:", f"{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}")
     vae_model = load_model(

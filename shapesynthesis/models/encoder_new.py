@@ -157,7 +157,7 @@ class BaseLightningModel(L.LightningModule):
         )
         # Define the learning rate scheduler
         # scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.2, patience=3)
-        scheduler = StepLR(optimizer, step_size=500, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=1000, gamma=0.5)
 
         # return [optimizer], [
         #     {"scheduler": scheduler, "interval": "step", "monitor": "lr-Adam"}
