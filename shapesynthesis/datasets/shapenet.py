@@ -141,26 +141,38 @@ def get_all_dataloaders(config: DataConfig, dev: bool):
 
 
 if __name__ == "__main__":
-    config = DataConfig(
+    airplane_config = DataConfig(
         root_dir="./data/shapenet",
         raw_dir="./data/shapenet/raw/ShapeNetCore.v2.PC15k",
         cates=[
             "airplane",
-            # "car",
-            # "chair",
-            # "lamp",
-            # "table",
-            # "sofa",
-            # "cabinet",
-            # "bench",
-            # "telephone",
-            # "speaker",
-            # "monitor",
-            # "vessel",
-            # "rifle",
         ],
         batch_size=32,
         module="",
     )
-    create_dataset(config, dev=False)
-    create_dataset(config, dev=True)
+    car_config = DataConfig(
+        root_dir="./data/shapenet",
+        raw_dir="./data/shapenet/raw/ShapeNetCore.v2.PC15k",
+        cates=[
+            "car",
+        ],
+        batch_size=32,
+        module="",
+    )
+    chair_config = DataConfig(
+        root_dir="./data/shapenet",
+        raw_dir="./data/shapenet/raw/ShapeNetCore.v2.PC15k",
+        cates=[
+            "chair",
+        ],
+        batch_size=32,
+        module="",
+    )
+    create_dataset(airplane_config, dev=False)
+    create_dataset(airplane_config, dev=True)
+
+    create_dataset(car_config, dev=False)
+    create_dataset(car_config, dev=True)
+
+    create_dataset(chair_config, dev=False)
+    create_dataset(chair_config, dev=True)
