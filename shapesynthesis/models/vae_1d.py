@@ -213,7 +213,7 @@ class BaseLightningModel(L.LightningModule):
         recon_batch, _, mu, logvar = self(ect_gt)
 
         total_loss, kl_loss, mse_loss = compute_mse_kld_loss_fn(
-            recon_batch, mu, logvar, ect_gt, beta=0.0005
+            recon_batch, mu, logvar, ect_gt, beta=0.0002
         )
 
         ###############################################################

@@ -24,7 +24,7 @@ data:
 modelconfig:
   module: models.vae_1d
   # in_channels: 1
-  latent_dim: 128
+  latent_dim: 64
   beta_min: 0.00000001
   beta_max: 0.001
   beta_period: 400
