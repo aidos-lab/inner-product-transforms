@@ -1,8 +1,3 @@
-if __name__ == "__main__":
-    import sys
-
-    sys.path.append("./shapesynthesis")
-
 from dataclasses import dataclass
 from typing import Literal
 
@@ -11,13 +6,10 @@ import torch
 from layers.ect import EctConfig
 from metrics.loss import compute_mse_kld_loss_fn
 from torch import nn
-from torch.optim.lr_scheduler import MultiStepLR
-from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
-from torchvision.transforms import Compose
+from torch.nn import functional as F
 
-from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
-from shapesynthesis.layers import ect
+from shapesynthesis.datasets.transforms import EctTransform
 
 
 @dataclass
@@ -29,6 +21,45 @@ class ModelConfig:
     beta_period: int
     beta_min: float
     beta_max: float
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, width):
+        super().__init__()
+        # self.groupnorm_1 = nn.GroupNorm(32, in_channels)
+        self.layernorm_1 = nn.LayerNorm((in_channels, width))
+        self.conv_1 = nn.Conv1d(in_channels, out_channels, kernel_size=7, padding=3)
+
+        # self.groupnorm_2 = nn.GroupNorm(32, out_channels)
+        self.layernorm_2 = nn.LayerNorm((out_channels, width))
+        self.conv_2 = nn.Conv1d(out_channels, out_channels, kernel_size=7, padding=3)
+
+        if in_channels == out_channels:
+            self.residual_layer = nn.Identity()
+        else:
+            self.residual_layer = nn.Conv1d(
+                in_channels, out_channels, kernel_size=1, padding=0
+            )
+
+    def forward(self, x):
+        # x: (Batch_Size, In_Channels, Height, Width)
+        residue = x
+        # (Batch_Size, In_Channels, Height, Width) -> (Batch_Size, In_Channels, Height, Width)
+        # x = self.groupnorm_1(x)
+        x = self.layernorm_1(x)
+        # (Batch_Size, In_Channels, Height, Width) -> (Batch_Size, In_Channels, Height, Width)
+        x = F.silu(x)
+        # (Batch_Size, In_Channels, Height, Width) -> (Batch_Size, Out_Channels, Height, Width)
+        x = self.conv_1(x)
+        # (Batch_Size, Out_Channels, Height, Width) -> (Batch_Size, Out_Channels, Height, Width)
+        # x = self.groupnorm_2(x)
+        x = self.layernorm_2(x)
+        # (Batch_Size, Out_Channels, Height, Width) -> (Batch_Size, Out_Channels, Height, Width)
+        x = F.silu(x)
+        # (Batch_Size, Out_Channels, Height, Width) -> (Batch_Size, Out_Channels, Height, Width)
+        x = self.conv_2(x)
+        # (Batch_Size, Out_Channels, Height, Width) -> (Batch_Size, Out_Channels, Height, Width)
+        return x + self.residual_layer(residue)
 
 
 class VanillaVAE(nn.Module):
@@ -46,49 +77,41 @@ class VanillaVAE(nn.Module):
         self.latent_dim = latent_dim
 
         self.encoder = nn.Sequential(
-            # (B, 128, W) -> (B, 64, W/2)
-            nn.Conv1d(128, 256, kernel_size=7, stride=2, padding=3),
-            nn.LayerNorm(normalized_shape=(256, 64)),
-            nn.ReLU(),
-            # (B, 64, W/2) -> (B, 32, W/4)
-            nn.Conv1d(256, 512, kernel_size=7, stride=2, padding=3),
-            nn.LayerNorm(normalized_shape=(512, 32)),
-            nn.ReLU(),
-            nn.Conv1d(512, 512, kernel_size=7, stride=1, padding=3),
-            nn.LayerNorm(normalized_shape=(512, 32)),
-            nn.ReLU(),
-            nn.Conv1d(512, 512, kernel_size=7, stride=1, padding=3),
-            nn.LayerNorm(normalized_shape=(512, 32)),
-            nn.ReLU(),
-            # (B, 64, W/4) -> (B, 32, W/8)
-            nn.Conv1d(512, 1024, kernel_size=7, stride=2, padding=3),
-            # Output: (B,1024,16)
+            ResidualBlock(128, 128, 128),
+            ResidualBlock(128, 256, 128),
+            nn.SiLU(),
+            nn.Conv1d(256, 256, kernel_size=7, stride=2, padding=3),
+            #############################################
+            ResidualBlock(256, 256, 64),
+            ResidualBlock(256, 512, 64),
+            nn.SiLU(),
+            nn.Conv1d(512, 512, kernel_size=7, stride=2, padding=3),
+            #############################################
+            ResidualBlock(512, 512, 32),
+            ResidualBlock(512, 1024, 32),
+            nn.SiLU(),
+            nn.Conv1d(1024, 1024, kernel_size=7, stride=2, padding=3),
         )
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose1d(
-                1024, 512, kernel_size=7, stride=2, padding=3, output_padding=1
-            ),
-            nn.LayerNorm(normalized_shape=(512, 32)),
-            nn.ReLU(),
-            nn.ConvTranspose1d(
-                512, 512, kernel_size=7, stride=1, padding=3, output_padding=0
-            ),
-            nn.LayerNorm(normalized_shape=(512, 32)),
-            nn.ReLU(),
-            nn.ConvTranspose1d(
-                512, 512, kernel_size=7, stride=1, padding=3, output_padding=0
-            ),
-            nn.LayerNorm(normalized_shape=(512, 32)),
-            nn.ReLU(),
-            nn.ConvTranspose1d(
-                512, 256, kernel_size=7, stride=2, padding=3, output_padding=1
-            ),
-            nn.LayerNorm(normalized_shape=(256, 64)),
-            nn.ReLU(),
-            nn.ConvTranspose1d(
-                256, 128, kernel_size=7, stride=2, padding=3, output_padding=1
-            ),
+            nn.Upsample(scale_factor=2),
+            nn.Conv1d(1024, 1024, kernel_size=7, stride=1, padding=3),
+            nn.SiLU(),
+            ResidualBlock(1024, 1024, 32),
+            ResidualBlock(1024, 512, 32),
+            ###################################
+            nn.Upsample(scale_factor=2),
+            nn.Conv1d(512, 512, kernel_size=7, stride=1, padding=3),
+            nn.SiLU(),
+            ResidualBlock(512, 512, 64),
+            ResidualBlock(512, 256, 64),
+            ###################################
+            nn.Upsample(scale_factor=2),
+            nn.Conv1d(256, 256, kernel_size=7, stride=1, padding=3),
+            nn.SiLU(),
+            ResidualBlock(256, 256, 128),
+            ResidualBlock(256, 128, 128),
+            ###################################
             nn.Tanh(),
         )
         self.fc_mu = nn.Linear(1024 * 16, latent_dim)
@@ -177,8 +200,6 @@ class BaseLightningModel(L.LightningModule):
         optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.config.learning_rate
         )
-        # scheduler = MultiStepLR(optimizer, milestones=[1000], gamma=0.1)
-        # return [optimizer], [scheduler]
         return optimizer
 
     def forward(self, batch):  # pylint: disable=arguments-differ
@@ -245,38 +266,7 @@ class BaseLightningModel(L.LightningModule):
             on_epoch=True,
         )
 
-        # return recon_batch, ect_gt, total_loss
         return total_loss
-
-    # def general_step(
-    #     self, batch, batch_idx, step: Literal["train", "test", "validation"]
-    # ):
-    #
-    #
-    #     decoded, _, z_mean, z_log_var = self(ect)
-    #
-    #     # loss = compute_mse_loss_fn(decoded, ect)
-    #     loss_dict = compute_mse_kld_loss_beta_annealing_fn(
-    #         decoded,
-    #         z_mean,
-    #         z_log_var,
-    #         ect,
-    #         self.current_epoch,
-    #         period=self.config.beta_period,
-    #         beta_min=self.config.beta_min,
-    #         beta_max=self.config.beta_max,
-    #         prefix=step + "_",
-    #     )
-    #
-    #     self.log_dict(
-    #         loss_dict,
-    #         prog_bar=True,
-    #         batch_size=len(batch),
-    #         on_step=False,
-    #         on_epoch=True,
-    #     )
-    #
-    #     return loss_dict[f"{step}_loss"]
 
     def test_step(self, batch, batch_idx):
         return self.general_step(batch, batch_idx, "test")
