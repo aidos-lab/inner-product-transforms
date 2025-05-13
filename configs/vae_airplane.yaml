@@ -33,10 +33,10 @@ modelconfig:
 
 trainer:
   accelerator: auto
-  max_epochs: 10000 # Should be 20k
+  max_epochs: 20000 # Should be 20k
   log_every_n_steps: 1
   save_dir: ./trained_models 
-  model_name: vae_baseline_airplane.ckpt
+  model_name: vae_resnet_airplane.ckpt
   results_dir: ./results
 
 loggers: 
@@ -44,5 +44,5 @@ loggers:
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "vae_baseline_airplane"
+  experiment_name: "vae_resnet_airplane"
   tags: []

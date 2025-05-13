@@ -22,7 +22,7 @@ data:
   ectconfig: *ref-ectconfig
 
 modelconfig:
-  module: models.vae_baseline_sampling
+  module: models.vae_1d
   # in_channels: 1
   latent_dim: 64
   beta_min: 0.00000001
@@ -36,7 +36,7 @@ trainer:
   max_epochs: 20000 # Was 1000 before.
   log_every_n_steps: 1
   save_dir: ./trained_models 
-  model_name: vae_baseline_car.ckpt
+  model_name: vae_resnet_car.ckpt
   results_dir: ./results
 
 loggers: 
@@ -44,5 +44,5 @@ loggers:
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "vae_baseline_car"
+  experiment_name: "vae_resnet_car"
   tags: []
