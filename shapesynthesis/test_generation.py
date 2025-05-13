@@ -47,8 +47,8 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
         out_pc, sample_ect = model.sample(len(pcs_gt))
 
         # Scale and translate
-        # out_pc = out_pc * s + m
-        pcs_gt = pcs_gt.cuda()  # * s + m
+        out_pc = out_pc * s + m
+        pcs_gt = pcs_gt.cuda() * s + m
 
         all_sample.append(out_pc)
         all_ref.append(pcs_gt)
@@ -86,12 +86,13 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
             ects,
             sample_ects,
             num_ects=2,
-            filename=f"./results{result_suffix}/{model_name}/ect.png",
+            # filename=f"./results{result_suffix}/{model_name}/ect.png",
         )
         plot_recon_3d(
             ref_pcs.cpu().numpy(),
             sample_pcs.cpu().numpy(),
-            filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+            num_pc=20,
+            # filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
         )
 
     # Compute metric
@@ -148,7 +149,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     encoder_config, _ = load_config(args.encoder_config)
+    if args.dev:
+        encoder_config.trainer.save_dir += "_dev"
 
+    print(
+        "LOADING:",
+        f"{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
+    )
     encoder_model = load_model(
         encoder_config.modelconfig,
         f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
@@ -158,7 +165,7 @@ if __name__ == "__main__":
     # Set model name for saving results in the results folder.
     model_name = encoder_config.trainer.model_name.split(".")[0]
 
-    dm = load_datamodule(encoder_config.data)
+    dm = load_datamodule(encoder_config.data, dev=args.dev)
 
     # Load the datamodule
     # NOTE: Loads the datamodule from the encoder and does not check for

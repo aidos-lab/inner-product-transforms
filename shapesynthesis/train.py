@@ -92,8 +92,9 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
         check_val_every_n_epoch=100,
-        enable_progress_bar=True,
+        enable_progress_bar=False,
         enable_checkpointing=False,
+        gradient_clip_val=0.01,
     )
 
     trainer.fit(

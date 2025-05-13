@@ -156,16 +156,16 @@ class BaseLightningModel(L.LightningModule):
         self.validation_accuracy = MeanSquaredError()
         self.test_accuracy = MeanSquaredError()
         self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
-        # # Metrics
-        # self.train_fid = FrechetInceptionDistance(
-        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
-        # )
-        # self.val_fid = FrechetInceptionDistance(
-        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
-        # )
-        # self.sample_fid = FrechetInceptionDistance(
-        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
-        # )
+        # Metrics
+        self.train_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
+        self.val_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
+        self.sample_fid = FrechetInceptionDistance(
+            feature=64, normalize=True, input_img_size=(1, 128, 128)
+        )
 
         self.model = VanillaVAE(config=self.config)
 
@@ -192,48 +192,48 @@ class BaseLightningModel(L.LightningModule):
         recon_batch, _, mu, logvar = self(ect_gt)
 
         total_loss, kl_loss, mse_loss = compute_mse_kld_loss_fn(
-            recon_batch, mu, logvar, ect_gt, beta=0.0005
+            recon_batch, mu, logvar, ect_gt, beta=0.0001
         )
 
         ###############################################################
         ### Metrics
         ###############################################################
 
-        # if step == "train":
-        #     self.train_fid.update(
-        #         (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-        #     )
-        #     self.train_fid.update(
-        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-        #     )
-        #     fid = self.train_fid
-        #     sample_fid = torch.tensor(0.0)
-        # elif step == "validation":
-        #     self.val_fid.update(
-        #         (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-        #     )
-        #     self.val_fid.update(
-        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-        #     )
-        #
-        #     samples = self.model.sample(n=batch_len, device="cuda")
-        #     self.sample_fid.update(
-        #         (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-        #     )
-        #     self.sample_fid.update(
-        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-        #     )
-        #     fid = self.val_fid
-        #     sample_fid = self.sample_fid
-        # else:
-        #     fid = torch.tensor(0.0)
-        #     sample_fid = torch.tensor(0.0)
+        if step == "train":
+            self.train_fid.update(
+                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.train_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+            fid = self.train_fid
+            sample_fid = torch.tensor(0.0)
+        elif step == "validation":
+            self.val_fid.update(
+                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.val_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+
+            samples = self.model.sample(n=batch_len, device="cuda")
+            self.sample_fid.update(
+                (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+            )
+            self.sample_fid.update(
+                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+            )
+            fid = self.val_fid
+            sample_fid = self.sample_fid
+        else:
+            fid = torch.tensor(0.0)
+            sample_fid = torch.tensor(0.0)
 
         loss_dict = {
             f"{step}_kl_loss": kl_loss,
             f"{step}_mse_loss": mse_loss,
-            # f"{step}_fid": fid,
-            # f"{step}_sample_fid": sample_fid,
+            f"{step}_fid": fid,
+            f"{step}_sample_fid": sample_fid,
             "loss": total_loss,
         }
 
