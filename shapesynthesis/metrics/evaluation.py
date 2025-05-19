@@ -5,11 +5,11 @@ import torch
 from numpy.linalg import norm
 from tqdm import tqdm
 
-from shapesynthesis.metrics.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D import (
+from chamfer3D.dist_chamfer_3D import (
     chamfer_3DDist,
 )
-from shapesynthesis.metrics.ChamferDistancePytorch.fscore import fscore
-from shapesynthesis.metrics.PyTorchEMD.emd import earth_mover_distance as EMD
+from ChamferDistancePytorch.fscore import fscore
+from PyTorchEMD.emd import earth_mover_distance as EMD
 
 # cham2D = chamfer_2DDist()
 cham3D = chamfer_3DDist()
