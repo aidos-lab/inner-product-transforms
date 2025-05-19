@@ -1,7 +1,7 @@
 [project]
 name = "shapesynthesis"
 version = "0.1.0"
-description = "Topological shape synthesis"
+description = "Shape synthesis"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.13"
 readme = "README.md"
@@ -17,7 +17,7 @@ dependencies = [
     "pydantic>=2.10.4,<3",
     "wandb>=0.19.1,<0.20",
     "matplotlib>=3.10.0,<4",
-    "pyvista[all,jupyter]>=0.44.2,<0.45",
+    "pyvista[jupyter]>=0.44.2,<0.45",
     "open3d>=0.18.0,<0.19",
     "scikit-learn>=1.6.0,<2",
     "addict>=2.4.0,<3",
@@ -25,32 +25,19 @@ dependencies = [
     "ipywidgets>=8.1.5,<9",
     "ipykernel>=6.29.5,<7",
     "torch-fidelity>=0.3.0",
-    # "chamfer-3d",
-    # "emd-ext",
+    "chamfer-3d",
+    "emd-ext",
     "seaborn>=0.13.2",
-    "pyqt6>=6.9.0",
-    "pyvistaqt>=0.11.2",
-    "vtk>=9.3.1",
-    "vtk-osmesa>=9.0.1",
 ]
 
 
 [dependency-groups]
-dev = [
-    "poethepoet>=0.25.0,<0.26",
-    "ipykernel>=6.29.5,<7",
-]
-vis = [
-    "pytest>=8.3.4,<9",
-    "pandas>=2.2.3,<3",
-]
+dev = ["poethepoet>=0.25.0,<0.26", "ipykernel>=6.29.5,<7"]
+vis = ["pytest>=8.3.4,<9", "pandas>=2.2.3,<3"]
 
 
 [tool.uv]
-default-groups = [
-    "dev",
-    "vis",
-]
+default-groups = ["dev", "vis"]
 
 [[tool.uv.index]]
 name = "kaolin-source"
@@ -59,11 +46,10 @@ explicit = true
 
 [tool.uv.sources]
 kaolin = { url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl" }
-chamfer-3d = { path = "dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
-emd-ext = { path = "shapesynthesis/metrics/PyTorchEMD/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+chamfer-3d = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
+emd-ext = { path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-

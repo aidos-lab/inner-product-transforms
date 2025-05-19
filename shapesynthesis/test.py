@@ -24,7 +24,7 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     all_ref = []
     all_ects = []
     all_recon_ect = []
-    for idx, pcs in enumerate(dm.train_dataloader):
+    for idx, pcs in enumerate(dm.val_dataloader):
         ect_gt = model.encoder.ect_transform(pcs.cuda())
         out_pc, reconstructed_ect = model.reconstruct(ect_gt)
 
@@ -154,6 +154,9 @@ if __name__ == "__main__":
         num_pc=20,
         #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
     )
+
+    torch.save(reconstructed_ect, "recon_ect.pt")
+    torch.save(ect, "gt_ect.pt")
 
     #
     # # Make sure folders exist

@@ -1,6 +1,7 @@
 import torch
-from layers.ect import compute_ect_point_cloud
 from torch import nn
+
+from shapesynthesis.layers.ect import compute_ect_point_cloud
 
 
 def render_point_cloud_half(x_init, ect_gt, v, num_epochs, scale, radius, resolution):
@@ -42,6 +43,7 @@ def render_point_cloud(x_init, ect_gt, v, num_epochs, scale, radius, resolution)
         optimizer, milestones=[50, 100, 200, 1000], gamma=0.5
     )
 
+    losses = []
     for epoch in range(1, num_epochs + 1):
         optimizer.zero_grad()
         ect_pred = compute_ect_point_cloud(
@@ -51,8 +53,9 @@ def render_point_cloud(x_init, ect_gt, v, num_epochs, scale, radius, resolution)
         loss.backward()
         optimizer.step()
 
+        losses.append(loss.detach().item())
         scheduler.step()
-    return x.detach()
+    return x.detach(), losses
 
 
 def render_point_cloud_viz(x_init, ect_gt, v, num_epochs, scale, radius, resolution):

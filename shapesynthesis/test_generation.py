@@ -41,7 +41,7 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
     all_ref = []
     all_sample_ect = []
     all_ects = []
-    for i, pcs_gt in enumerate(dm.val_dataloader):
+    for i, pcs_gt in enumerate(dm.test_dataloader):
         ect_gt = model.encoder.ect_transform(pcs_gt.cuda())
         out_pc, sample_ect = model.sample(len(pcs_gt))
 
@@ -74,13 +74,13 @@ def evaluate_gen(model: ModelWrapper, dm, dev: bool):
             ects,
             sample_ects,
             num_ects=2,
-            filename=f"./ect.png",
+            # filename=f"./ect.png",
         )
         plot_recon_3d(
             7 * ref_pcs.cpu().numpy(),
             7 * sample_pcs.cpu().numpy(),
             num_pc=20,
-            filename=f"./samples.png",
+            # filename=f"./samples.png",
         )
     else:
         plot_ect(

@@ -46,46 +46,56 @@ class VanillaVAE(nn.Module):
         self.latent_dim = latent_dim
 
         self.encoder = nn.Sequential(
+            ###################################################
             # (B, 128, W) -> (B, 64, W/2)
             nn.Conv1d(128, 256, kernel_size=7, stride=2, padding=3),
             nn.LayerNorm(normalized_shape=(256, 64)),
             nn.ReLU(),
+            ###################################################
             # (B, 64, W/2) -> (B, 32, W/4)
             nn.Conv1d(256, 512, kernel_size=7, stride=2, padding=3),
             nn.LayerNorm(normalized_shape=(512, 32)),
             nn.ReLU(),
+            ###################################################
             nn.Conv1d(512, 512, kernel_size=7, stride=1, padding=3),
             nn.LayerNorm(normalized_shape=(512, 32)),
             nn.ReLU(),
+            ###################################################
             nn.Conv1d(512, 512, kernel_size=7, stride=1, padding=3),
             nn.LayerNorm(normalized_shape=(512, 32)),
             nn.ReLU(),
+            ###################################################
             # (B, 64, W/4) -> (B, 32, W/8)
             nn.Conv1d(512, 1024, kernel_size=7, stride=2, padding=3),
             # Output: (B,1024,16)
         )
 
         self.decoder = nn.Sequential(
+            ###################################################
             nn.ConvTranspose1d(
                 1024, 512, kernel_size=7, stride=2, padding=3, output_padding=1
             ),
             nn.LayerNorm(normalized_shape=(512, 32)),
             nn.ReLU(),
+            ###################################################
             nn.ConvTranspose1d(
                 512, 512, kernel_size=7, stride=1, padding=3, output_padding=0
             ),
             nn.LayerNorm(normalized_shape=(512, 32)),
             nn.ReLU(),
+            ###################################################
             nn.ConvTranspose1d(
                 512, 512, kernel_size=7, stride=1, padding=3, output_padding=0
             ),
             nn.LayerNorm(normalized_shape=(512, 32)),
             nn.ReLU(),
+            ###################################################
             nn.ConvTranspose1d(
                 512, 256, kernel_size=7, stride=2, padding=3, output_padding=1
             ),
             nn.LayerNorm(normalized_shape=(256, 64)),
             nn.ReLU(),
+            ###################################################
             nn.ConvTranspose1d(
                 256, 128, kernel_size=7, stride=2, padding=3, output_padding=1
             ),
@@ -192,7 +202,7 @@ class BaseLightningModel(L.LightningModule):
         recon_batch, _, mu, logvar = self(ect_gt)
 
         total_loss, kl_loss, mse_loss = compute_mse_kld_loss_fn(
-            recon_batch, mu, logvar, ect_gt, beta=0.0001
+            recon_batch, mu, logvar, ect_gt, beta=0.00001
         )
 
         ###############################################################

@@ -6,8 +6,8 @@ import torch
 from layers.ect import EctConfig
 from metrics.loss import compute_mse_kld_loss_fn
 from torch import nn
-from torchmetrics.regression import MeanSquaredError
 from torch.nn import functional as F
+from torchmetrics.regression import MeanSquaredError
 
 from shapesynthesis.datasets.transforms import EctTransform
 
@@ -213,7 +213,7 @@ class BaseLightningModel(L.LightningModule):
         recon_batch, _, mu, logvar = self(ect_gt)
 
         total_loss, kl_loss, mse_loss = compute_mse_kld_loss_fn(
-            recon_batch, mu, logvar, ect_gt, beta=0.0002
+            recon_batch, mu, logvar, ect_gt, beta=0.0001
         )
 
         ###############################################################
