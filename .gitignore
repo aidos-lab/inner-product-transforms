@@ -4,6 +4,7 @@ results/
 img/
 wandb/
 scratch/
+tables/
 lightning_logs/
 **/__pycache__
 trained_models/**
