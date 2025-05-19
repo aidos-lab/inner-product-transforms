@@ -26,6 +26,8 @@ ddpm-butterflies-128/
 *.txt
 figures/
 scratch/
+tables/
+
 
 my_logs/
 shapenet/
