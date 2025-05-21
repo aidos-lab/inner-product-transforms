@@ -44,7 +44,7 @@ modelconfig:
 loggers: 
   logger: wandb
   project: shape-synthesis
-  entity: aidos-labs
+  entity: XXX
   save_dir: ./lightning_logs
   experiment_name: "encoder_new_airplane"
   tags: []

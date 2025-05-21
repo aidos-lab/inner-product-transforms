@@ -42,7 +42,7 @@ trainer:
 loggers: 
   logger: wandb
   project: shape-synthesis
-  entity: aidos-labs
+  entity: XXX
   save_dir: ./lightning_logs
   experiment_name: "vae_resnet_chair"
   tags: []
