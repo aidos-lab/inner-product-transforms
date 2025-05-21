@@ -1,7 +1,7 @@
 ectconfig: &ref-ectconfig
   seed: 2024
-  num_thetas: 256
-  resolution: 256 
+  num_thetas: 128
+  resolution: 128 
   scale: 128
   r: 4.5
   ect_type: "points"
@@ -9,46 +9,49 @@ ectconfig: &ref-ectconfig
   normalized: True
 
 ectlossconfig: &ref-ectlossconfig 
-  seed: 2024
-  num_thetas: 64
-  resolution: 64 
-  scale: 32
+  num_thetas: 128
+  resolution: 128 
+  scale: 8
   r: 4.5
   ect_type: "points"
-  ambient_dimension: 3 
+  ambient_dimension: 3
   normalized: True
+  seed: 2024
 
 
 data: 
-  module: datasets.shapenetcore
-  root: ./data/shapenet
+  module: datasets.shapenet
+  root_dir: ./data/shapenet
+  raw_dir: ./data/shapenet/raw/ShapeNetCore.v2.PC15k
   cates: 
     - car
   num_workers: 0
-  batch_size: 64
+  batch_size: 128
   pin_memory: True
-  drop_last: False
+  drop_last: True
   force_reload: False
   ectconfig: *ref-ectconfig
 
 modelconfig:
-  module: models.encoder
+  module: models.encoder_new
   num_pts: 2048
-  learning_rate: 0.00005
+  learning_rate: 0.000005
   ectlossconfig: *ref-ectlossconfig
   ectconfig: *ref-ectconfig
+
 
 loggers: 
   logger: wandb
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_car"
+  experiment_name: "encoder_new_car"
   tags: []
 
 trainer:
   accelerator: auto
-  max_epochs: 200
-  log_every_n_steps: 1
-  save_dir: "trained_models" 
-  model_name: "encoder_car.ckpt" 
+  max_epochs: 1000
+  log_every_n_steps: 5
+  save_dir: trained_models
+  model_name: encoder_new_car.ckpt
+  results_dir: ./results

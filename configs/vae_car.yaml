@@ -22,7 +22,7 @@ data:
   ectconfig: *ref-ectconfig
 
 modelconfig:
-  module: models.vae_1d
+  module: models.vae_baseline_sampling
   # in_channels: 1
   latent_dim: 64
   beta_min: 0.00000001
