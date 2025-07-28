@@ -2,9 +2,6 @@
 
 # Installation 
 
-
-
-
 ## Data
 
 ```sh 
@@ -21,21 +18,18 @@ unzip ShapeNetCore.v2.PC15k.zip
 
 ```
 
-## Venv 
+## Virtual environment
 
-Custom version runs on `uv`. 
-For training models the following suffices. 
-```shell 
-uv sync 
+First install the dependencies and then the full virtual 
+environment. For the dependencies run 
+
+```shell
+cd dependencies
+make venv
 ```
 
-For evaluation of the emd, the `emd_kernel.cu` needs to be 
-installed. For that run the following in the environment 
-where the code will be ran, to have access to the specific 
-NVIDIA architecture in the environment variables. This 
-also assumes `nvcc` is installed. Also first install 
-the virtual environment for availability of the other 
-dependencies. 
+Once the dependencies are installed run `uv sync` in the 
+top level directory. 
 
 Motivation for the custom installation is the fact that 
 the kernel is dependent on the specific GPU architecture 
@@ -43,35 +37,44 @@ and therefore has to be compiled with an exact python
 version `3.10.12` and an exact cuda version `cu124`. 
 Other versions have not been tested.
 
-(On the HPC cluster this has to be ran via an sbatch job.)
+Full script. 
+
 
 ```shell
-cd shapesynthesis/metrics/PyTorchEMD
-uv build --wheel --no-build-isolation
+cd dependencies
+make venv 
+cd .. 
+uv sync
 ```
 
-Under `shapesynthesis/metrics/PyTorchEMD/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl` the compiled kernel can be 
-found and added to the virtual environment via 
-
-```shell
-uv add shapesynthesis/metrics/PyTorchEMD/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl
-```
 
 # Training and evaluation.
 
-Train a model via the following command. 
+For training and testing models there is an 
+sbatch script. 
+
+After preparing the data, prepare them for training via the command: 
+
+```shell
+uv run shapesynthesis/datasets/shapenet.py
+```
+
+To check that model training works we can train a VAE and an encoder in the 
+development environment via the commands
 
 ```
-python train.py ./configs/encoder_airplane.yaml
+python train.py ./configs/encoder_airplane.yaml --dev
+python train.py ./configs/vae_airplane.yaml --dev
 ```
 
-It will store the trained model under `trained_models`. 
-To evaluate an encoder model, we run 
+It will store the trained model under `trained_models_dev`. 
+To evaluate the encoder model, we run 
 
 ```shell
 uv run ./shapesynthesis/test.py \
-    --encoder_config ./configs/encoder_airplane.yaml
+    --encoder_config ./configs/encoder_airplane.yaml --dev
 ```
+
 That is to say that a specific model is tied to a specific 
 configuration in a `1:1` relation.
 
@@ -81,7 +84,7 @@ encoder and a VAE model.
 ```shell
 uv run ./shapesynthesis/test.py \
     --encoder_config ./configs/encoder_airplane.yaml \
-    --vae_config ./configs/vae_airplane.yaml
+    --vae_config ./configs/vae_airplane.yaml --dev 
 ```
 
 To evaluate the generative performance we run 
@@ -89,10 +92,12 @@ To evaluate the generative performance we run
 ```shell
 uv run ./shapesynthesis/test_generation.py \
     --encoder_config ./configs/encoder_airplane.yaml \
-    --vae_config ./configs/vae_airplane.yaml
+    --vae_config ./configs/vae_airplane.yaml --dev 
 ```
 
-This takes a while to run (~30 minutes) so some patience is 
+In this last case, the Encoder is _not_ taken from the dev folder. 
+
+This takes a while to run (~15-30 minutes) so some patience is 
 required. 
 
 
@@ -105,7 +110,7 @@ In the model directory we can add a new file `my_new_model.py`
 and add two base classes to it. 
 First is the `ModelConfig` class containing all the model configurations 
 and one is a `BaseLightningModel` class which can be copied verbatim from 
-one of the already implemented models. 
+one of the existing models. 
 
 **ModelConfig.** The ModelConfig class has one mandatory argument and 
 that is the relative module path to the specific model. 

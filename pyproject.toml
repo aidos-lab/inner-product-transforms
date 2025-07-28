@@ -25,9 +25,10 @@ dependencies = [
     "ipywidgets>=8.1.5,<9",
     "ipykernel>=6.29.5,<7",
     "torch-fidelity>=0.3.0",
-    "chamfer-3d",
     "emd-ext",
     "seaborn>=0.13.2",
+    "chamfer-3d",
+    "torchtnt>=0.2.4",
 ]
 
 
@@ -46,10 +47,13 @@ explicit = true
 
 [tool.uv.sources]
 kaolin = { url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl" }
-chamfer-3d = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
 emd-ext = { path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+chamfer-3d = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
 
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shapesynthesis"]

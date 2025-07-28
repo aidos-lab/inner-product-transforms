@@ -35,7 +35,7 @@ data:
 
 modelconfig:
   module: models.encoder_new
-  num_pts: 2048
+  num_pts: 4096
   learning_rate: 0.00005
   ectlossconfig: *ref-ectlossconfig
   ectconfig: *ref-ectconfig
@@ -46,7 +46,7 @@ loggers:
   project: shape-synthesis
   entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "encoder_new_airplane"
+  experiment_name: "encoder_new_large_airplane"
   tags: []
 
 trainer:
@@ -54,5 +54,5 @@ trainer:
   max_epochs: 500
   log_every_n_steps: 5
   save_dir: trained_models
-  model_name: encoder_new_airplane.ckpt
+  model_name: encoder_new_large_airplane.ckpt
   results_dir: ./results

@@ -5,7 +5,7 @@ import os
 import torch
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-from model_wrapper import ModelWrapper
+from model_wrapper import ModelDownsampleWrapper
 from plotting import plot_ect, plot_recon_3d
 
 # Settings
@@ -13,7 +13,7 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 @torch.no_grad()
-def evaluate_reconstruction(model: ModelWrapper, dm):
+def evaluate_reconstruction(model: ModelDownsampleWrapper, dm):
     m = dm.m.view(1, 1, 3).cuda()
     s = dm.s.squeeze().cuda()
     print("STD", s.shape, s)
@@ -23,19 +23,25 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     all_ref = []
     all_ects = []
     all_recon_ect = []
+    all_sparse_pcs = []
     for idx, pcs in enumerate(dm.val_dataloader):
-        ect_gt = model.encoder.ect_transform(pcs.cuda())
-        out_pc, reconstructed_ect = model.reconstruct(ect_gt)
+
+        ect_gt = model.encoder_downsampler.ect_transform(pcs.cuda())
+        out_pc, sparse_pc, reconstructed_ect = model.reconstruct(ect_gt)
 
         out_pc = out_pc * s + m
         pcs = pcs * dm.s + dm.m
+        sparse_pc = sparse_pc * s + m
+
         all_sample.append(out_pc)
         all_ref.append(pcs)
         all_ects.append(ect_gt)
         all_recon_ect.append(reconstructed_ect)
+        all_sparse_pcs.append(sparse_pc)
 
     sample_pcs = torch.cat(all_sample, dim=0)
     ref_pcs = torch.cat(all_ref, dim=0)
+    sparse_pcs = torch.cat(all_sparse_pcs, dim=0)
     reconstructed_ect = torch.cat(all_recon_ect)
     ects = torch.cat(all_ects)
 
@@ -49,20 +55,20 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     )
 
     result = {"MMD-CD": cd_dist, "MMD-EMD": emd_dist}
-    return result, sample_pcs, ref_pcs, reconstructed_ect, ects
+    return result, sample_pcs, ref_pcs, sparse_pcs, reconstructed_ect, ects
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--encoder_config",
+        "--downsampler_config",
         required=True,
         type=str,
         help="Encoder configuration",
     )
     parser.add_argument(
-        "--vae_config",
-        required=False,
+        "--upsampler_config",
+        required=True,
         default=None,
         type=str,
         help="VAE Configuration (Optional)",
@@ -81,63 +87,56 @@ if __name__ == "__main__":
     ##################################################################
     ### Encoder
     ##################################################################
-    encoder_config, _ = load_config(args.encoder_config)
+    encoder_downsampler_config, _ = load_config(args.downsampler_config)
 
     # Inject dev runs if needed.
     if args.dev:
-        encoder_config.trainer.save_dir += "_dev"
+        encoder_downsampler_config.trainer.save_dir += "_dev"
 
     print(
-        f"Loading model from ./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}"
+        f"Loading model from ./{encoder_downsampler_config.trainer.save_dir}/{encoder_downsampler_config.trainer.model_name}"
     )
-    encoder_model = load_model(
-        encoder_config.modelconfig,
-        f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
+    encoder_downsampler = load_model(
+        encoder_downsampler_config.modelconfig,
+        f"./{encoder_downsampler_config.trainer.save_dir}/{encoder_downsampler_config.trainer.model_name}",
     ).to(DEVICE)
-    encoder_model.model.eval()
-
-    # Set model name for saving results in the results folder.
-    model_name = encoder_config.trainer.model_name.split(".")[0]
-
-    dm = load_datamodule(encoder_config.data, dev=args.dev)
+    encoder_downsampler.model.eval()
 
     # Load the datamodule
-    # NOTE: Loads the datamodule from the encoder and does not check for
-    # equality of the VAE data configs.
+    dm = load_datamodule(encoder_downsampler_config.data, dev=args.dev)
 
-    if args.vae_config:
-        vae_config, _ = load_config(args.vae_config)
+    encoder_upsampler_config, _ = load_config(args.upsampler_config)
 
-        if args.dev:
-            vae_config.trainer.save_dir += "_dev"
+    if args.dev:
+        encoder_upsampler_config.trainer.save_dir += "_dev"
 
-        # Check that the configs are equal for the ECT.
-        assert vae_config.ectconfig == encoder_config.ectconfig
+    # Check that the configs are equal for the ECT.
+    assert encoder_upsampler_config.ectconfig == encoder_downsampler_config.ectconfig
 
-        vae_model = load_model(
-            vae_config.modelconfig,
-            f"./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
-        ).to(DEVICE)
+    encoder_upsampler = load_model(
+        encoder_upsampler_config.modelconfig,
+        f"./{encoder_upsampler_config.trainer.save_dir}/{encoder_upsampler_config.trainer.model_name}",
+    ).to(DEVICE)
 
-        # If VAE is provided, overwrite the modelname.
-        model_name = vae_config.trainer.model_name.split(".")[0]
-    else:
-        vae_model = None
+    # Define model name
+    model_name = encoder_downsampler_config.trainer.model_name.split(".")[0]
 
-    encoder_model.eval()
+    encoder_downsampler.eval()
+    encoder_upsampler.eval()
 
-    model = ModelWrapper(encoder_model, vae_model)
+    model = ModelDownsampleWrapper(encoder_downsampler, encoder_upsampler)
 
     results = []
     for _ in range(args.num_reruns):
         # Evaluate reconstruction
-        result, sample_pc, ref_pc, reconstructed_ect, ect = evaluate_reconstruction(
-            model, dm
+        result, sample_pc, ref_pc, sparse_pc, reconstructed_ect, ect = (
+            evaluate_reconstruction(model, dm)
         )
 
-        result["model"] = model_name
-        result["normalized"] = False
         suffix = ""
+        result["model"] = model_name
+        result["num_pts"] = encoder_downsampler_config.modelconfig.num_pts
+        result["normalized"] = False
         results.append(result)
 
     #####################################################
@@ -148,16 +147,19 @@ if __name__ == "__main__":
     if args.dev:
         result_suffix = "_dev"
 
-    print(result)
+    print(results)
     # plot_recon_3d(
     #     sample_pc.cpu().numpy(),
     #     ref_pc.cpu().numpy(),
     #     num_pc=20,
     #     #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
     # )
-
-    # torch.save(reconstructed_ect, "recon_ect.pt")
-    # torch.save(ect, "gt_ect.pt")
+    # plot_recon_3d(
+    #     sparse_pc.cpu().numpy(),
+    #     ref_pc.cpu().numpy(),
+    #     num_pc=20,
+    #     #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+    # )
 
     # Make sure folders exist
     os.makedirs("./results", exist_ok=True)
@@ -179,12 +181,24 @@ if __name__ == "__main__":
         ref_pc,
         f"./results{result_suffix}/{model_name}/references{suffix}.pt",
     )
-    if torch.is_tensor(reconstructed_ect):
-        torch.save(
-            reconstructed_ect,
-            f"./results{result_suffix}/{model_name}/reconstructed_ect.pt",
-        )
-        torch.save(
-            ect,
-            f"./results{result_suffix}/{model_name}/ect.pt",
-        )
+    torch.save(
+        sparse_pc,
+        f"./results{result_suffix}/{model_name}/sparsereconstruction{suffix}.pt",
+    )
+    # torch.save(
+    #     means,
+    #     f"./results{result_suffix}/{model_name}/means.pt",
+    # )
+    # torch.save(
+    #     stdevs,
+    #     f"./results{result_suffix}/{model_name}/stdevs.pt",
+    # )
+    # if torch.is_tensor(reconstructed_ect):
+    #     torch.save(
+    #         reconstructed_ect,
+    #         f"./results{result_suffix}/{model_name}/reconstructed_ect.pt",
+    #     )
+    #     torch.save(
+    #         ect,
+    #         f"./results{result_suffix}/{model_name}/ect.pt",
+    #     )

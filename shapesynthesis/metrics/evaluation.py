@@ -1,15 +1,10 @@
-import warnings
-
 import numpy as np
 import torch
 from numpy.linalg import norm
 from tqdm import tqdm
 
-from chamfer3D.dist_chamfer_3D import (
-    chamfer_3DDist,
-)
-from ChamferDistancePytorch.fscore import fscore
-from PyTorchEMD.emd import earth_mover_distance as EMD
+from dependencies.chamfer3D.dist_chamfer_3D import chamfer_3DDist
+from dependencies.PyTorchEMD.emd import earth_mover_distance as EMD
 
 # cham2D = chamfer_2DDist()
 cham3D = chamfer_3DDist()
@@ -36,7 +31,6 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True, accelerated_cd=None):
 
     cd_lst = []
     emd_lst = []
-    fs_lst = []
     iterator = range(0, N_sample, batch_size)
 
     for b_start in iterator:
@@ -45,8 +39,8 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True, accelerated_cd=None):
         ref_batch = ref_pcs[b_start:b_end]
 
         dl, dr, _, _ = cham3D(sample_batch.cuda(), ref_batch.cuda())
-        fs = fscore(dl, dr)[0].cpu()
-        fs_lst.append(fs)
+        # fs = fscore(dl, dr)[0].cpu()
+        # fs_lst.append(fs)
         cd_lst.append(dl.mean(dim=1) + dr.mean(dim=1))
         emd_batch = EMD(sample_batch.cuda(), ref_batch.cuda(), transpose=False)
         emd_lst.append(emd_batch)
@@ -57,10 +51,9 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True, accelerated_cd=None):
     else:
         cd = torch.cat(cd_lst)
         emd = torch.cat(emd_lst)
-    fs_lst = torch.cat(fs_lst).mean()
     # results = {"MMD-CD": cd, "MMD-EMD": emd, "fscore": fs_lst}
     # return results
-    return cd, emd
+    return cd.item(), emd.item()
 
 
 def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, accelerated_cd=True):

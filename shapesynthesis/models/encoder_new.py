@@ -177,7 +177,9 @@ class BaseLightningModel(L.LightningModule):
         # pcs_gt = self.rotation_transform(pcs_gt)
 
         ect_gt = self.ect_transform(pcs_gt)
-        pcs_pred = self(ect_gt).reshape(batch_len, 2048, 3)
+        pcs_pred = self(ect_gt).reshape(
+            batch_len, self.config.num_pts, self.config.ectconfig.ambient_dimension
+        )
 
         ect_loss_pred = self.losslayer(pcs_pred)
         ect_loss_gt = self.losslayer(pcs_gt)

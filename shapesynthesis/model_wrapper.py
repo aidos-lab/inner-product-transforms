@@ -6,8 +6,8 @@ one in pointflow and make it accept the same type of data.
 import torch
 from layers.directions import generate_uniform_directions
 from layers.ect import EctLayer, compute_ect_point_cloud
-from models.encoder import BaseLightningModel as Encoder
-from models.vae_1d import BaseLightningModel as VAE
+from models.encoder_new import BaseLightningModel as Encoder
+from models.vae_baseline import BaseLightningModel as VAE
 from scipy import sparse
 
 DEVICE = "cuda:0"
@@ -41,16 +41,22 @@ class ModelWrapper:
         """
         ect_samples = self.vae.model.sample(n=num_samples)
 
-        vae_pointcloud = self.encoder(ect_samples).view(-1, 2048, 3)
+        vae_pointcloud = self.encoder(ect_samples).view(
+            -1,
+            self.encoder.config.num_pts,
+            3,
+        )
         return vae_pointcloud, ect_samples
 
     @torch.no_grad()
     def reconstruct(self, ect):
         if self.vae is not None:
             reconstructed_ect, _, _, _ = self.vae.model(ect)
-            pointcloud = self.encoder(reconstructed_ect).view(-1, 2048, 3)
+            pointcloud = self.encoder(reconstructed_ect).view(
+                -1, self.encoder.config.num_pts, 3
+            )
         else:
-            pointcloud = self.encoder(ect).view(-1, 2048, 3)
+            pointcloud = self.encoder(ect).view(-1, self.encoder.config.num_pts, 3)
             reconstructed_ect = ect
 
         return pointcloud, reconstructed_ect
@@ -93,7 +99,7 @@ class ModelDownsampleWrapper:
         ).cuda()
 
     @torch.no_grad()
-    def reconstruct(self, batch, normalized=False):
+    def reconstruct(self, ect_gt, normalized=False):
         """
         The method first applies the downsamler to create a sparse
         representation of the point cloud and subsequently upsamples the model
@@ -102,27 +108,18 @@ class ModelDownsampleWrapper:
         is decoding in this experiment are thus far out of distribution.
         """
 
-        pc_shape = batch[0].x.shape
-
-        sparse_pointcloud = self.encoder_downsampler(batch.ect).view(
-            -1, self.config.num_pts, pc_shape[1]
+        sparse_pointcloud = self.encoder_downsampler(ect_gt).view(
+            -1,
+            self.config.num_pts,
+            self.config.ectconfig.ambient_dimension,
         )
 
-        sparse_ect = (
-            compute_ect_point_cloud(
-                x=sparse_pointcloud,
-                v=self.v,
-                radius=self.config.ectconfig.r,
-                resolution=self.config.ectconfig.resolution,
-                scale=self.config.ectconfig.scale,
-            )
-            / self.config.num_pts
-        )
+        sparse_ect = self.encoder_downsampler.ect_transform(sparse_pointcloud)
         pointcloud = self.encoder_upsampler(sparse_ect).view(
-            -1, self.encoder_upsampler.config.num_pts, pc_shape[1]
+            -1, self.encoder_upsampler.config.num_pts, 3
         )
 
-        return pointcloud, sparse_pointcloud
+        return pointcloud, sparse_pointcloud, sparse_ect
 
 
 class ModelCompletionWrapper:

@@ -319,7 +319,7 @@ name = "chamfer-3d"
 version = "0.0.0"
 source = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
 wheels = [
-    { filename = "chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:9ac49642bf7ed2802722216b969d6ce1bb9ed740037f06b7abfc5b01bcb5b752" },
+    { filename = "chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:2a6b352e4c8c2b2f6f81cb7acdafb2c3ea15eadd5430597945d0f6982b7661c3" },
 ]
 
 [[package]]
@@ -589,7 +589,7 @@ name = "emd-ext"
 version = "0.0.0"
 source = { path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
 wheels = [
-    { filename = "emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:86d82c7809f004da26143c5a69799b4a8d94855a75fa2a53f92a0e9cf0b12572" },
+    { filename = "emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:8f013b520b64bc1f39d4edf943aba5ffac3a4fcaeb6a5487d513d24d0ee9b2d8" },
 ]
 
 [[package]]
@@ -2318,6 +2318,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pyre-extensions"
+version = "0.0.32"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+    { name = "typing-inspect" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a7/53/5bc2532536e921c48366ad1047c1344ccef6afa5e84053f0f6e20a453767/pyre_extensions-0.0.32.tar.gz", hash = "sha256:5396715f14ea56c4d5fd0a88c57ca7e44faa468f905909edd7de4ad90ed85e55", size = 10852 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/7a/9812cb8be9828ab688203c5ac5f743c60652887f0c00995a6f6f19f912bd/pyre_extensions-0.0.32-py3-none-any.whl", hash = "sha256:a63ba6883ab02f4b1a9f372ed4eb4a2f4c6f3d74879aa2725186fdfcfe3e5c68", size = 12766 },
+]
+
+[[package]]
 name = "pytest"
 version = "8.3.5"
 source = { registry = "https://pypi.org/simple" }
@@ -2875,6 +2888,7 @@ dependencies = [
     { name = "torch" },
     { name = "torch-fidelity" },
     { name = "torch-geometric" },
+    { name = "torchtnt" },
     { name = "torchvision" },
     { name = "trame" },
     { name = "wandb" },
@@ -2911,6 +2925,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.5.1,<3" },
     { name = "torch-fidelity", specifier = ">=0.3.0" },
     { name = "torch-geometric", specifier = ">=2.6.1,<3" },
+    { name = "torchtnt", specifier = ">=0.2.4" },
     { name = "torchvision", specifier = ">=0.20.1,<0.21" },
     { name = "trame", specifier = ">=3.7.6,<4" },
     { name = "wandb", specifier = ">=0.19.1,<0.20" },
@@ -2995,6 +3010,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/99/5a5b6f19ff9f083671ddf7b9632028436167cd3d33e11015754e41b249a4/sympy-1.13.1.tar.gz", hash = "sha256:9cebf7e04ff162015ce31c9c6c9144daa34a93bd082f54fd8f12deca4f47515f", size = 7533040 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/fe/81695a1aa331a842b582453b605175f419fe8540355886031328089d840a/sympy-1.13.1-py3-none-any.whl", hash = "sha256:db36cdc64bf61b9b24578b6f7bab1ecdd2452cf008f34faa33776680c26d66f8", size = 6189177 },
+]
+
+[[package]]
+name = "tabulate"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/fe/802052aecb21e3797b8f7902564ab6ea0d60ff8ca23952079064155d1ae1/tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c", size = 81090 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f", size = 35252 },
 ]
 
 [[package]]
@@ -3207,6 +3231,28 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/c4/2d921ccf7433ee6d8d6edeaca238674cbbc74528120631c662014795c645/torchmetrics-1.7.1.tar.gz", hash = "sha256:0ac1a0e90d2375866ceb5d3868720c6df7d7d0c5729b7ad36e92c897c6af70c2", size = 565045 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/ee/4d0a7213a6f412afb3483031009a3b970dd7bed3be24de95ab04fba1c05a/torchmetrics-1.7.1-py3-none-any.whl", hash = "sha256:9a4c45edbd0a1844cc1540c9e71bfbe0ee783a2ed997344d947fefecac90dbb9", size = 961489 },
+]
+
+[[package]]
+name = "torchtnt"
+version = "0.2.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fsspec" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyre-extensions" },
+    { name = "setuptools" },
+    { name = "tabulate" },
+    { name = "tensorboard" },
+    { name = "torch" },
+    { name = "tqdm" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/b9/c440c3bf39edddf1b72cbf88245a8ca3345caae0cbeabb2601ddcc679be5/torchtnt-0.2.4.tar.gz", hash = "sha256:26cf4e718965afc293e76158b47283722055bcf79e94d0e67e70b5dbf61c0c9b", size = 115176 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b1/20/d8b33d11f38515ef88a84ac32e1809de110440278cd35c30d3f1ca511397/torchtnt-0.2.4-py3-none-any.whl", hash = "sha256:c9b738232090c5e3453f202b1feb45e23d5cd2f23a04ca8b53e9b28ad3755ddb", size = 163459 },
 ]
 
 [[package]]
