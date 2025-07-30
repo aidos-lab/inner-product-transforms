@@ -154,12 +154,13 @@ if __name__ == "__main__":
     #     num_pc=20,
     #     #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
     # )
-    # plot_recon_3d(
-    #     sparse_pc.cpu().numpy(),
-    #     ref_pc.cpu().numpy(),
-    #     num_pc=20,
-    #     #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
-    # )
+    plot_recon_3d(
+        sparse_pc.cpu().numpy(),
+        ref_pc.cpu().numpy(),
+        num_pc=5,
+        point_size=5,
+        #  filename=f"./results{result_suffix}/{model_name}/reconstruction.png",
+    )
 
     # Make sure folders exist
     os.makedirs("./results", exist_ok=True)

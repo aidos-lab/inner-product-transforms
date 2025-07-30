@@ -24,5 +24,13 @@ df["MMD-CD"] *= 1e4
 df["MMD-EMD"] *= 1e3
 
 df = df[["dataset",'num_pts','MMD-CD',"MMD-EMD"]].set_index(['dataset','num_pts']).sort_index()
-df.to_markdown("rebuttal_lower.md")
+
+df = df.unstack(level=0).reorder_levels([1,0],axis=1).sort_index(axis=1)
 # fmt: on
+
+
+# |%%--%%| <7QPjohcs3S|D5NZX1VWkr>
+
+df.reset_index(col_level=1).to_markdown()
+
+# df.to_markdown("rebuttal_lower.md")

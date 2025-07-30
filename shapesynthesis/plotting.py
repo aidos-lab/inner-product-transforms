@@ -57,7 +57,7 @@ def plot_recon_2d(recon_pcs, ref_pcs, jnt_pcs=None, num_pc=5):
     return fig
 
 
-def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename=None):
+def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename=None, point_size=2):
 
     off_screen = True if filename is not None else False
 
@@ -79,7 +79,7 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename=None):
             show_scalar_bar=False,
             render_points_as_spheres=True,
             color="lightgray",
-            point_size=2,
+            point_size=point_size,
             ambient=0.2,
             diffuse=0.8,
             specular=0.8,
@@ -94,7 +94,7 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename=None):
             show_scalar_bar=False,
             render_points_as_spheres=True,
             color=LIGHTRED,
-            point_size=2,
+            point_size=point_size,
             ambient=0.2,
             diffuse=0.8,
             specular=0.8,
@@ -108,7 +108,7 @@ def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename=None):
             show_scalar_bar=False,
             render_points_as_spheres=True,
             color="lightgray",
-            point_size=2,
+            point_size=point_size,
             ambient=0.2,
             diffuse=0.8,
             specular=0.8,

@@ -1,0 +1,58 @@
+# Global ect config, referenced in modelconfig.
+ectconfig: &ref-ectconfig
+  seed: 2024
+  num_thetas: 128
+  resolution: 8
+  scale: 32
+  r: 7
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+
+ectlossconfig: &ref-ectlossconfig 
+  num_thetas: 128
+  resolution: 128
+  scale: 8
+  r: 7
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+  seed: 2024
+
+
+data: 
+  module: datasets.shapenet
+  root_dir: ./data/shapenet
+  raw_dir: ./data/shapenet/raw/ShapeNetCore.v2.PC15k
+  cates: 
+    - airplane
+  num_workers: 0
+  batch_size: 128
+  pin_memory: True
+  drop_last: False
+  force_reload: False
+  ectconfig: *ref-ectconfig
+
+modelconfig:
+  module: models.encoder_new
+  num_pts: 2048
+  learning_rate: 0.00005
+  ectlossconfig: *ref-ectlossconfig
+  ectconfig: *ref-ectconfig
+
+
+loggers: 
+  logger: wandb
+  project: shape-synthesis
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+  experiment_name: "encoder_new_numres_008_airplane"
+  tags: []
+
+trainer:
+  accelerator: auto
+  max_epochs: 500
+  log_every_n_steps: 5
+  save_dir: trained_models
+  model_name: encoder_new_numres_008_airplane.ckpt
+  results_dir: ./results
