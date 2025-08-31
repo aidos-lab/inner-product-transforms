@@ -16,7 +16,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
 from torchvision.transforms import Compose
 
-from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
+from shapesynthesis.datasets.transforms import Ect2DTransform, RandomRotate
 from shapesynthesis.layers import ect
 
 
@@ -165,17 +165,17 @@ class BaseLightningModel(L.LightningModule):
         self.training_accuracy = MeanSquaredError()
         self.validation_accuracy = MeanSquaredError()
         self.test_accuracy = MeanSquaredError()
-        self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
-        # Metrics
-        self.train_fid = FrechetInceptionDistance(
-            feature=64, normalize=True, input_img_size=(1, 128, 128)
-        )
-        self.val_fid = FrechetInceptionDistance(
-            feature=64, normalize=True, input_img_size=(1, 128, 128)
-        )
-        self.sample_fid = FrechetInceptionDistance(
-            feature=64, normalize=True, input_img_size=(1, 128, 128)
-        )
+        self.ect_transform = Ect2DTransform(config=config.ectconfig, device="cuda")
+        # # Metrics
+        # self.train_fid = FrechetInceptionDistance(
+        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
+        # )
+        # self.val_fid = FrechetInceptionDistance(
+        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
+        # )
+        # self.sample_fid = FrechetInceptionDistance(
+        #     feature=64, normalize=True, input_img_size=(1, 128, 128)
+        # )
 
         self.model = VanillaVAE(config=self.config)
 
@@ -196,6 +196,7 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
+        pcs_gt = pcs_gt[0]
         batch_len = len(pcs_gt)
         ect_gt = self.ect_transform(pcs_gt)
 
@@ -209,35 +210,35 @@ class BaseLightningModel(L.LightningModule):
         ### Metrics
         ###############################################################
 
-        if step == "train":
-            self.train_fid.update(
-                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-            )
-            self.train_fid.update(
-                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-            )
-            fid = self.train_fid
-            sample_fid = torch.tensor(0.0)
-        elif step == "validation":
-            self.val_fid.update(
-                (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-            )
-            self.val_fid.update(
-                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-            )
-
-            samples = self.model.sample(n=batch_len, device="cuda")
-            self.sample_fid.update(
-                (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
-            )
-            self.sample_fid.update(
-                (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
-            )
-            fid = self.val_fid
-            sample_fid = self.sample_fid
-        else:
-            fid = torch.tensor(0.0)
-            sample_fid = torch.tensor(0.0)
+        # if step == "train":
+        #     self.train_fid.update(
+        #         (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     )
+        #     self.train_fid.update(
+        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     )
+        #     fid = self.train_fid
+        #     sample_fid = torch.tensor(0.0)
+        # elif step == "validation":
+        #     self.val_fid.update(
+        #         (recon_batch.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     )
+        #     self.val_fid.update(
+        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     )
+        #
+        #     samples = self.model.sample(n=batch_len, device="cuda")
+        #     self.sample_fid.update(
+        #         (samples.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=False
+        #     )
+        #     self.sample_fid.update(
+        #         (ect_gt.unsqueeze(1).repeat(1, 3, 1, 1) + 1) / 2, real=True
+        #     )
+        #     fid = self.val_fid
+        #     sample_fid = self.sample_fid
+        # else:
+        fid = torch.tensor(0.0)
+        sample_fid = torch.tensor(0.0)
 
         loss_dict = {
             f"{step}_kl_loss": kl_loss,

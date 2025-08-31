@@ -1,0 +1,68 @@
+ectconfig: &ref-ectconfig
+  seed: 2024
+  num_thetas: 32
+  resolution: 32
+  scale: 128
+  r: 1
+  ect_type: "points"
+  ambient_dimension: 2
+  normalized: True
+  structured: True
+
+
+
+data: 
+  module: datasets.mnist
+  root: ./data
+  num_workers: 0
+  batch_size: 128
+  num_pts: 256
+  drop_last: True
+  force_reload: False
+  ectconfig: *ref-ectconfig
+
+
+
+trainer: 
+  seed : 1111
+  max_epochs: 50 # Should be 20k
+  log_every_n_steps: 1
+  model_name: vqvae_mnist.ckpt
+  results_dir: ./results
+  accelerator: auto
+  save_dir: trained_models
+
+modelconfig:
+  module: models.vqvae
+  lr: 0.0001
+  ectconfig: *ref-ectconfig
+  z_channels: 3
+  codebook_size : 128
+  down_channels : [64, 128,  128]
+  mid_channels : [128, 128]
+  down_sample : [True, True]
+  attn_down : [False, False]
+  norm_channels: 32
+  im_channels : 1
+  num_heads: 16
+  num_down_layers : 1
+  num_mid_layers : 1
+  num_up_layers : 1
+  disc_start: 1000
+  disc_weight: 0.5
+  codebook_weight: 1
+  commitment_beta: 0.2
+  perceptual_weight: 1
+  kl_weight: 0.000005
+  save_latents : False
+
+
+loggers: 
+  logger: wandb
+  project: shape-synthesis
+  entity: aidos-labs
+  save_dir: ./lightning_logs
+  experiment_name: "vqvae_airplane"
+  tags: []
+
+

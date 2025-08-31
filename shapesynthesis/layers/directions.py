@@ -2,8 +2,37 @@
 Helper function to generate a structured set of directions in 2 or 3 dimensions.
 """
 
-import torch
 import numpy as np
+import torch
+
+
+def generate_2d_directions(num_thetas: int = 64):
+    """
+    Provides a structured set of directions in two dimensions. First the
+    interval [0,2*pi] is devided into a regular grid and the corresponding
+    angles on the unit circle calculated.
+
+    Parameters
+    ----------
+    num_thetas: int
+        The number of directions to generate.
+
+    Returns
+    ----------
+    v: Tensor
+        Tensor of shape [2,num_thetas] containing the directions where each
+        column is one direction in 2D.
+        The directions start at $theta=0$ and runs to $theta = 2 * pi$.
+    """
+
+    v = torch.vstack(
+        [
+            torch.sin(torch.linspace(0, 2 * torch.pi, num_thetas)),
+            torch.cos(torch.linspace(0, 2 * torch.pi, num_thetas)),
+        ]
+    )
+
+    return v
 
 
 def generate_uniform_directions(num_thetas: int = 64, d: int = 3, seed=None):

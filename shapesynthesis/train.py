@@ -18,6 +18,8 @@ L.seed_everything(seed=2013)
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
+torch.set_float32_matmul_precision("medium")
+
 
 def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
     """
@@ -71,7 +73,12 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
             self.ground_truth_batches.append(outputs[0])
             self.predicted_batches.append(outputs[1])
             return super().on_test_batch_end(
-                trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+                trainer,
+                pl_module,
+                outputs,
+                batch,
+                batch_idx,
+                dataloader_idx,
             )
 
         def on_test_end(self, trainer, pl_module):
@@ -91,18 +98,18 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
-        check_val_every_n_epoch=100,
+        check_val_every_n_epoch=1,
         enable_progress_bar=True,
         enable_checkpointing=False,
-        gradient_clip_val=0.01,
+        # gradient_clip_val=0.01,
     )
 
     trainer.fit(
         model, train_dataloaders=dm.train_dataloader, val_dataloaders=dm.val_dataloader
     )
 
-    # Set up for testing
-    trainer.test(model, dataloaders=dm.test_dataloader)
+    # # Set up for testing
+    # trainer.test(model, dataloaders=dm.test_dataloader)
 
     print("SAVING TO:", f"./{config.trainer.save_dir}/{config.trainer.model_name}")
     trainer.save_checkpoint(f"./{config.trainer.save_dir}/{config.trainer.model_name}")

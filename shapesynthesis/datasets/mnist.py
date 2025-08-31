@@ -95,7 +95,7 @@ def create_dataset(config: DataConfig, dev: bool = False):
     save_config(config=config, path=f"{path}/config.yaml")
 
 
-def get_dataloaders(config: DataConfig, dev: bool = False):
+def get_all_dataloaders(config: DataConfig, dev: bool = False):
     """Returns two dataloaders, train and test."""
 
     dataset_type = "dev" if dev else "prod"
@@ -106,8 +106,8 @@ def get_dataloaders(config: DataConfig, dev: bool = False):
     test_point_cloud = torch.load(f"{path}/test.pt")
     test_imgs = torch.load(f"{path}/test_imgs.pt")
 
-    train_ds = torch.utils.data.TensorDataset(train_point_cloud, train_imgs)
-    test_ds = torch.utils.data.TensorDataset(test_point_cloud, test_imgs)
+    train_ds = torch.utils.data.TensorDataset(train_point_cloud)
+    test_ds = torch.utils.data.TensorDataset(test_point_cloud)
 
     train_dl = torch.utils.data.DataLoader(
         train_ds,
@@ -124,7 +124,13 @@ def get_dataloaders(config: DataConfig, dev: bool = False):
         num_workers=0,
         drop_last=False,
     )
-    return train_dl, test_dl
+    return (
+        train_dl,
+        test_dl,
+        test_dl,
+        torch.tensor([0, 0, 0.0]),
+        torch.tensor([[[1.0]]]),
+    )
 
 
 if __name__ == "__main__":
@@ -136,7 +142,7 @@ if __name__ == "__main__":
         batch_size=64,
     )
     create_dataset(config, dev=True)
-    # create_dataset(config, dev=False)
+    create_dataset(config, dev=False)
 
     # print(72 * "=")
     # print("Data Configuration")

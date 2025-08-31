@@ -74,7 +74,7 @@ def compute_ect_point_cloud(
     nh = (x @ v).unsqueeze(1)
     ecc = torch.nn.functional.sigmoid(scale * torch.sub(lin, nh))
     ect = torch.sum(ecc, dim=2)
-    return 2 * ect / torch.amax(ect, dim=(-1, -2), keepdim=True) - 1
+    return 2 * (ect / torch.amax(ect, dim=(-1, -2), keepdim=True)) - 1
 
 
 def compute_ecc(nh, index, lin, scale):

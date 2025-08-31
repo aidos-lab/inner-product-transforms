@@ -2,41 +2,37 @@ ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 128
   resolution: 128 
-  scale: 128
-  r: 7
+  scale: 500
+  r: 1
   ect_type: "points"
-  ambient_dimension: 3
+  ambient_dimension: 2
   normalized: True
 
 data: 
-  module: datasets.shapenet
-  root_dir: ./data/shapenet
-  raw_dir: ./data/shapenet/raw/ShapeNetCore.v2.PC15k
-  cates: 
-    - airplane
+  module: datasets.mnist
+  root: ./data
   num_workers: 0
-  batch_size: 64
-  pin_memory: True
+  batch_size: 128
+  num_pts: 256
   drop_last: False
   force_reload: False
   ectconfig: *ref-ectconfig
 
 modelconfig:
   module: models.vae_baseline_sampling
-  # in_channels: 1
   latent_dim: 64
   beta_min: 0.00000001
   beta_max: 0.001
-  beta_period: 400
-  learning_rate: 0.0001
+  beta_period: 200
+  learning_rate: 0.001
   ectconfig: *ref-ectconfig 
 
 trainer:
   accelerator: auto
-  max_epochs: 20 # Should be 20k
+  max_epochs: 50 # Was 1000 before.
   log_every_n_steps: 1
   save_dir: ./trained_models 
-  model_name: vae_resnet_airplane.ckpt
+  model_name: vae_mnist.ckpt
   results_dir: ./results
 
 loggers: 
@@ -44,5 +40,5 @@ loggers:
   project: shape-synthesis
   entity: XXX
   save_dir: ./lightning_logs
-  experiment_name: "vae_resnet_airplane"
+  experiment_name: "vae_mnist"
   tags: []

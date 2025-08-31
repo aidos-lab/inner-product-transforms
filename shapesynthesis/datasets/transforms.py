@@ -2,22 +2,51 @@
 All transforms for the datasets.
 """
 
+from dataclasses import dataclass
 from functools import partial
 
 import numpy as np
 import torch
-from torchvision.transforms import Compose
 
-from shapesynthesis.layers.directions import generate_uniform_directions
+from shapesynthesis.layers.directions import (
+    generate_2d_directions,
+    generate_uniform_directions,
+)
 from shapesynthesis.layers.ect import EctConfig, compute_ect_point_cloud
 
 
+@dataclass
+class EctTransformConfig(EctConfig):
+    structured: bool
+
+
 class EctTransform:
+    def __init__(self, config: EctTransformConfig, device="cpu"):
+        self.config = config
+        if config.structured and config.ambient_dimension == 2:
+            self.v = generate_2d_directions(config.num_thetas).to(device)
+        else:
+            self.v = generate_uniform_directions(
+                config.num_thetas, d=config.ambient_dimension, seed=config.seed
+            ).to(device)
+        self.ect_fn = torch.compile(
+            partial(
+                compute_ect_point_cloud,
+                v=self.v,
+                radius=self.config.r,
+                resolution=self.config.resolution,
+                scale=self.config.scale,
+            )
+        )
+
+    def __call__(self, x):
+        return self.ect_fn(x)
+
+
+class Ect2DTransform:
     def __init__(self, config: EctConfig, device="cpu"):
         self.config = config
-        self.v = generate_uniform_directions(
-            config.num_thetas, d=config.ambient_dimension, seed=config.seed
-        ).to(device)
+        self.v = generate_2d_directions(config.num_thetas).to(device)
         self.ect_fn = torch.compile(
             partial(
                 compute_ect_point_cloud,

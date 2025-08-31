@@ -31,7 +31,6 @@ def load_datamodule(config, dev: bool = False):
     )
 
 
-# @timeit_decorator
 def load_model(config, model_path=None):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "BaseLightningModel")
