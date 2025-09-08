@@ -291,7 +291,7 @@ class BaseLightningModel(L.LightningModule):
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
 
-        pcs_gt = pcs_gt[0]
+        # pcs_gt = pcs_gt[0]
 
         optimizer_g, optimizer_d = self.optimizers()
 
@@ -374,7 +374,7 @@ class BaseLightningModel(L.LightningModule):
 
     @torch.no_grad()
     def validation_step(self, pcs_gt, batch_idx):
-        pcs_gt = pcs_gt[0]
+        # pcs_gt = pcs_gt[0]
         ect_gt = self.ect_transform(pcs_gt).unsqueeze(1)
 
         # Fetch autoencoders output(reconstructions)

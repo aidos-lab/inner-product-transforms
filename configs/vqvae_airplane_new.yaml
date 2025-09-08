@@ -1,12 +1,13 @@
 ectconfig: &ref-ectconfig
   seed: 2024
-  num_thetas: 32
-  resolution: 32
-  scale: 128
+  num_thetas: 128
+  resolution: 128
+  scale: 100
   r: 7
   ect_type: "points"
   ambient_dimension: 3
   normalized: True
+  structured: False
 
 
 data: 
@@ -24,10 +25,11 @@ data:
 
 trainer: 
   seed : 1111
-  max_epochs: 5 # Should be 20k
+  max_epochs: 500 # Should be 20k
   log_every_n_steps: 1
   model_name: vae_resnet_airplane.ckpt
   results_dir: ./results
+  save_dir: ./lightning_logs
   accelerator: auto
 
 modelconfig:
@@ -38,7 +40,7 @@ modelconfig:
   codebook_size : 1024
   down_channels : [64,  128, 256, 256]
   mid_channels : [256, 256]
-  down_sample : [True, False, False]
+  down_sample : [True, True, False]
   attn_down : [False, False,False]
   norm_channels: 32
   im_channels : 1
@@ -58,7 +60,7 @@ modelconfig:
 loggers: 
   logger: wandb
   project: shape-synthesis
-  entity: aidos-lab
+  entity: aidos-labs
   save_dir: ./lightning_logs
   experiment_name: "vqvae_airplane"
   tags: []

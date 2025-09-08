@@ -6,6 +6,7 @@ wandb/
 scratch/
 tables/
 lightning_logs/
+lightning_logs_dev/
 **/__pycache__
 trained_models/**
 **/*.pt

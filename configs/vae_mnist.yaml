@@ -38,7 +38,7 @@ trainer:
 loggers: 
   logger: wandb
   project: shape-synthesis
-  entity: XXX
+  entity: aidos-labs
   save_dir: ./lightning_logs
   experiment_name: "vae_mnist"
   tags: []

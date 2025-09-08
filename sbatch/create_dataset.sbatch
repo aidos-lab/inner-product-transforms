@@ -1,13 +1,18 @@
 #!/bin/bash
-#SBATCH --job-name=create_dataset
+#SBATCH --job-name=test
 #SBATCH --nodes=1
-#SBATCH --mem=8G
-#SBATCH --time=0:10:00
-#SBATCH --output=./logs/create_dataset_output.txt
-#SBATCH --error=./logs/create_dataset_error.txt
+#SBATCH --gres=gpu:1
+#SBATCH --mem=12G
+#SBATCH --time=00:10:00
+#SBATCH --output=./logs/mnist.txt
+#SBATCH --error=./logs/error_mnist.txt
 #SBATCH --nice=10000
-#SBATCH --partition=cpu_p
-#SBATCH --qos=cpu_normal
+#SBATCH --qos=gpu_normal
+#SBATCH --partition=GPU
+
+
+
 
 # Run your job commands
-uv run python ./shapesynthesis/datasets/shapenet.py
+#uv run python ./shapesynthesis/datasets/shapenet.py
+uv run python ./shapesynthesis/datasets/mnist.py
