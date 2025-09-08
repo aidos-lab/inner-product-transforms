@@ -16,7 +16,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
 from torchvision.transforms import Compose
 
-from shapesynthesis.datasets.transforms import Ect2DTransform, RandomRotate
+from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
 from shapesynthesis.layers import ect
 
 
@@ -165,7 +165,7 @@ class BaseLightningModel(L.LightningModule):
         self.training_accuracy = MeanSquaredError()
         self.validation_accuracy = MeanSquaredError()
         self.test_accuracy = MeanSquaredError()
-        self.ect_transform = Ect2DTransform(config=config.ectconfig, device="cuda")
+        self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
         # # Metrics
         # self.train_fid = FrechetInceptionDistance(
         #     feature=64, normalize=True, input_img_size=(1, 128, 128)
@@ -196,7 +196,6 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
-        pcs_gt = pcs_gt[0]
         batch_len = len(pcs_gt)
         ect_gt = self.ect_transform(pcs_gt)
 

@@ -2,7 +2,7 @@ ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 128
   resolution: 128 
-  scale: 128
+  scale: 100
   r: 7
   ect_type: "points"
   ambient_dimension: 3
@@ -33,16 +33,16 @@ modelconfig:
 
 trainer:
   accelerator: auto
-  max_epochs: 20 # Should be 20k
+  max_epochs: 500 # Should be 20k
   log_every_n_steps: 1
   save_dir: ./trained_models 
-  model_name: vae_resnet_airplane.ckpt
+  model_name: vae_airplane.ckpt
   results_dir: ./results
 
 loggers: 
   logger: wandb
   project: shape-synthesis
-  entity: XXX
+  entity: aidos-labs
   save_dir: ./lightning_logs
-  experiment_name: "vae_resnet_airplane"
+  experiment_name: "vae_airplane"
   tags: []

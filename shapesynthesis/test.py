@@ -25,7 +25,7 @@ def evaluate_reconstruction(model: ModelWrapper, dm):
     all_recon_ect = []
     for idx, pcs in enumerate(dm.val_dataloader):
         ect_gt = model.encoder.ect_transform(pcs.cuda())
-        out_pc, reconstructed_ect = model.reconstruct(ect_gt)
+        out_pc, reconstructed_ect = model.reconstruct(ect_gt.unsqueeze(1))
 
         out_pc = out_pc * s + m
         pcs = pcs * dm.s + dm.m
@@ -118,6 +118,9 @@ if __name__ == "__main__":
             vae_config.modelconfig,
             f"./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
         ).to(DEVICE)
+        print(
+            f"Loading vae model from ./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
+        )
 
         # If VAE is provided, overwrite the modelname.
         model_name = vae_config.trainer.model_name.split(".")[0]

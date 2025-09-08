@@ -51,12 +51,15 @@ class ModelWrapper:
     @torch.no_grad()
     def reconstruct(self, ect):
         if self.vae is not None:
-            reconstructed_ect, _, _, _ = self.vae.model(ect)
-            pointcloud = self.encoder(reconstructed_ect).view(
+            output = self.vae.model(ect)
+            pointcloud = self.encoder(output[0].squeeze()).view(
                 -1, self.encoder.config.num_pts, 3
             )
+            reconstructed_ect = output[0]
         else:
-            pointcloud = self.encoder(ect).view(-1, self.encoder.config.num_pts, 3)
+            pointcloud = self.encoder(ect.squeeze()).view(
+                -1, self.encoder.config.num_pts, 3
+            )
             reconstructed_ect = ect
 
         return pointcloud, reconstructed_ect

@@ -23,7 +23,13 @@ class EctTransformConfig(EctConfig):
 class EctTransform:
     def __init__(self, config: EctTransformConfig, device="cpu"):
         self.config = config
-        if config.structured and config.ambient_dimension == 2:
+
+        if not hasattr(config, "structured"):
+            structured = False
+        else:
+            structured = config.structured
+
+        if structured and config.ambient_dimension == 2:
             self.v = generate_2d_directions(config.num_thetas).to(device)
         else:
             self.v = generate_uniform_directions(

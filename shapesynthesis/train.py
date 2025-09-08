@@ -21,7 +21,13 @@ DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 torch.set_float32_matmul_precision("medium")
 
 
-def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
+def train(
+    config: SimpleNamespace,
+    resume=False,
+    evaluate=False,
+    dev=False,
+    compile=False,
+):
     """
     Method to train models.
     """
@@ -29,7 +35,7 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
     # Modify configs based on dev flag.
     if dev:
         config.loggers.tags.append("dev")
-        # config.trainer.max_epochs = 1
+        config.trainer.max_epochs = 2
         config.trainer.save_dir += "_dev"
         config.trainer.results_dir += "_dev"
 
@@ -51,6 +57,9 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         ).to(DEVICE)
     else:
         model = load_model(config.modelconfig).to(DEVICE)
+
+    if compile:
+        model = torch.compile(model)
 
     logger = load_logger(config.loggers)
 
@@ -98,9 +107,10 @@ def train(config: SimpleNamespace, resume=False, evaluate=False, dev=False):
         accelerator=config.trainer.accelerator,
         max_epochs=config.trainer.max_epochs,
         log_every_n_steps=config.trainer.log_every_n_steps,
-        check_val_every_n_epoch=1,
+        check_val_every_n_epoch=10,
         enable_progress_bar=True,
         enable_checkpointing=False,
+        precision="16-mixed",
         # gradient_clip_val=0.01,
     )
 
@@ -122,6 +132,9 @@ if __name__ == "__main__":
         "--dev", default=False, action="store_true", help="Run a small subset."
     )
     parser.add_argument(
+        "--compile", default=False, action="store_true", help="Run a small subset."
+    )
+    parser.add_argument(
         "--resume", default=False, action="store_true", help="Resume training"
     )
     parser.add_argument(
@@ -133,4 +146,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     run_config, _ = load_config(args.INPUT)
 
-    train(run_config, resume=args.resume, dev=args.dev, evaluate=args.evaluate)
+    train(
+        run_config,
+        resume=args.resume,
+        dev=args.dev,
+        evaluate=args.evaluate,
+        compile=args.compile,
+    )

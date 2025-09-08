@@ -3,7 +3,7 @@ ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 128
   resolution: 128 
-  scale: 32
+  scale: 100
   r: 7
   ect_type: "points"
   ambient_dimension: 3
@@ -18,6 +18,7 @@ ectlossconfig: &ref-ectlossconfig
   ambient_dimension: 3
   normalized: True
   seed: 2024
+  structured: False
 
 
 data: 
@@ -32,6 +33,7 @@ data:
   drop_last: False
   force_reload: False
   ectconfig: *ref-ectconfig
+  structured: False
 
 modelconfig:
   module: models.encoder_new

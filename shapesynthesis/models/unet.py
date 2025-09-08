@@ -73,16 +73,16 @@ class BaseLightningModel(L.LightningModule):
         )
         return optimizer
 
-    def forward(self, batch):  # pylint: disable=arguments-differ
-        x = self.model(batch)
+    def forward(self, x, t):
+        x = self.model(x, t)
         return x
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
-        pcs_gt = pcs_gt[0]
+        # pcs_gt = pcs_gt[0]
 
         im = self.ect_transform(pcs_gt).unsqueeze(1)
         with torch.no_grad():
-            im, _ = self.vae.encode(im)
+            im, _ = self.vae.model.encode(im)
 
         # Sample random noise
         noise = torch.randn_like(im)
