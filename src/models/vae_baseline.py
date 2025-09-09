@@ -65,49 +65,6 @@ class Model(nn.Module):
         self.fc_var = nn.Linear(4 * 32 * 16 * 16, latent_dim)
         self.decoder_input = nn.Linear(latent_dim, 4 * 32 * 16 * 16)
 
-        # self.encoder = nn.Sequential(
-        #     # (B, 128, W) -> (B, 64, W/2)
-        #     nn.Conv1d(128, 256, kernel_size=13, stride=2, padding=6),
-        #     nn.LeakyReLU(),
-        #     # (B, 64, W/2) -> (B, 32, W/4)
-        #     nn.Conv1d(256, 256, kernel_size=13, stride=1, padding=6),
-        #     nn.LeakyReLU(),
-        #     # (B, 64, W/2) -> (B, 32, W/4)
-        #     nn.Conv1d(256, 256, kernel_size=13, stride=1, padding=6),
-        #     nn.LeakyReLU(),
-        #     # (B, 64, W/2) -> (B, 32, W/4)
-        #     nn.Conv1d(256, 256, kernel_size=13, stride=1, padding=6),
-        #     nn.LeakyReLU(),
-        #     # (B, 32, W/4) -> (B, 16, W/8)
-        #     nn.Conv1d(256, 64, kernel_size=13, stride=2, padding=6),
-        #     # Output -> (B, 16, 16)
-        # )
-
-        # self.decoder = nn.Sequential(
-        #     nn.ConvTranspose1d(
-        #         64, 256, kernel_size=13, stride=1, padding=6, output_padding=0
-        #     ),
-        #     nn.LeakyReLU(),
-        #     nn.ConvTranspose1d(
-        #         256, 256, kernel_size=13, stride=1, padding=6, output_padding=0
-        #     ),
-        #     nn.LeakyReLU(),
-        #     nn.ConvTranspose1d(
-        #         256, 256, kernel_size=13, stride=1, padding=6, output_padding=0
-        #     ),
-        #     nn.Upsample(scale_factor=2),
-        #     nn.LeakyReLU(),
-        #     nn.ConvTranspose1d(
-        #         256, 256, kernel_size=13, stride=1, padding=6, output_padding=0
-        #     ),
-        #     nn.LeakyReLU(),
-        #     nn.Upsample(scale_factor=2),
-        #     nn.ConvTranspose1d(
-        #         256, 128, kernel_size=13, stride=1, padding=6, output_padding=0
-        #     ),
-        #     nn.Tanh(),
-        # )
-
     def encode(self, input_tensor):
         result = self.encoder(input_tensor)
         result = torch.flatten(result, start_dim=1)

@@ -85,17 +85,6 @@ def train(
         optimizer_g.zero_grad(set_to_none=False)
         optimizer_d.zero_grad(set_to_none=True)
 
-        # Save model.
-        if epoch % trainerconfig.checkpoint_interval == 0:
-            state = {"model": model}
-            print(
-                f" Saving model to results/{loggerconfig.results_dir}/model.ckpt",
-            )
-            fabric.save(
-                f"results/{loggerconfig.results_dir}/model.ckpt",
-                state,
-            )
-
         for pc in tqdm(dataloader, disable=no_progressbar):
             ect = transform(pc).unsqueeze(1)
 
@@ -103,7 +92,7 @@ def train(
 
             # Start adding the discrimminator after 1k steps.
             disc_scale_loss = 0
-            if step_count > 200:
+            if epoch > 100:
                 disc_scale_loss = 1
 
             # Fetch autoencoders output(reconstructions)
@@ -153,23 +142,21 @@ def train(
                     "disc_loss": disc_loss,
                     "g_loss": g_loss,
                     "recon_loss": recon_loss,
+                    "disc_scale": disc_scale_loss,
                 }
                 | quant_losses,
                 step=epoch,
             )
-
-    os.makedirs(name=f"results/{loggerconfig.results_dir}/test", exist_ok=True)
-    # Starting the test loop.
-    recon = []
-    gt = []
-    for idx, pc in enumerate(valdataloader):
-        ect = transform(pc).unsqueeze(1)
-        gt.append(ect)
-        # Fetch autoencoders output(reconstructions)
-        output, internal_loss, quant_losses = model(ect)
-        recon.append(output)
-
-        if idx == 0:
+        # Save model.
+        if epoch % trainerconfig.checkpoint_interval == 0:
+            state = {"model": model}
+            print(
+                f" Saving model to results/{loggerconfig.results_dir}/model.ckpt",
+            )
+            fabric.save(
+                f"results/{loggerconfig.results_dir}/model.ckpt",
+                state,
+            )
             sample_size = 8
             save_recon = (
                 1 + torch.clamp(output[:sample_size], -1.0, 1.0).detach().cpu()
@@ -178,16 +165,53 @@ def train(
 
             grid = make_grid(torch.cat([save_gt, save_recon], dim=0), nrow=sample_size)
             img = torchvision.transforms.ToPILImage()(grid)
-            img.save(f"results/{loggerconfig.results_dir}/ect_recon.png")
+            img.save(f"results/{loggerconfig.results_dir}/ect_recon_{epoch:04}.png")
             img.close()
-            # if idx == 0:
-            #     logger.log_image(
-            #         "generated_images",
-            #         [
-            #             grid,
-            #         ],
-            #         0,
-            #     )
+
+    # Final save before the test loop.
+    state = {"model": model}
+    print(
+        f"Final save to results/{loggerconfig.results_dir}/model.ckpt",
+    )
+    fabric.save(
+        f"results/{loggerconfig.results_dir}/model.ckpt",
+        state,
+    )
+
+    os.makedirs(name=f"results/{loggerconfig.results_dir}/test", exist_ok=True)
+
+    # Starting the test loop.
+    recon = []
+    gt = []
+    model.eval()
+    with torch.no_grad():
+        for idx, pc in enumerate(valdataloader):
+            ect = transform(pc).unsqueeze(1)
+            gt.append(ect)
+            # Fetch autoencoders output(reconstructions)
+            output, internal_loss, quant_losses = model(ect)
+            recon.append(output)
+
+            if idx == 0:
+                sample_size = 8
+                save_recon = (
+                    1 + torch.clamp(output[:sample_size], -1.0, 1.0).detach().cpu()
+                ) / 2
+                save_gt = ((ect[:sample_size] + 1) / 2).detach().cpu()
+
+                grid = make_grid(
+                    torch.cat([save_gt, save_recon], dim=0), nrow=sample_size
+                )
+                img = torchvision.transforms.ToPILImage()(grid)
+                img.save(f"results/{loggerconfig.results_dir}/ect_recon.png")
+                img.close()
+        torch.save(
+            torch.vstack(recon).cpu(),
+            f"results/{loggerconfig.results_dir}/recon_ect.pt",
+        )
+        torch.save(
+            torch.vstack(gt).cpu(), f"results/{loggerconfig.results_dir}/gt_ect.pt"
+        )
 
 
 def main():
@@ -274,6 +298,9 @@ def main():
     model = load_model(modelconfig)
 
     if resume:
+        print(
+            f"Resuming, loading model from: results/{loggerconfig.results_dir}/model.ckpt"
+        )
         state = {"model": model}
         fabric.load(f"results/{loggerconfig.results_dir}/model.ckpt", state)
 
@@ -292,7 +319,7 @@ def main():
     # Discrimminator
     discrimminatorconfig = DiscrimminatorConfig(
         im_channels=modelconfig.im_channels,
-        lr=0.0001,
+        lr=0.00001,
     )
     discrimminator = Discrimminator(discrimminatorconfig)
     if compile:

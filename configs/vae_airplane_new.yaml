@@ -65,4 +65,4 @@ modelconfig:
   perceptual_weight: 1
   learning_rate: 0.0001
   disc_start: 1000
-  disc_weight: 0.5
+  disc_weight: 0.01
