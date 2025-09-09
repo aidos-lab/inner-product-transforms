@@ -1,5 +1,5 @@
 [project]
-name = "shapesynthesis"
+name = "shape-synthesis"
 version = "0.1.0"
 description = "Shape synthesis"
 authors = [{ name = "Your Name", email = "you@example.com" }]
@@ -61,9 +61,17 @@ ignore = ["tests"]
 venvPath = "."
 venv = ".venv"
 
+
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+sources = ['src']
 
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
+[project.scripts]
+main = "shape_synthesis.main:main"
+trainvae = "train_vae:main"
+
+
+
+

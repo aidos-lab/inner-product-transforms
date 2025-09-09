@@ -45,6 +45,7 @@ class Model(nn.Module):
 
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.down_channels = config.down_channels
         self.mid_channels = config.mid_channels
         self.down_sample = config.down_sample

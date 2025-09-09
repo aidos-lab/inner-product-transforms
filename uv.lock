@@ -2904,7 +2904,7 @@ wheels = [
 ]
 
 [[package]]
-name = "shapesynthesis"
+name = "shape-synthesis"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

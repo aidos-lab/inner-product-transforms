@@ -1,16 +1,18 @@
 import argparse
 import importlib
+import os
 from typing import Any
 
 import pydantic
 import torch
+import torchvision
 import yaml
 from lightning import seed_everything
 from lightning.fabric import Fabric
 from torch.optim import Adam
+from torchvision.utils import make_grid
 from tqdm import tqdm
 
-from src.datasets.shapenet import DataConfig
 from src.loaders import load_datamodule, load_logger, load_model, load_transform
 from src.models.discrimminator import Discrimminator, DiscrimminatorConfig
 from src.models.lpips import LPIPS
@@ -66,6 +68,7 @@ def train(
     loggerconfig,
     fabric,
     dataloader,
+    valdataloader,
     model,
     lpips_model,
     discrimminator,
@@ -78,7 +81,7 @@ def train(
     no_progressbar,
 ):
     step_count = 0
-    for epoch in tqdm(range(trainerconfig.max_epochs), disable=no_progressbar):
+    for epoch in range(trainerconfig.max_epochs):
         optimizer_g.zero_grad(set_to_none=False)
         optimizer_d.zero_grad(set_to_none=True)
 
@@ -86,14 +89,14 @@ def train(
         if epoch % trainerconfig.checkpoint_interval == 0:
             state = {"model": model}
             print(
-                f" Saving model to {loggerconfig.results_dir}/model.ckpt",
+                f" Saving model to results/{loggerconfig.results_dir}/model.ckpt",
             )
             fabric.save(
-                f"{loggerconfig.results_dir}/model.ckpt",
+                f"results/{loggerconfig.results_dir}/model.ckpt",
                 state,
             )
 
-        for pc in dataloader:
+        for pc in tqdm(dataloader, disable=no_progressbar):
             ect = transform(pc).unsqueeze(1)
 
             step_count += 1
@@ -155,8 +158,74 @@ def train(
                 step=epoch,
             )
 
+    os.makedirs(name=f"results/{loggerconfig.results_dir}/test", exist_ok=True)
+    # Starting the test loop.
+    recon = []
+    gt = []
+    for idx, pc in enumerate(valdataloader):
+        ect = transform(pc).unsqueeze(1)
+        gt.append(ect)
+        # Fetch autoencoders output(reconstructions)
+        output, internal_loss, quant_losses = model(ect)
+        recon.append(output)
 
-def main(args):
+        if idx == 0:
+            sample_size = 8
+            save_recon = (
+                1 + torch.clamp(output[:sample_size], -1.0, 1.0).detach().cpu()
+            ) / 2
+            save_gt = ((ect[:sample_size] + 1) / 2).detach().cpu()
+
+            grid = make_grid(torch.cat([save_gt, save_recon], dim=0), nrow=sample_size)
+            img = torchvision.transforms.ToPILImage()(grid)
+            img.save(f"results/{loggerconfig.results_dir}/ect_recon.png")
+            img.close()
+            # if idx == 0:
+            #     logger.log_image(
+            #         "generated_images",
+            #         [
+            #             grid,
+            #         ],
+            #         0,
+            #     )
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Arguments for vq vae training",
+    )
+    parser.add_argument(
+        "--config",
+        dest="config_path",
+        default="configs/vqvae_airplane_new.yaml",
+        type=str,
+    )
+    parser.add_argument(
+        "--compile",
+        default=False,
+        action="store_true",
+        help="Compile all the models",
+    )
+    parser.add_argument(
+        "--dev",
+        default=False,
+        action="store_true",
+        help="Run a small subset.",
+    )
+    parser.add_argument(
+        "--resume",
+        default=False,
+        action="store_true",
+        help="Run a small subset.",
+    )
+    parser.add_argument(
+        "--no-progressbar",
+        default=False,
+        action="store_true",
+        help="Disable tqdm",
+    )
+    args = parser.parse_args()
+
     # Parse the args
     compile: bool = args.compile
     dev: bool = args.dev
@@ -196,6 +265,7 @@ def main(args):
     # Dataloaders
     dm = load_datamodule(dataconfig, dev=dev)
     dataloader = fabric.setup_dataloaders(dm.train_dataloader)
+    valdataloader = fabric.setup_dataloaders(dm.test_dataloader)
 
     transform = load_transform(transformconfig)
     transform = fabric.setup_module(transform)
@@ -205,7 +275,7 @@ def main(args):
 
     if resume:
         state = {"model": model}
-        fabric.load("trained_models_dev/vqvae.ckpt", state)
+        fabric.load(f"results/{loggerconfig.results_dir}/model.ckpt", state)
 
     if compile:
         model = torch.compile(model)
@@ -259,6 +329,7 @@ def main(args):
         loggerconfig,
         fabric,
         dataloader,
+        valdataloader,
         model,
         lpips_model,
         discrimminator,
@@ -273,38 +344,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Arguments for vq vae training",
-    )
-    parser.add_argument(
-        "--config",
-        dest="config_path",
-        default="configs/vqvae_airplane_new.yaml",
-        type=str,
-    )
-    parser.add_argument(
-        "--compile",
-        default=False,
-        action="store_true",
-        help="Compile all the models",
-    )
-    parser.add_argument(
-        "--dev",
-        default=False,
-        action="store_true",
-        help="Run a small subset.",
-    )
-    parser.add_argument(
-        "--resume",
-        default=False,
-        action="store_true",
-        help="Run a small subset.",
-    )
-    parser.add_argument(
-        "--no-progressbar",
-        default=False,
-        action="store_true",
-        help="Disable tqdm",
-    )
-    args = parser.parse_args()
-    main(args)
+    main()
