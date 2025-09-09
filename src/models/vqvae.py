@@ -2,20 +2,18 @@ from dataclasses import dataclass
 from typing import Literal
 
 import lightning as L
+import pydantic
 import torch
 import torch.nn as nn
 import torchvision
-from layers.ect import EctConfig
-from models.blocks import DownBlock, MidBlock, UpBlock
-from models.discriminator import Discriminator
-from models.lpips import LPIPS
 from torch import nn
 from torch.optim import Adam
 from torchmetrics.regression import MeanSquaredError
 from torchvision.utils import make_grid
 
-from src.datasets.transforms import EctTransform
-import pydantic
+from layers.ect import EctConfig
+from models.blocks import DownBlock, MidBlock, UpBlock
+from models.lpips import LPIPS
 
 
 class ModelConfig(pydantic.BaseModel):
@@ -42,7 +40,9 @@ class ModelConfig(pydantic.BaseModel):
     kl_weight: float
 
 
-class VQVAE(nn.Module):
+class Model(nn.Module):
+    """VQVAE implementation."""
+
     def __init__(self, config):
         super().__init__()
         self.down_channels = config.down_channels
@@ -233,7 +233,11 @@ class VQVAE(nn.Module):
     def forward(self, x):
         z, quant_losses = self.encode(x)
         out = self.decode(z)
-        return out, z, quant_losses
+
+        internal_loss = (
+            self.config.codebook_weight * quant_losses["codebook_loss"]
+        ) + (self.config.commitment_beta * quant_losses["commitment_loss"])
+        return out, internal_loss, quant_losses
 
 
 class BaseLightningModel(L.LightningModule):

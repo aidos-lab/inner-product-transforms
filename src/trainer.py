@@ -8,3 +8,4 @@ class TrainerConfig(pydantic.BaseModel):
     log_every_n_steps: int
     accelerator: str
     precision: str | None
+    checkpoint_interval: int

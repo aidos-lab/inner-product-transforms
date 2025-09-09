@@ -22,6 +22,19 @@ data:
   force_reload: False
   ectconfig: *ref-ectconfig
 
+transform: 
+  module: transforms.ecttransform
+  seed: 2024
+  num_thetas: 128
+  resolution: 128
+  scale: 100
+  r: 7
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+  structured: False
+
+
 trainer: &ref-trainer
   module: trainer
   seed : 1111
@@ -29,6 +42,7 @@ trainer: &ref-trainer
   log_every_n_steps: 1
   accelerator: auto
   precision: null
+  checkpoint_interval: 10
 
 
 logger:

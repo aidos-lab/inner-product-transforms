@@ -7,21 +7,19 @@ from functools import partial
 
 import numpy as np
 import torch
+from torch import nn
 
-from src.layers.directions import (
-    generate_2d_directions,
-    generate_uniform_directions,
-)
+from src.layers.directions import generate_2d_directions, generate_uniform_directions
 from src.layers.ect import EctConfig, compute_ect_point_cloud
 
 
 @dataclass
-class EctTransformConfig(EctConfig):
+class TransformConfig(EctConfig):
     structured: bool
 
 
-class EctTransform:
-    def __init__(self, config: EctTransformConfig, device="cpu"):
+class EctTransform(nn.Module):
+    def __init__(self, config: TransformConfig):
         self.config = config
 
         if not hasattr(config, "structured"):
@@ -30,11 +28,11 @@ class EctTransform:
             structured = config.structured
 
         if structured and config.ambient_dimension == 2:
-            self.v = generate_2d_directions(config.num_thetas).to(device)
+            self.v = generate_2d_directions(config.num_thetas)
         else:
             self.v = generate_uniform_directions(
                 config.num_thetas, d=config.ambient_dimension, seed=config.seed
-            ).to(device)
+            )
         self.ect_fn = torch.compile(
             partial(
                 compute_ect_point_cloud,
@@ -126,3 +124,16 @@ class RandomRotate:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(axis={self.axis})"
+
+
+#####################################################
+## User API
+#####################################################
+
+TRANSFORMDICT = {
+    "ECT": EctTransform,
+}
+
+
+def get_transform(config):
+    return TRANSFORMDICT[config.name](config)

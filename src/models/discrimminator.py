@@ -1,8 +1,14 @@
+import pydantic
 import torch
 import torch.nn as nn
 
 
-class Discriminator(nn.Module):
+class DiscrimminatorConfig(pydantic.BaseModel):
+    im_channels: int
+    lr: float
+
+
+class Discrimminator(nn.Module):
     r"""
     PatchGAN Discriminator.
     Rather than taking IMG_CHANNELSxIMG_HxIMG_W all the way to
@@ -12,7 +18,7 @@ class Discriminator(nn.Module):
     to the grid cell is real
     """
 
-    def __init__(self, config):
+    def __init__(self, config: DiscrimminatorConfig):
         super().__init__()
         conv_channels = [64, 128, 256]
         kernels = [4, 4, 4, 4]
@@ -49,9 +55,3 @@ class Discriminator(nn.Module):
         for layer in self.layers:
             out = layer(out)
         return out
-
-
-if __name__ == "__main__":
-    x = torch.randn((2, 3, 256, 256))
-    prob = Discriminator(im_channels=3)(x)
-    print(prob.shape)
