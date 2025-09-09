@@ -14,11 +14,11 @@ from torch.optim import Adam
 from torchmetrics.regression import MeanSquaredError
 from torchvision.utils import make_grid
 
-from shapesynthesis.datasets.transforms import EctTransform
+from src.datasets.transforms import EctTransform
+import pydantic
 
 
-@dataclass
-class ModelConfig:
+class ModelConfig(pydantic.BaseModel):
     lr: float
     module: str
     ectconfig: EctConfig
@@ -35,7 +35,7 @@ class ModelConfig:
     num_mid_layers: int
     num_up_layers: int
     disc_start: int
-    disc_weight: int
+    disc_weight: float
     codebook_weight: float
     commitment_beta: float
     perceptual_weight: float
@@ -271,7 +271,6 @@ class BaseLightningModel(L.LightningModule):
         self.save_hyperparameters()
 
     def configure_optimizers(self):
-
         optimizer_d = Adam(
             self.discriminator.parameters(),
             lr=self.config.lr,
@@ -290,7 +289,6 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
-
         # pcs_gt = pcs_gt[0]
 
         optimizer_g, optimizer_d = self.optimizers()

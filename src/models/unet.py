@@ -23,7 +23,6 @@ from shapesynthesis.datasets.transforms import EctTransform
 class ModelConfig:
     module: str
     latent_dim: int
-    learning_rate: float
     ectconfig: EctTransformConfig
     beta_period: int
     beta_min: float
@@ -39,7 +38,6 @@ class ModelConfig:
     num_down_layers: int
     num_mid_layers: int
     num_up_layers: int
-    module: str
     im_channels: int
     learning_rate: float
     noise_scheduler: NoiseSchedulerConfig

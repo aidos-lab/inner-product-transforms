@@ -22,14 +22,22 @@ data:
   force_reload: False
   ectconfig: *ref-ectconfig
 
-trainer: 
+trainer: &ref-trainer
+  module: trainer
   seed : 1111
   max_epochs: 1 # Should be 20k
   log_every_n_steps: 1
-  model_name: vqvae_airplane.ckpt
-  results_dir: ./results
-  save_dir: trained_models
   accelerator: auto
+  precision: null
+
+
+logger:
+  module: loggers.wandblogger
+  project: shape-synthesis
+  entity: aidos-labs
+  trainconfig: *ref-trainer
+  results_dir: vqvae_airplane
+
 
 modelconfig:
   module: models.vqvae
@@ -55,13 +63,5 @@ modelconfig:
   kl_weight: 0.000005
   save_latents : False
 
-
-loggers: 
-  logger: wandb
-  project: shape-synthesis
-  entity: aidos-labs
-  save_dir: ./trained_models
-  experiment_name: "vqvae_airplane"
-  tags: []
 
 

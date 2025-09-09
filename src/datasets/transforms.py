@@ -8,11 +8,11 @@ from functools import partial
 import numpy as np
 import torch
 
-from shapesynthesis.layers.directions import (
+from src.layers.directions import (
     generate_2d_directions,
     generate_uniform_directions,
 )
-from shapesynthesis.layers.ect import EctConfig, compute_ect_point_cloud
+from src.layers.ect import EctConfig, compute_ect_point_cloud
 
 
 @dataclass

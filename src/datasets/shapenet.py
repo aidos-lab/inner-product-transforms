@@ -4,12 +4,12 @@ from dataclasses import dataclass, field
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from shapesynthesis.datasets.shapenetbase import get_datasets as get_raw_datasets
-from shapesynthesis.layers.ect import EctConfig
+from src.datasets.shapenetbase import get_datasets as get_raw_datasets
+from src.layers.ect import EctConfig
+import pydantic
 
 
-@dataclass
-class DataConfig:
+class DataConfig(pydantic.BaseModel):
     module: str = "datasets.shapenet"
     root_dir: str = "./data/shapenet"
     raw_dir: str = "./data/shapenet/raw/ShapeNetCore.v2.PC15k"

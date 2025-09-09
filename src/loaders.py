@@ -102,19 +102,7 @@ def get_wandb_logger(config):
 
 def load_logger(config):
     """
-    Loads the wandb logger.
+    Loads the logger.
     """
-    if config.logger == "wandb":
-        logger = WandbLogger(
-            project=config.project,
-            entity=config.entity,
-            save_dir=config.save_dir,
-            name=config.experiment_name,
-            tags=config.tags,
-        )
-        return logger
-    elif config.logger == "tensorboard":
-        logger = TensorBoardLogger("my_logs", name=f"{config.experiment_name}")
-        return logger
-    else:
-        raise ValueError()
+    module = importlib.import_module(config.module)
+    return module.load_logger(config)
