@@ -4,11 +4,13 @@ one in pointflow and make it accept the same type of data.
 """
 
 import torch
+
+# from models.vae_baseline import BaseLightningModel as VAE
+from scipy import sparse
+
 from layers.directions import generate_uniform_directions
 from layers.ect import EctLayer, compute_ect_point_cloud
 from models.encoder_new import BaseLightningModel as Encoder
-from models.vae_baseline import BaseLightningModel as VAE
-from scipy import sparse
 
 DEVICE = "cuda:0"
 
@@ -23,7 +25,7 @@ def normalize(pts):
 
 
 class ModelWrapper:
-    def __init__(self, encoder: Encoder, vae: VAE | None = None) -> None:
+    def __init__(self, encoder: Encoder, vae: None = None) -> None:
         self.encoder = encoder
         self.encoder.eval()
         self.vae = vae

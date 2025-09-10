@@ -18,8 +18,8 @@ class TransformConfig(EctConfig):
     structured: bool
 
 
-class EctTransform(nn.Module):
-    def __init__(self, config: TransformConfig):
+class EctTransform:
+    def __init__(self, config: TransformConfig, device):
         self.config = config
 
         if not hasattr(config, "structured"):
@@ -28,11 +28,11 @@ class EctTransform(nn.Module):
             structured = config.structured
 
         if structured and config.ambient_dimension == 2:
-            self.v = generate_2d_directions(config.num_thetas)
+            self.v = generate_2d_directions(config.num_thetas).to(device)
         else:
             self.v = generate_uniform_directions(
                 config.num_thetas, d=config.ambient_dimension, seed=config.seed
-            )
+            ).to(device)
         self.ect_fn = torch.compile(
             partial(
                 compute_ect_point_cloud,

@@ -92,7 +92,7 @@ def train(
 
             # Start adding the discrimminator after 1k steps.
             disc_scale_loss = 0
-            if epoch > 100:
+            if epoch > 30:
                 disc_scale_loss = 1
 
             # Fetch autoencoders output(reconstructions)

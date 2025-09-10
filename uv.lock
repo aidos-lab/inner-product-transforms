@@ -327,6 +327,14 @@ wheels = [
 ]
 
 [[package]]
+name = "chamfer-3d"
+version = "0.0.0"
+source = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
+wheels = [
+    { filename = "chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:2a6b352e4c8c2b2f6f81cb7acdafb2c3ea15eadd5430597945d0f6982b7661c3" },
+]
+
+[[package]]
 name = "charset-normalizer"
 version = "3.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -586,6 +594,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c5/e6/d1f6c00b7221e2d7c4b470132c931325c8b22c51ca62417e300f5ce16009/docker-pycreds-0.4.0.tar.gz", hash = "sha256:6ce3270bcaf404cc4c3e27e4b6c70d3521deae82fb508767870fdbf772d584d4", size = 8754 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f5/e8/f6bd1eee09314e7e6dee49cbe2c5e22314ccdb38db16c9fc72d2fa80d054/docker_pycreds-0.4.0-py2.py3-none-any.whl", hash = "sha256:7266112468627868005106ec19cd0d722702d2b7d5912a28e19b826c3d37af49", size = 8982 },
+]
+
+[[package]]
+name = "emd-ext"
+version = "0.0.0"
+source = { path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
+wheels = [
+    { filename = "emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl", hash = "sha256:8f013b520b64bc1f39d4edf943aba5ffac3a4fcaeb6a5487d513d24d0ee9b2d8" },
 ]
 
 [[package]]
@@ -2909,6 +2925,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "addict" },
+    { name = "chamfer-3d" },
+    { name = "emd-ext" },
     { name = "gdown" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
@@ -2946,6 +2964,8 @@ vis = [
 [package.metadata]
 requires-dist = [
     { name = "addict", specifier = ">=2.4.0,<3" },
+    { name = "chamfer-3d", path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" },
+    { name = "emd-ext", path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" },
     { name = "gdown", specifier = ">=5.2.0" },
     { name = "ipykernel", specifier = ">=6.29.5,<7" },
     { name = "ipywidgets", specifier = ">=8.1.5,<9" },
