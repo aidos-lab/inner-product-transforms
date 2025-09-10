@@ -5,14 +5,14 @@ from typing import Literal, TypeAlias
 
 import lightning as L
 import torch
-from layers.directions import generate_uniform_directions
-from layers.ect import EctConfig, EctLayer
-from metrics.loss import chamfer2DECT, chamfer3DECT
 from torch import nn
 from torch.optim.lr_scheduler import StepLR
 from torchvision.transforms import Compose
 
-from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
+from layers.directions import generate_uniform_directions
+from layers.ect import EctConfig, EctLayer
+from metrics.loss import chamfer2DECT, chamfer3DECT
+from transforms.transforms import EctTransform
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -127,30 +127,30 @@ class BaseLightningModel(L.LightningModule):
         self.gt_test_batches = []
 
         self.model = Model(config)
-        self.losslayer = EctTransform(config=config.ectlossconfig, device="cuda")
+        # self.losslayer = EctTransform(config=config.ectlossconfig)
         self.ect_transform = EctTransform(config=config.ectconfig, device="cuda")
+        #
+        # print("CONIFG")
+        # print(self.losslayer.config)
 
-        print("CONIFG")
-        print(self.losslayer.config)
+        # self.rotation_transform = Compose(
+        #     [
+        #         RandomRotate(axis=0),
+        #         RandomRotate(axis=1),
+        #         RandomRotate(axis=2),
+        #     ]
+        # )
 
-        self.rotation_transform = Compose(
-            [
-                RandomRotate(axis=0),
-                RandomRotate(axis=1),
-                RandomRotate(axis=2),
-            ]
-        )
-
-        # Determine the loss function based on dimension.
-        # The 2D chamfer first embeds the 2d into 3d.
-        if config.ectlossconfig.ambient_dimension == 3:
-            self.loss_fn = chamfer3DECT
-        elif config.ectlossconfig.ambient_dimension == 2:
-            self.loss_fn = chamfer2DECT
-        else:
-            raise ValueError(
-                f"Number of dimensions {config.ectlossconfig.ambient_dimension} not supported"
-            )
+        # # Determine the loss function based on dimension.
+        # # The 2D chamfer first embeds the 2d into 3d.
+        # if config.ectlossconfig.ambient_dimension == 3:
+        #     self.loss_fn = chamfer3DECT
+        # elif config.ectlossconfig.ambient_dimension == 2:
+        #     self.loss_fn = chamfer2DECT
+        # else:
+        #     raise ValueError(
+        #         f"Number of dimensions {config.ectlossconfig.ambient_dimension} not supported"
+        #     )
 
         self.save_hyperparameters()
 

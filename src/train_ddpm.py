@@ -8,7 +8,7 @@ import argparse
 import numpy as np
 import torch
 from lightning.fabric import Fabric
-from loaders import load_config, load_datamodule
+from shapesynthesis.loaders import load_config, load_datamodule
 from models.schedulers.linear_scheduler import LinearNoiseScheduler
 from models.unet import Unet
 from models.vqvae import VQVAE
@@ -111,17 +111,21 @@ def train(args):
     print("Done Training ...")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Arguments for ddpm training")
-    parser.add_argument(
+    _ = parser.add_argument(
         "--config", dest="config_path", default="configs/vqvae_airplane.yaml", type=str
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--dev", default=False, action="store_true", help="Run a small subset."
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--compile", default=False, action="store_true", help="Compile modules"
     )
     args = parser.parse_args()
 
     train(args)
+
+
+if __name__ == "__main__":
+    main()

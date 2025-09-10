@@ -33,14 +33,21 @@ def load_datamodule(config, dev: bool = False):
 
 def load_model(config, model_path=None):
     module = importlib.import_module(config.module)
-    model_class = getattr(module, "BaseLightningModel")
+    model_class = getattr(module, "Model")
 
     if model_path:
         model = model_class.load_from_checkpoint(model_path)
     else:
         config_dict = json.loads(json.dumps(config, default=lambda s: vars(s)))
-        model = model_class(config)
+    model = model_class(config)
     return model
+
+
+def load_transform(config):
+    module = importlib.import_module(config.module)
+    transform_class = getattr(module, "Transform")
+    transform = transform_class(config)
+    return transform
 
 
 # @timeit_decorator
@@ -102,19 +109,7 @@ def get_wandb_logger(config):
 
 def load_logger(config):
     """
-    Loads the wandb logger.
+    Loads the logger.
     """
-    if config.logger == "wandb":
-        logger = WandbLogger(
-            project=config.project,
-            entity=config.entity,
-            save_dir=config.save_dir,
-            name=config.experiment_name,
-            tags=config.tags,
-        )
-        return logger
-    elif config.logger == "tensorboard":
-        logger = TensorBoardLogger("my_logs", name=f"{config.experiment_name}")
-        return logger
-    else:
-        raise ValueError()
+    module = importlib.import_module(config.module)
+    return module.load_logger(config)

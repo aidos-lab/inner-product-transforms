@@ -2,23 +2,21 @@ from dataclasses import dataclass
 from typing import Literal
 
 import lightning as L
+import pydantic
 import torch
 import torch.nn as nn
 import torchvision
-from layers.ect import EctConfig
-from models.blocks import DownBlock, MidBlock, UpBlock
-from models.discriminator import Discriminator
-from models.lpips import LPIPS
 from torch import nn
 from torch.optim import Adam
 from torchmetrics.regression import MeanSquaredError
 from torchvision.utils import make_grid
 
-from shapesynthesis.datasets.transforms import EctTransform
+from layers.ect import EctConfig
+from models.blocks import DownBlock, MidBlock, UpBlock
+from models.lpips import LPIPS
 
 
-@dataclass
-class ModelConfig:
+class ModelConfig(pydantic.BaseModel):
     lr: float
     module: str
     ectconfig: EctConfig
@@ -35,16 +33,19 @@ class ModelConfig:
     num_mid_layers: int
     num_up_layers: int
     disc_start: int
-    disc_weight: int
+    disc_weight: float
     codebook_weight: float
     commitment_beta: float
     perceptual_weight: float
     kl_weight: float
 
 
-class VQVAE(nn.Module):
+class Model(nn.Module):
+    """VQVAE implementation."""
+
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.down_channels = config.down_channels
         self.mid_channels = config.mid_channels
         self.down_sample = config.down_sample
@@ -233,7 +234,11 @@ class VQVAE(nn.Module):
     def forward(self, x):
         z, quant_losses = self.encode(x)
         out = self.decode(z)
-        return out, z, quant_losses
+
+        internal_loss = (
+            self.config.codebook_weight * quant_losses["codebook_loss"]
+        ) + (self.config.commitment_beta * quant_losses["commitment_loss"])
+        return out, internal_loss, quant_losses
 
 
 class BaseLightningModel(L.LightningModule):
@@ -271,7 +276,6 @@ class BaseLightningModel(L.LightningModule):
         self.save_hyperparameters()
 
     def configure_optimizers(self):
-
         optimizer_d = Adam(
             self.discriminator.parameters(),
             lr=self.config.lr,
@@ -290,7 +294,6 @@ class BaseLightningModel(L.LightningModule):
         return x
 
     def general_step(self, pcs_gt, _, step: Literal["train", "test", "validation"]):
-
         # pcs_gt = pcs_gt[0]
 
         optimizer_g, optimizer_d = self.optimizers()
