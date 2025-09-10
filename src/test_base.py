@@ -8,22 +8,11 @@ import torch
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
 from model_wrapper import ModelWrapper
+from models.encoder_new import BaseLightningModel as Encoder
 from plotting import plot_ect, plot_recon_3d
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-
-def load_litmodel(config, model_path=None):
-    module = importlib.import_module(config.module)
-    model_class = getattr(module, "BaseLightningModel")
-
-    if model_path:
-        model = model_class.load_from_checkpoint(model_path)
-    else:
-        config_dict = json.loads(json.dumps(config, default=lambda s: vars(s)))
-    model = model_class(config)
-    return model
 
 
 @torch.no_grad()
@@ -97,58 +86,15 @@ if __name__ == "__main__":
     ##################################################################
     encoder_config, _ = load_config(args.encoder_config)
 
-    # Inject dev runs if needed.
-    if args.dev:
-        encoder_config.trainer.save_dir += "_dev"
-
-    print(
-        f"Loading model from ./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}"
-    )
-    encoder_model = load_litmodel(
-        encoder_config.modelconfig,
-        f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
-    ).to(DEVICE)
-    encoder_model.model.eval()
-
-    # Set model name for saving results in the results folder.
-    model_name = encoder_config.trainer.model_name.split(".")[0]
+    encoder_model = Encoder.load_from_checkpoint(
+        "trained_models/encoder_new_airplane.ckpt"
+    ).cuda()
 
     dm = load_datamodule(encoder_config.data, dev=args.dev)
-
-    # Load the datamodule
-    # NOTE: Loads the datamodule from the encoder and does not check for
-    # equality of the VAE data configs.
-
-    if args.vae_config:
-        vae_config, _ = load_config(args.vae_config)
-
-        if args.dev:
-            vae_config.trainer.save_dir += "_dev"
-
-        # Check that the configs are equal for the ECT.
-        assert vae_config.ectconfig == encoder_config.ectconfig
-
-        vae_model = load_model(
-            vae_config.modelconfig,
-            f"./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
-        ).to(DEVICE)
-        print(
-            f"Loading vae model from ./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
-        )
-
-        # If VAE is provided, overwrite the modelname.
-        model_name = vae_config.trainer.model_name.split(".")[0]
-    else:
-        vae_model = None
-
-    encoder_model.eval()
-
-    model = ModelWrapper(encoder_model, vae_model)
 
     ects_gt = torch.load("results/vae_baseline_airplane/gt_ect.pt").cuda()
     ects_recon = torch.load("results/vae_baseline_airplane/recon_ect.pt").cuda()
     ects_sample = torch.load("results/vae_baseline_airplane/sample_ect.pt").cuda()
-    print(ects_gt.shape)
 
     pointcloud_gt = encoder_model(ects_gt.squeeze()).view(
         -1, encoder_config.modelconfig.num_pts, 3
