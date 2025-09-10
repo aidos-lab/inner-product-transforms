@@ -3,20 +3,18 @@ import importlib
 import json
 import os
 
-import matplotlib.pyplot as plt
 import torch
 
-from loaders import load_config, load_datamodule
+from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-
-# from model_wrapper import ModelWrapper
+from model_wrapper import ModelWrapper
 from plotting import plot_ect, plot_recon_3d
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-def load_model(config, model_path=None):
+def load_litmodel(config, model_path=None):
     module = importlib.import_module(config.module)
     model_class = getattr(module, "BaseLightningModel")
 
@@ -29,7 +27,7 @@ def load_model(config, model_path=None):
 
 
 @torch.no_grad()
-def evaluate_reconstruction(model, dm):
+def evaluate_reconstruction(model: ModelWrapper, dm):
     m = dm.m.view(1, 1, 3).cuda()
     s = dm.s.squeeze().cuda()
     print("STD", s.shape, s)
@@ -78,9 +76,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--vae_config",
-        required=True,
+        required=False,
+        default=None,
         type=str,
-        help="Encoder configuration",
+        help="VAE Configuration (Optional)",
     )
     parser.add_argument(
         "--dev", default=False, action="store_true", help="Run a small subset."
@@ -97,28 +96,74 @@ if __name__ == "__main__":
     ### Encoder
     ##################################################################
     encoder_config, _ = load_config(args.encoder_config)
-    vae_config, _ = load_config(args.vae_config)
 
-    recon_ect = torch.load(f"results/{vae_config.logger.results_dir}/recon_ect.pt")
-    gt_ect = torch.load(f"results/{vae_config.logger.results_dir}/gt_ect.pt")
-
-    plt.imshow(gt_ect[0].squeeze())
-    plt.show()
+    # Inject dev runs if needed.
+    if args.dev:
+        encoder_config.trainer.save_dir += "_dev"
 
     print(
         f"Loading model from ./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}"
     )
-    encoder_model = load_model(
+    encoder_model = load_litmodel(
         encoder_config.modelconfig,
         f"./{encoder_config.trainer.save_dir}/{encoder_config.trainer.model_name}",
     ).to(DEVICE)
+    encoder_model.model.eval()
+
+    # Set model name for saving results in the results folder.
+    model_name = encoder_config.trainer.model_name.split(".")[0]
+
+    dm = load_datamodule(encoder_config.data, dev=args.dev)
+
+    # Load the datamodule
+    # NOTE: Loads the datamodule from the encoder and does not check for
+    # equality of the VAE data configs.
+
+    if args.vae_config:
+        vae_config, _ = load_config(args.vae_config)
+
+        if args.dev:
+            vae_config.trainer.save_dir += "_dev"
+
+        # Check that the configs are equal for the ECT.
+        assert vae_config.ectconfig == encoder_config.ectconfig
+
+        vae_model = load_model(
+            vae_config.modelconfig,
+            f"./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
+        ).to(DEVICE)
+        print(
+            f"Loading vae model from ./{vae_config.trainer.save_dir}/{vae_config.trainer.model_name}",
+        )
+
+        # If VAE is provided, overwrite the modelname.
+        model_name = vae_config.trainer.model_name.split(".")[0]
+    else:
+        vae_model = None
+
     encoder_model.eval()
 
-    gt_pc = encoder_model(gt_ect.squeeze().movedim(-1, -2).cuda()).view(-1, 2048, 3)
-    print(gt_pc.shape)
-    #     recon_pc = encoder_model(recon_ect.squeeze().cuda())
-    #
+    model = ModelWrapper(encoder_model, vae_model)
+
+    ects_gt = torch.load("results/vae_baseline_airplane/gt_ect.pt").cuda()
+    ects_recon = torch.load("results/vae_baseline_airplane/recon_ect.pt").cuda()
+    ects_sample = torch.load("results/vae_baseline_airplane/sample_ect.pt").cuda()
+    print(ects_gt.shape)
+
+    pointcloud_gt = encoder_model(ects_gt.squeeze()).view(
+        -1, encoder_config.modelconfig.num_pts, 3
+    )
+    pointcloud_recon = encoder_model(ects_recon.squeeze()).view(
+        -1, encoder_config.modelconfig.num_pts, 3
+    )
+    pointcloud_sample = encoder_model(ects_sample.squeeze()).view(
+        -1, encoder_config.modelconfig.num_pts, 3
+    )
+
     plot_recon_3d(
-        gt_pc.detach().cpu().numpy(),
-        gt_pc.detach().cpu().numpy(),  # , filename="recon_newstuff.png"
+        pointcloud_gt.detach().cpu().numpy(), pointcloud_recon.detach().cpu().numpy()
+    )
+
+    plot_recon_3d(
+        pointcloud_gt.detach().cpu().numpy(), pointcloud_sample.detach().cpu().numpy()
     )
