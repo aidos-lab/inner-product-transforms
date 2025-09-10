@@ -3,16 +3,15 @@ import os
 
 import torch
 import torchvision
-import yaml
 from lightning.fabric import Fabric
-from PIL import Image
-from src.models.unet import Unet
-from src.models.vqvae import VQVAE
-from src.schedulers.linear_scheduler import LinearNoiseScheduler
+from loaders import load_config
+from models.encoder_new import BaseLightningModel as Encoder
+from models.schedulers.linear_scheduler import LinearNoiseScheduler
+from models.unet import BaseLightningModel as Unet
+from models.vqvae import BaseLightningModel as VQVAE
+from plotting import plot_recon_3d
 from torchvision.utils import make_grid
 from tqdm import tqdm
-
-from configs import load_config
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -20,40 +19,34 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 @torch.no_grad()
 def main(args):
 
-    # Parse the args
-    config_path = args.config_path
-
-    # Set up Fabric
-    fabric = Fabric()
-    config, _ = load_config(config_path)
+    config, _ = load_config(args.unet_config)
 
     # Create the noise scheduler
-    scheduler = LinearNoiseScheduler(config=config.noise_scheduler)
+    scheduler = LinearNoiseScheduler(config=config.modelconfig.noise_scheduler)
 
     # Instantiate the model
-    model = Unet(
-        im_channels=config.vae.z_channels,
-        model_config=config.ldm_params,
+    unet_model = Unet.load_from_checkpoint("trained_models/unet_airplane.ckpt").to(
+        device
+    )
+    vae_model = VQVAE.load_from_checkpoint("trained_models/vqvae_airplane.ckpt").to(
+        device
+    )
+
+    encoder_model = Encoder.load_from_checkpoint(
+        "trained_models/encoder_new_airplane.ckpt"
     ).to(device)
 
-    fabric.load("trained_models/latent_ddpm.ckpt")
+    vae_model.eval()
+    unet_model.eval()
+    encoder_model.eval()
 
-    # Load the model
-    vae = VQVAE(config.vae).to("cuda")
-
-    state = {"model": vae}
-    fabric.load("trained_models/vqvae.ckpt", state)
-    vae.eval()
-
-    im_size = config.transform.resolution // 2 ** sum(config.vae.down_sample)
-    xt = torch.randn(
-        (config.train.num_samples, config.vae.z_channels, im_size, im_size)
-    ).to(device)
+    xt = torch.randn((32, 9, 32, 32)).to(device)
 
     save_count = 0
-    for i in tqdm(reversed(range(config.noise_scheduler.num_timesteps))):
+    for i in tqdm(reversed(range(config.modelconfig.noise_scheduler.num_timesteps))):
+        # for i in tqdm(reversed(range(10))):
         # Get prediction of noise
-        noise_pred = model(xt, torch.as_tensor(i).unsqueeze(0).to(device))
+        noise_pred = unet_model(xt, torch.as_tensor(i).unsqueeze(0).to(device))
 
         # Use scheduler to get x0 and xt-1
         xt, x0_pred = scheduler.sample_prev_timestep(
@@ -64,21 +57,43 @@ def main(args):
         # ims = torch.clamp(xt, -1., 1.).detach().cpu()
         if i == 0:
             # Decode ONLY the final iamge to save time
-            ims = vae.decode(xt)
+            ims = vae_model.model.decode(xt)
+
+            pc = encoder_model(ims.squeeze())
+            torch.save(pc, "results/unet/pc.pt")
+            plot_recon_3d(
+                pc.cpu().numpy(), pc.cpu().numpy(), filename="results/unet/recon.png"
+            )
+
+            ims = (1 + torch.clamp(ims, -1.0, 1.0).detach().cpu()) / 2
+            grid = make_grid(ims, nrow=2)
+            img = torchvision.transforms.ToPILImage()(grid[:3, :, :])
+            img.save(f"results/unet/generated_ects_{i}.png")
+            img.close()
+
         else:
             ims = xt
-
-        ims = torch.clamp(ims, -1.0, 1.0).detach().cpu()
-        grid = make_grid(ims, nrow=config.train.num_grid_rows)
-        img = torchvision.transforms.ToPILImage()(grid[:3, :, :])
-        img.save(f"results/generated_ects_{i}.png")
-        img.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Arguments for ddpm image generation")
     parser.add_argument(
-        "--config", dest="config_path", default="config/qm9.yaml", type=str
+        "--unet_config",
+        dest="unet_config",
+        default="configs/unet_airplane.yaml",
+        type=str,
+    )
+    parser.add_argument(
+        "--vae_config",
+        dest="vae_config",
+        default="configs/vqvae_airplane.yaml",
+        type=str,
+    )
+    parser.add_argument(
+        "--encoder_config",
+        dest="encoder_config",
+        default="configs/encoder_airplane.yaml",
+        type=str,
     )
     args = parser.parse_args()
     main(args)
