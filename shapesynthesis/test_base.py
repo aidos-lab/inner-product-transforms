@@ -133,6 +133,7 @@ if __name__ == "__main__":
 
     ects_gt = torch.load("results/vae_baseline_airplane/gt_ect.pt").cuda()
     ects_recon = torch.load("results/vae_baseline_airplane/recon_ect.pt").cuda()
+    ects_sample = torch.load("results/vae_baseline_airplane/sample_ect.pt").cuda()
     print(ects_gt.shape)
 
     pointcloud_gt = encoder_model(ects_gt.squeeze()).view(
@@ -141,7 +142,14 @@ if __name__ == "__main__":
     pointcloud_recon = encoder_model(ects_recon.squeeze()).view(
         -1, encoder_config.modelconfig.num_pts, 3
     )
+    pointcloud_sample = encoder_model(ects_sample.squeeze()).view(
+        -1, encoder_config.modelconfig.num_pts, 3
+    )
 
     plot_recon_3d(
         pointcloud_gt.detach().cpu().numpy(), pointcloud_recon.detach().cpu().numpy()
+    )
+
+    plot_recon_3d(
+        pointcloud_gt.detach().cpu().numpy(), pointcloud_sample.detach().cpu().numpy()
     )
