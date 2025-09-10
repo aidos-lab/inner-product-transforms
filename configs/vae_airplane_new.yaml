@@ -38,7 +38,7 @@ transform:
 trainer: &ref-trainer
   module: trainer
   seed : 1111
-  max_epochs: 100 # Should be 20k
+  max_epochs: 1 # Should be 20k
   log_every_n_steps: 1
   accelerator: auto
   precision: null

@@ -183,6 +183,7 @@ def train(
     # Starting the test loop.
     recon = []
     gt = []
+    samples = []
     model.eval()
     with torch.no_grad():
         for idx, pc in enumerate(valdataloader):
@@ -190,6 +191,7 @@ def train(
             gt.append(ect)
             # Fetch autoencoders output(reconstructions)
             output, internal_loss, quant_losses = model(ect)
+            samples.append(model.sample(len(pc), device="cuda"))
             recon.append(output)
 
             if idx == 0:
@@ -211,6 +213,10 @@ def train(
         )
         torch.save(
             torch.vstack(gt).cpu(), f"results/{loggerconfig.results_dir}/gt_ect.pt"
+        )
+        torch.save(
+            torch.vstack(samples).cpu(),
+            f"results/{loggerconfig.results_dir}/sample_ect.pt",
         )
 
 

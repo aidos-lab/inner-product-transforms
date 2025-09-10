@@ -33,7 +33,7 @@ def load_datamodule(config, dev: bool = False):
 
 def load_model(config, model_path=None):
     module = importlib.import_module(config.module)
-    model_class = getattr(module, "BaseLightningModel")
+    model_class = getattr(module, "Model")
 
     if model_path:
         model = model_class.load_from_checkpoint(model_path)
