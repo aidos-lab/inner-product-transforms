@@ -110,12 +110,10 @@ def train(
         check_val_every_n_epoch=10,
         enable_progress_bar=True,
         enable_checkpointing=False,
-        precision="16-mixed",
-        # gradient_clip_val=0.01,
     )
 
     trainer.fit(
-        model, train_dataloaders=dm.train_dataloader, val_dataloaders=dm.val_dataloader
+        model, train_dataloaders=dm.train_dataloader, val_dataloaders=dm.val_dataloader,
     )
 
     # # Set up for testing

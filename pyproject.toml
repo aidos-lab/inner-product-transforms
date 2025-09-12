@@ -25,9 +25,9 @@ dependencies = [
     "ipywidgets>=8.1.5,<9",
     "ipykernel>=6.29.5,<7",
     "torch-fidelity>=0.3.0",
-    "emd-ext",
+    # "emd-ext",
     "seaborn>=0.13.2",
-    "chamfer-3d",
+    # "chamfer-3d",
     "torchtnt>=0.2.4",
     "gdown>=5.2.0",
 ]
