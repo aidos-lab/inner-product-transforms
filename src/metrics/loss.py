@@ -66,28 +66,8 @@ def compute_mse_kld_loss_fn(decoded, mu, log_var, ect, beta=0.0):
     return mse_loss + beta * kld_loss, kld_loss, mse_loss
 
 
-def chamfer3D(pred_pc, ref_pc):
+def chamfer(pred_pc, ref_pc):
+    if pred_pc.shape[-1] == 2:
+        pred_pc = F.pad(input=pred_pc, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
+        ref_pc = F.pad(input=ref_pc, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
     return chamfer_distance(pred_pc, ref_pc).mean()
-
-
-def chamfer2D(pred_pc, ref_pc):
-    pred_pc = F.pad(input=pred_pc, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
-    ref_pc = F.pad(input=ref_pc, pad=(0, 1, 0, 0, 0, 0), mode="constant", value=0)
-    return chamfer_distance(pred_pc, ref_pc).mean()
-
-
-def chamfer3DECT(pred_pc, ref_pc, ect_pred, ect):
-    ch_loss = chamfer3D(pred_pc, ref_pc)
-    mse_loss = F.mse_loss(ect_pred, ect)
-    return 100 * (ch_loss + 10 * mse_loss), mse_loss, ch_loss
-
-
-def chamfer2DECT(pred_pc, ref_pc, ect_pred, ect):
-    ch_loss = chamfer2D(pred_pc, ref_pc)
-    mse_loss = F.mse_loss(ect_pred, ect)
-    return ch_loss + 10 * mse_loss, mse_loss, ch_loss
-
-
-def dect_loss_fn(ect_pred, ect):
-    mse_loss = F.mse_loss(ect_pred, ect)
-    return mse_loss

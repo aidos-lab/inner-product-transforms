@@ -8,8 +8,8 @@ import torch
 
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
-from model_wrapper import ModelWrapper
-from plotting import plot_ect, plot_recon_3d
+
+# from plotting import plot_ect, plot_recon_3d
 
 # Settings
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -39,20 +39,22 @@ def evaluate_reconstruction(model, dm):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--vae_config",
-        required=True,
-        default=None,
-        type=str,
-        help="VAE Configuration",
-    )
-    parser.add_argument(
         "--encoder_config",
         required=True,
         default=None,
         type=str,
         help="VAE Configuration",
     )
+    parser.add_argument(
+        "--dev",
+        default=False,
+        action="store_true",
+        help="Run a small subset.",
+    )
     args = parser.parse_args()
+
+    # Parse the args
+    dev: bool = args.dev
 
     ##################################################################
     ### Encoder
@@ -62,35 +64,34 @@ if __name__ == "__main__":
     # NOTE: Loads the datamodule from the encoder and does not check for
     # equality of the VAE data configs.
 
-    # encoder_config = load_config(args.encoder_config)
-    #
-    # # Third argument is the model config.
-    # encoder_model = load_model(encoder_config[2])
-    # encoder_model.eval()
-
     (
         dataconfig,
         transformconfig,
         modelconfig,
         trainerconfig,
         loggerconfig,
-    ) = load_config(args.vae_config)
+    ) = load_config(args.encoder_config)
+
+    ##########################################################
+    ### Inject dev.
+    ##########################################################
+
+    results_base_dir = "results"
+    if dev:
+        results_base_dir += "_dev"
+    results_base_dir += f"/{loggerconfig.results_dir}"
 
     results = []
 
     # Load the saved tensors.
 
-    ect_recon = torch.load(f"results/{loggerconfig.results_dir}/recon_ect.pt")
-    ect_gt = torch.load(f"results/{loggerconfig.results_dir}/gt_ect.pt")
-    pcs_gt = torch.load(f"results/{loggerconfig.results_dir}/gt_pcs.pt")
+    pcs_recon = torch.load(f"{results_base_dir}/pcs_recon.pt")
+    pcs_gt = torch.load(f"{results_base_dir}/pcs_gt.pt")
 
     #####################################################
     ### Evaluate
     #####################################################
 
-    # with torch.no_grad():
-    #     pcs_recon = encoder_model(ect_recon)
-    #
-    # result = EMD_CD(pcs_recon, pcs_gt, batch_size=128, accelerated_cd=True)
-    #
-    # print(result)
+    result = EMD_CD(pcs_recon, pcs_gt, batch_size=128, accelerated_cd=True)
+
+    print(result)

@@ -30,6 +30,7 @@ dependencies = [
     "chamfer-3d",
     "torchtnt>=0.2.4",
     "gdown>=5.2.0",
+    "torchinfo>=1.8.0",
 ]
 
 

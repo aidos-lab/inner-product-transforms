@@ -1,65 +1,27 @@
 import argparse
-import importlib
 import os
-from typing import Any
 
 import pydantic
 import torch
 import torchvision
-import yaml
 from lightning import seed_everything
 from lightning.fabric import Fabric
 from torch.optim import Adam
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-from src.loaders import load_datamodule, load_logger, load_model, load_transform
+from src.loaders import (
+    load_config,
+    load_datamodule,
+    load_logger,
+    load_model,
+    load_transform,
+)
 from src.models.discrimminator import Discrimminator, DiscrimminatorConfig
 from src.models.lpips import LPIPS
 
 # Global settings.
 torch.set_float32_matmul_precision("medium")
-
-
-def load_module(config_dict: dict[Any, Any], classname: str) -> pydantic.BaseModel:
-
-    module_name = config_dict.get("module", None)
-
-    if module_name is not None:
-        module = importlib.import_module(config_dict["module"])
-        config_class = getattr(module, classname)
-        config = config_class(**config_dict)
-    else:
-        module = importlib.import_module("__main__")
-        config_class = getattr(module, classname)
-        config = config_class(**config_dict)
-    return config
-
-
-def load_config(path: str):
-    """
-    Loads the configuration yaml and parses it into an object with dot access.
-    """
-    with open(path, encoding="utf-8") as stream:
-        # Load dict
-        config_dict: dict[str, Any] = yaml.safe_load(stream)
-
-    # Data
-    dataconfig = load_module(config_dict["data"], classname="DataConfig")
-
-    # Transform
-    transformconfig = load_module(config_dict["transform"], classname="TransformConfig")
-
-    # Model
-    modelconfig = load_module(config_dict["modelconfig"], classname="ModelConfig")
-
-    # Trainer
-    trainerconfig = load_module(config_dict["trainer"], classname="TrainerConfig")
-
-    # Logger
-    loggerconfig = load_module(config_dict["logger"], classname="LogConfig")
-
-    return dataconfig, transformconfig, modelconfig, trainerconfig, loggerconfig
 
 
 def train(
@@ -184,11 +146,13 @@ def train(
     recon = []
     gt = []
     samples = []
+    gt_pcs = []
     model.eval()
     with torch.no_grad():
         for idx, pc in enumerate(valdataloader):
             ect = transform(pc).unsqueeze(1)
             gt.append(ect)
+            gt_pcs.append(pc)
             # Fetch autoencoders output(reconstructions)
             output, internal_loss, quant_losses = model(ect)
             samples.append(model.sample(len(pc), device="cuda"))
@@ -217,6 +181,10 @@ def train(
         torch.save(
             torch.vstack(samples).cpu(),
             f"results/{loggerconfig.results_dir}/sample_ect.pt",
+        )
+        torch.save(
+            torch.vstack(gt_pcs).cpu(),
+            f"results/{loggerconfig.results_dir}/gt_pcs.pt",
         )
 
 
@@ -274,9 +242,10 @@ def main():
     ### Inject dev.
     ##########################################################
 
+    results_base_dir = "results"
     if dev:
         trainerconfig.max_epochs = 10
-        loggerconfig.results_dir += "_dev"
+        results_base_dir += "_dev"
 
     ##########################################################
     ### Load all assets

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pyvista as pv
 import torch
+from torch import Tensor
 
 pv.set_jupyter_backend("static")
 
@@ -57,7 +58,20 @@ def plot_recon_2d(recon_pcs, ref_pcs, jnt_pcs=None, num_pc=5):
     return fig
 
 
-def plot_recon_3d(recon_pcs, ref_pcs, num_pc=5, offset=0, filename=None, point_size=2):
+def plot_recon_3d(
+    recon_pcs,
+    ref_pcs=None,
+    num_pc=5,
+    offset=0,
+    filename=None,
+    point_size=2,
+):
+
+    if type(recon_pcs) == Tensor:
+        recon_pcs = recon_pcs.cpu().detach().numpy()
+
+    if type(ref_pcs) == Tensor:
+        ref_pcs = ref_pcs.cpu().detach().numpy()
 
     off_screen = True if filename is not None else False
 

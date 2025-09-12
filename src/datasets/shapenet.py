@@ -1,12 +1,12 @@
 import os
 from dataclasses import dataclass, field
 
+import pydantic
 import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.datasets.shapenetbase import get_datasets as get_raw_datasets
 from src.layers.ect import EctConfig
-import pydantic
 
 
 class DataConfig(pydantic.BaseModel):
@@ -114,6 +114,7 @@ def get_dataloader(config: DataConfig, split: str, dev: bool):
     shuffle = False if split in ["test", "val"] else True
     if dev:
         drop_last = False
+        shuffle = False
     else:
         drop_last = True if split in ["train"] else False
 
@@ -126,6 +127,8 @@ def get_dataloader(config: DataConfig, split: str, dev: bool):
             num_workers=0,
             shuffle=shuffle,
             drop_last=drop_last,
+            persistent_workers=False,
+            pin_memory=True,
         ),
         m,
         s,

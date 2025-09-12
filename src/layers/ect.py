@@ -5,6 +5,7 @@ Ect layer implementation
 from dataclasses import dataclass
 from typing import Literal, Protocol, TypeAlias
 
+import pydantic
 import torch
 from pydantic import BaseModel
 from torch import nn
@@ -19,8 +20,7 @@ class EctBatch(Batch):
     ect: Tensor | None = None
 
 
-@dataclass
-class EctConfig:
+class EctConfig(pydantic.BaseModel):
     """
     Config for initializing an ect layer.
     """

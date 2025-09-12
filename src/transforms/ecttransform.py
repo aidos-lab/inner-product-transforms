@@ -17,32 +17,26 @@ from src.layers.ect import EctConfig, compute_ect_point_cloud
 
 class TransformConfig(pydantic.BaseModel):
     module: str
-    structured: bool
-    num_thetas: int
-    resolution: int
-    r: float
-    scale: float
-    ect_type: Literal["points"]
-    ambient_dimension: int
-    normalized: bool
-    seed: int
+    ectconfig: EctConfig
 
 
 class Transform(nn.Module):
     def __init__(self, config: TransformConfig):
         super().__init__()
-        self.config = config
+        self.config = config.ectconfig
 
         if not hasattr(config, "structured"):
             structured = False
         else:
-            structured = config.structured
+            structured = self.config.structured
 
-        if structured and config.ambient_dimension == 2:
-            v = generate_2d_directions(config.num_thetas)
+        if structured and self.config.ambient_dimension == 2:
+            v = generate_2d_directions(self.config.num_thetas)
         else:
             v = generate_uniform_directions(
-                config.num_thetas, d=config.ambient_dimension, seed=config.seed
+                self.config.num_thetas,
+                d=self.config.ambient_dimension,
+                seed=self.config.seed,
             )
 
         self.v = torch.nn.Parameter(v, requires_grad=False)

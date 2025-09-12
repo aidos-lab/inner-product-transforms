@@ -2944,6 +2944,7 @@ dependencies = [
     { name = "torch" },
     { name = "torch-fidelity" },
     { name = "torch-geometric" },
+    { name = "torchinfo" },
     { name = "torchtnt" },
     { name = "torchvision" },
     { name = "trame" },
@@ -2983,6 +2984,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.5.1,<3" },
     { name = "torch-fidelity", specifier = ">=0.3.0" },
     { name = "torch-geometric", specifier = ">=2.6.1,<3" },
+    { name = "torchinfo", specifier = ">=1.8.0" },
     { name = "torchtnt", specifier = ">=0.2.4" },
     { name = "torchvision", specifier = ">=0.20.1,<0.21" },
     { name = "trame", specifier = ">=3.7.6,<4" },
@@ -3275,6 +3277,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e8/81/e1b015494cb9e0bf4c47cc8426e49736120248733be0e22072a5628ae9ed/torch_geometric-2.6.1.tar.gz", hash = "sha256:1f18f9d0fc4d2239d526221e4f22606a4a3895b5d965a9856d27610a3df662c6", size = 771490 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/9f/157e913626c1acfb3b19ce000b1a6e4e4fb177c0bc0ea0c67ca5bd714b5a/torch_geometric-2.6.1-py3-none-any.whl", hash = "sha256:8faeb353f9655f7dbec44c5e0b44c721773bdfb279994da96b9b8b12fd30f427", size = 1135632 },
+]
+
+[[package]]
+name = "torchinfo"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/d9/2b811d1c0812e9ef23e6cf2dbe022becbe6c5ab065e33fd80ee05c0cd996/torchinfo-1.8.0.tar.gz", hash = "sha256:72e94b0e9a3e64dc583a8e5b7940b8938a1ac0f033f795457f27e6f4e7afa2e9", size = 25880 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/25/973bd6128381951b23cdcd8a9870c6dcfc5606cb864df8eabd82e529f9c1/torchinfo-1.8.0-py3-none-any.whl", hash = "sha256:2e911c2918603f945c26ff21a3a838d12709223dc4ccf243407bce8b6e897b46", size = 23377 },
 ]
 
 [[package]]

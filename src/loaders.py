@@ -3,9 +3,12 @@ import importlib
 import json
 import timeit
 from types import SimpleNamespace
+from typing import Any
 
+import pydantic
 import yaml
 from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
+from torch import nn
 
 
 def timeit_decorator(func):
@@ -17,6 +20,50 @@ def timeit_decorator(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def load_module(config_dict: dict[Any, Any], classname: str) -> pydantic.BaseModel:
+
+    module_name = config_dict.get("module", None)
+
+    if module_name is not None:
+        module = importlib.import_module(config_dict["module"])
+        config_class = getattr(module, classname)
+        config = config_class(**config_dict)
+    else:
+        module = importlib.import_module("__main__")
+        config_class = getattr(module, classname)
+        config = config_class(**config_dict)
+    return config
+
+
+def load_config(path: str):
+    """
+    Loads the configuration yaml and parses it into an object with dot access.
+    """
+    with open(path, encoding="utf-8") as stream:
+        # Load dict
+        config_dict: dict[str, Any] = yaml.safe_load(stream)
+
+    # Data
+    dataconfig = load_module(config_dict["data"], classname="DataConfig")
+
+    # Transform
+    transformconfig = [
+        load_module(cfg, classname="TransformConfig")
+        for cfg in config_dict["transform"]
+    ]
+
+    # Model
+    modelconfig = load_module(config_dict["modelconfig"], classname="ModelConfig")
+
+    # Trainer
+    trainerconfig = load_module(config_dict["trainer"], classname="TrainerConfig")
+
+    # Logger
+    loggerconfig = load_module(config_dict["logger"], classname="LogConfig")
+
+    return dataconfig, transformconfig, modelconfig, trainerconfig, loggerconfig
 
 
 def load_datamodule(config, dev: bool = False):
@@ -44,10 +91,14 @@ def load_model(config, model_path=None):
 
 
 def load_transform(config):
-    module = importlib.import_module(config.module)
-    transform_class = getattr(module, "Transform")
-    transform = transform_class(config)
-    return transform
+    transforms = []
+    for tr_config in config:
+        module = importlib.import_module(tr_config.module)
+        transform_class = getattr(module, "Transform")
+        transform = transform_class(tr_config)
+        transforms.append(transform)
+
+    return nn.Sequential(*transforms)
 
 
 # @timeit_decorator
@@ -58,18 +109,18 @@ def load_object(obj):
         return obj
 
 
-# @timeit_decorator
-def load_config(path):
-    """
-    Loads the configuration yaml and parses it into an object with dot access.
-    """
-    with open(path, encoding="utf-8") as stream:
-        # Load dict
-        config_dict = yaml.safe_load(stream)
-
-        # Convert to namespace (access via config.data etc)
-        config = json.loads(json.dumps(config_dict), object_hook=load_object)
-    return config, config_dict
+# # @timeit_decorator
+# def load_config(path):
+#     """
+#     Loads the configuration yaml and parses it into an object with dot access.
+#     """
+#     with open(path, encoding="utf-8") as stream:
+#         # Load dict
+#         config_dict = yaml.safe_load(stream)
+#
+#         # Convert to namespace (access via config.data etc)
+#         config = json.loads(json.dumps(config_dict), object_hook=load_object)
+#     return config, config_dict
 
 
 def validate_configuration(run_config_dict: dict):

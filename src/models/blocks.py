@@ -2,6 +2,13 @@ import torch
 import torch.nn as nn
 
 
+def get_normlayer(norm_channels, in_channels, normtype="group"):
+    if normtype == "group":
+        return nn.GroupNorm(norm_channels, in_channels)
+    elif normtype == "batch":
+        return nn.BatchNorm2d(in_channels)
+
+
 def get_time_embedding(time_steps, temb_dim):
     r"""
     Convert time steps tensor into an embedding using the
@@ -53,6 +60,7 @@ class DownBlock(nn.Module):
         norm_channels,
         cross_attn=False,
         context_dim=None,
+        normtype="group",
     ):
         super().__init__()
         self.num_layers = num_layers
@@ -64,8 +72,10 @@ class DownBlock(nn.Module):
         self.resnet_conv_first = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(
-                        norm_channels, in_channels if i == 0 else out_channels
+                    get_normlayer(
+                        norm_channels,
+                        in_channels if i == 0 else out_channels,
+                        normtype=normtype,
                     ),
                     nn.SiLU(),
                     nn.Conv2d(
@@ -89,7 +99,7 @@ class DownBlock(nn.Module):
         self.resnet_conv_second = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(norm_channels, out_channels),
+                    get_normlayer(norm_channels, out_channels, normtype=normtype),
                     nn.SiLU(),
                     nn.Conv2d(
                         out_channels, out_channels, kernel_size=3, stride=1, padding=1
@@ -101,7 +111,10 @@ class DownBlock(nn.Module):
 
         if self.attn:
             self.attention_norms = nn.ModuleList(
-                [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+                [
+                    get_normlayer(norm_channels, out_channels, normtype="group")
+                    for _ in range(num_layers)
+                ]
             )
 
             self.attentions = nn.ModuleList(
@@ -116,7 +129,10 @@ class DownBlock(nn.Module):
                 context_dim is not None
             ), "Context Dimension must be passed for cross attention"
             self.cross_attention_norms = nn.ModuleList(
-                [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+                [
+                    get_normlayer(norm_channels, out_channels, normtype=normtype)
+                    for _ in range(num_layers)
+                ]
             )
             self.cross_attentions = nn.ModuleList(
                 [
@@ -206,6 +222,7 @@ class MidBlock(nn.Module):
         norm_channels,
         cross_attn=None,
         context_dim=None,
+        normtype="group",
     ):
         super().__init__()
         self.num_layers = num_layers
@@ -215,8 +232,10 @@ class MidBlock(nn.Module):
         self.resnet_conv_first = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(
-                        norm_channels, in_channels if i == 0 else out_channels
+                    get_normlayer(
+                        norm_channels,
+                        in_channels if i == 0 else out_channels,
+                        normtype=normtype,
                     ),
                     nn.SiLU(),
                     nn.Conv2d(
@@ -241,7 +260,7 @@ class MidBlock(nn.Module):
         self.resnet_conv_second = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(norm_channels, out_channels),
+                    get_normlayer(norm_channels, out_channels, normtype=normtype),
                     nn.SiLU(),
                     nn.Conv2d(
                         out_channels, out_channels, kernel_size=3, stride=1, padding=1
@@ -252,7 +271,10 @@ class MidBlock(nn.Module):
         )
 
         self.attention_norms = nn.ModuleList(
-            [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+            [
+                get_normlayer(norm_channels, out_channels, normtype="group")
+                for _ in range(num_layers)
+            ]
         )
 
         self.attentions = nn.ModuleList(
@@ -266,7 +288,10 @@ class MidBlock(nn.Module):
                 context_dim is not None
             ), "Context Dimension must be passed for cross attention"
             self.cross_attention_norms = nn.ModuleList(
-                [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+                [
+                    get_normlayer(norm_channels, out_channels, normtype=normtype)
+                    for _ in range(num_layers)
+                ]
             )
             self.cross_attentions = nn.ModuleList(
                 [
@@ -357,6 +382,7 @@ class UpBlock(nn.Module):
         num_layers,
         attn,
         norm_channels,
+        normtype="group",
     ):
         super().__init__()
         self.num_layers = num_layers
@@ -366,8 +392,10 @@ class UpBlock(nn.Module):
         self.resnet_conv_first = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(
-                        norm_channels, in_channels if i == 0 else out_channels
+                    get_normlayer(
+                        norm_channels,
+                        in_channels if i == 0 else out_channels,
+                        normtype=normtype,
                     ),
                     nn.SiLU(),
                     nn.Conv2d(
@@ -393,7 +421,7 @@ class UpBlock(nn.Module):
         self.resnet_conv_second = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(norm_channels, out_channels),
+                    get_normlayer(norm_channels, out_channels, normtype=normtype),
                     nn.SiLU(),
                     nn.Conv2d(
                         out_channels, out_channels, kernel_size=3, stride=1, padding=1
@@ -404,7 +432,10 @@ class UpBlock(nn.Module):
         )
         if self.attn:
             self.attention_norms = nn.ModuleList(
-                [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+                [
+                    get_normlayer(norm_channels, out_channels, normtype="group")
+                    for _ in range(num_layers)
+                ]
             )
 
             self.attentions = nn.ModuleList(
@@ -479,6 +510,7 @@ class UpBlockUnet(nn.Module):
         norm_channels,
         cross_attn=False,
         context_dim=None,
+        normtype="group",
     ):
         super().__init__()
         self.num_layers = num_layers
@@ -489,8 +521,10 @@ class UpBlockUnet(nn.Module):
         self.resnet_conv_first = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(
-                        norm_channels, in_channels if i == 0 else out_channels
+                    get_normlayer(
+                        norm_channels,
+                        in_channels if i == 0 else out_channels,
+                        normtype=normtype,
                     ),
                     nn.SiLU(),
                     nn.Conv2d(
@@ -516,7 +550,7 @@ class UpBlockUnet(nn.Module):
         self.resnet_conv_second = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.GroupNorm(norm_channels, out_channels),
+                    get_normlayer(norm_channels, out_channels, normtype=normtype),
                     nn.SiLU(),
                     nn.Conv2d(
                         out_channels, out_channels, kernel_size=3, stride=1, padding=1
@@ -527,7 +561,10 @@ class UpBlockUnet(nn.Module):
         )
 
         self.attention_norms = nn.ModuleList(
-            [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+            [
+                get_normlayer(norm_channels, out_channels, normtype="group")
+                for _ in range(num_layers)
+            ]
         )
 
         self.attentions = nn.ModuleList(
@@ -542,7 +579,10 @@ class UpBlockUnet(nn.Module):
                 context_dim is not None
             ), "Context Dimension must be passed for cross attention"
             self.cross_attention_norms = nn.ModuleList(
-                [nn.GroupNorm(norm_channels, out_channels) for _ in range(num_layers)]
+                [
+                    get_normlayer(norm_channels, out_channels, normtype=normtype)
+                    for _ in range(num_layers)
+                ]
             )
             self.cross_attentions = nn.ModuleList(
                 [
