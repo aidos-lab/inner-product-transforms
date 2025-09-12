@@ -1,0 +1,163 @@
+"""
+All transforms for the datasets.
+"""
+
+from dataclasses import dataclass
+from functools import partial
+
+import numpy as np
+import pydantic
+import torch
+from torch import nn
+from torchvision.transforms import ToTensor
+
+from src.layers.directions import generate_2d_directions, generate_uniform_directions
+from src.layers.ect import EctConfig, compute_ect_point_cloud
+
+
+class TransformConfig(pydantic.BaseModel):
+    module: str
+    mean_mean: tuple[float, float, float]
+    mean_std: tuple[float, float, float]
+    scale_mean: float
+    scale_std: float
+    max_scale: float
+
+
+class Transform(nn.Module):
+    """
+    Affine transform. Translates point clouds and applies scaling.
+    """
+
+    def __init__(self, config: TransformConfig):
+        super().__init__()
+        self.config = config
+
+        self.mean_mean = nn.Parameter(
+            torch.tensor(config.mean_mean), requires_grad=False
+        )
+        self.mean_std = nn.Parameter(torch.tensor(config.mean_std), requires_grad=False)
+
+        self.scale_mean = nn.Parameter(
+            torch.tensor(config.scale_mean), requires_grad=False
+        )
+        self.scale_std = nn.Parameter(
+            torch.tensor(config.scale_std), requires_grad=False
+        )
+
+    def __call__(self, x):
+        x_mean = x.mean(axis=1, keepdim=True)
+        x_max_norm = (x - x_mean).norm(dim=-1, keepdim=True).max(dim=1, keepdim=True)[0]
+        x_normalized = (x - x_mean) / x_max_norm
+        # New mean
+        m = self.mean_std.unsqueeze(0).unsqueeze(0) * torch.randn_like(
+            x_mean, device=x.device
+        ) + self.mean_mean.unsqueeze(0).unsqueeze(0)
+        m_radii = m.norm(dim=-1, keepdim=True)
+        m_radii[m_radii > 0.8 * self.config.max_scale] *= 1 / 0.8
+        m_radii[m_radii < 0.8 * self.config.max_scale] = 1
+        m = m / m_radii
+
+        s = (
+            self.scale_std * torch.randn_like(x_max_norm, device=x.device)
+            + self.scale_mean
+        )
+
+        s_max = self.config.max_scale - m.norm(dim=-1, keepdim=True)
+        s_new = torch.clamp(s, min=torch.tensor(0.1, device=x.device), max=s_max)
+
+        x_new = s_new * x_normalized + m
+
+        return x_new
+
+
+# class Ect2DTransform:
+#     def __init__(self, config: EctConfig, device="cpu"):
+#         self.config = config
+#         self.v = generate_2d_directions(config.num_thetas).to(device)
+#         self.ect_fn = torch.compile(
+#             partial(
+#                 compute_ect_point_cloud,
+#                 v=self.v,
+#                 radius=self.config.r,
+#                 resolution=self.config.resolution,
+#                 scale=self.config.scale,
+#             )
+#         )
+#
+#     def __call__(self, x):
+#         return self.ect_fn(x)
+#
+#
+# class RandomSamplePoints:
+#     """Randomly Choose points"""
+#
+#     def __call__(self, x):
+#         idx = np.random.choice(size=2048, replace=False)
+#         return x[idx]
+#
+#
+# class RandomRotate:
+#     r"""Rotates node positions around a specific axis by a randomly sampled
+#     factor within a given interval (functional name: :obj:`random_rotate`).
+#
+#     Args:
+#         degrees (tuple or float): Rotation interval from which the rotation
+#             angle is sampled. If :obj:`degrees` is a number instead of a
+#             tuple, the interval is given by :math:`[-\mathrm{degrees},
+#             \mathrm{degrees}]`.
+#         axis (int, optional): The rotation axis. (default: :obj:`0`)
+#     """
+#
+#     def __init__(self, axis: int) -> None:
+#         self.axis = axis
+#
+#     def __call__(self, x):
+#         # Max 45 degree rotation per axis
+#         angles = 0.15 * torch.pi * torch.rand(size=(len(x),))
+#         sin, cos = torch.sin(angles), torch.cos(angles)
+#         vec_1 = torch.ones(size=(len(x),))
+#         vec_0 = torch.zeros(size=(len(x),))
+#
+#         if self.axis == 0:
+#             matrix = torch.stack(
+#                 [
+#                     torch.stack([vec_1, vec_0, vec_0]),
+#                     torch.stack([vec_0, cos, sin]),
+#                     torch.stack([vec_0, -sin, cos]),
+#                 ]
+#             )
+#         elif self.axis == 1:
+#             matrix = torch.stack(
+#                 [
+#                     torch.stack([cos, vec_0, -sin]),
+#                     torch.stack([vec_0, vec_1, vec_0]),
+#                     torch.stack([sin, vec_0, cos]),
+#                 ]
+#             )
+#         else:
+#             matrix = torch.stack(
+#                 [
+#                     torch.stack([cos, sin, vec_0]),
+#                     torch.stack([-sin, cos, vec_0]),
+#                     torch.stack([vec_0, vec_0, vec_1]),
+#                 ]
+#             )
+#
+#         return torch.bmm(x, matrix.movedim(0, -1).movedim(0, -2).cuda())
+#
+#     def __repr__(self) -> str:
+#         return f"{self.__class__.__name__}(axis={self.axis})"
+#
+#
+# #####################################################
+# ## User API
+# #####################################################
+#
+# TRANSFORMDICT = {
+#     "ECT": EctTransform,
+# }
+#
+#
+# def get_transform(config):
+#     return TRANSFORMDICT[config.name](config)

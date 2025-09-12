@@ -1,5 +1,5 @@
 [project]
-name = "shapesynthesis"
+name = "shape-synthesis"
 version = "0.1.0"
 description = "Shape synthesis"
 authors = [{ name = "Your Name", email = "you@example.com" }]
@@ -30,11 +30,16 @@ dependencies = [
     # "chamfer-3d",
     "torchtnt>=0.2.4",
     "gdown>=5.2.0",
+    "torchinfo>=1.8.0",
 ]
 
 
 [dependency-groups]
-dev = ["poethepoet>=0.25.0,<0.26", "ipykernel>=6.29.5,<7"]
+dev = [
+    "poethepoet>=0.25.0,<0.26",
+    "ipykernel>=6.29.5,<7",
+    "basedpyright>=1.31.4",
+]
 vis = ["pytest>=8.3.4,<9", "pandas>=2.2.3,<3"]
 
 
@@ -51,10 +56,23 @@ kaolin = { url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_c
 emd-ext = { path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
 chamfer-3d = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
 
+[tool.pyright]
+# strict = ["strec"]
+ignore = ["tests"]
+venvPath = "."
+venv = ".venv"
+
+
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+sources = ['src']
 
-[tool.hatch.build.targets.wheel]
-packages = ["shapesynthesis"]
+[project.scripts]
+main = "shape_synthesis.main:main"
+trainvae = "train_vae:main"
+
+
+
+
