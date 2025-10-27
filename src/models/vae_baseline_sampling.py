@@ -8,16 +8,15 @@ from typing import Literal
 
 import lightning as L
 import torch
-from layers.ect import EctConfig
-from metrics.loss import compute_mse_kld_loss_fn
+from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
 from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.regression import MeanSquaredError
 from torchvision.transforms import Compose
 
-from shapesynthesis.datasets.transforms import EctTransform, RandomRotate
-from shapesynthesis.layers import ect
+from layers.ect import EctConfig
+from metrics.loss import compute_mse_kld_loss_fn
 
 
 @dataclass

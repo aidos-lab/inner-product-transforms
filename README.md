@@ -126,3 +126,24 @@ same keys as this class and will serve for input validation.
 torch geometric datasets and logging metrics and will need only need minimal change. 
 The actual model lives under the `self.model` and can be implemented separately. 
 
+
+## Citation
+
+If you believe our work was useful for your research, please consider a citation.
+
+```{bibtex}
+@inproceedings{Roell25a,
+	archiveprefix = {arXiv},
+	author = {Ernst R{\"o}ell and Bastian Rieck},
+	booktitle = {Advances in Neural Information Processing Systems},
+	eprint = {2410.18987},
+	primaryclass = {cs.CV},
+	publisher = {Curran Associates, Inc.},
+	pubstate = {inpress},
+	title = {Point Cloud Synthesis Using Inner Product Transforms},
+	volume = {38},
+	year = {2025},
+}
+```
+
+

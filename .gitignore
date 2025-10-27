@@ -17,6 +17,7 @@ scratch**
 viz**
 diffusers**
 ddpm-butterflies-128/
+**/.jukit
 
 **/**.npy
 **/**.svg 
