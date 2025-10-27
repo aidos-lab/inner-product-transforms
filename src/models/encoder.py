@@ -33,7 +33,7 @@ class Model(nn.Module):
             nn.Conv1d(
                 config.ectconfig.num_thetas,
                 2 * config.ectconfig.num_thetas,
-                kernel_size=7,
+                kernel_size=3,
                 stride=1,
             ),
             nn.BatchNorm1d(num_features=2 * config.ectconfig.num_thetas),
@@ -42,28 +42,28 @@ class Model(nn.Module):
             ###########################################################
             nn.Conv1d(
                 2 * config.ectconfig.num_thetas,
-                4 * config.ectconfig.num_thetas,
-                kernel_size=7,
+                2 * config.ectconfig.num_thetas,
+                kernel_size=3,
                 stride=1,
             ),
-            nn.BatchNorm1d(num_features=4 * config.ectconfig.num_thetas),
+            nn.BatchNorm1d(num_features=2 * config.ectconfig.num_thetas),
             nn.SiLU(),
             nn.MaxPool1d(kernel_size=2),
             ###########################################################
             nn.Conv1d(
-                4 * config.ectconfig.num_thetas,
-                8 * config.ectconfig.num_thetas,
-                kernel_size=7,
+                2 * config.ectconfig.num_thetas,
+                2 * config.ectconfig.num_thetas,
+                kernel_size=3,
                 stride=1,
             ),
-            nn.BatchNorm1d(num_features=8 * config.ectconfig.num_thetas),
+            nn.BatchNorm1d(num_features=2 * config.ectconfig.num_thetas),
             nn.SiLU(),
             nn.MaxPool1d(kernel_size=2),
             ###########################################################
             nn.Conv1d(
-                8 * config.ectconfig.num_thetas,
-                8 * config.ectconfig.num_thetas,
-                kernel_size=7,
+                2 * config.ectconfig.num_thetas,
+                config.ectconfig.num_thetas,
+                kernel_size=3,
                 stride=1,
             ),
         )

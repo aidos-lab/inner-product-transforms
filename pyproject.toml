@@ -10,30 +10,20 @@ dependencies = [
     "torch-geometric>=2.6.1,<3",
     "torchvision>=0.20.1,<0.21",
     "kaolin",
-    "tensorboard>=2.18.0,<3",
-    "tensorboardx>=2.6.2.2,<3",
-    "scikit-image>=0.25.0,<0.26",
     "pydantic>=2.10.4,<3",
     "wandb>=0.19.1,<0.20",
     "matplotlib>=3.10.0,<4",
     "pyvista[jupyter]>=0.44.2,<0.45",
-    "open3d>=0.18.0,<0.19",
     "scikit-learn>=1.6.0,<2",
-    "addict>=2.4.0,<3",
     "trame>=3.7.6,<4",
     "ipywidgets>=8.1.5,<9",
     "ipykernel>=6.29.5,<7",
     "torch-fidelity>=0.3.0",
-    # "emd-ext",
-    "seaborn>=0.13.2",
-    # "chamfer-3d",
-    "torchtnt>=0.2.4",
     "gdown>=5.2.0",
-    "torchinfo>=1.8.0",
     "torch>=2.5.1",
-    "ninja>=1.13.0",
-    "emd-ext",
+    "torchinfo>=1.8.0",
     "chamfer-3d",
+    "emd-ext",
 ]
 
 
@@ -56,8 +46,8 @@ explicit = true
 
 [tool.uv.sources]
 kaolin = { url = "https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.5.1_cu124/kaolin-0.17.0-cp310-cp310-linux_x86_64.whl" }
-emd-ext = { path = "dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
-chamfer-3d = { path = "dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
+chamfer-3d = { path = "src/dependencies/dist/chamfer_3d-0.0.0-cp310-cp310-linux_x86_64.whl" }
+emd-ext = { path = "src/dependencies/dist/emd_ext-0.0.0-cp310-cp310-linux_x86_64.whl" }
 
 [tool.pyright]
 # strict = ["strec"]

@@ -8,6 +8,7 @@ import torch
 
 from loaders import load_config, load_datamodule, load_model
 from metrics.evaluation import EMD_CD
+from plotting import plot_recon_3d
 
 # from plotting import plot_ect, plot_recon_3d
 
@@ -84,9 +85,16 @@ if __name__ == "__main__":
     results = []
 
     # Load the saved tensors.
-
     pcs_recon = torch.load(f"{results_base_dir}/pcs_recon.pt")
     pcs_gt = torch.load(f"{results_base_dir}/pcs_gt.pt")
+
+    # Save screenshot
+    plot_recon_3d(
+        10 * pcs_recon[:8],
+        10 * pcs_gt[:8],
+        num_pc=8,
+        filename=f"{results_base_dir}/pcs_recon_test.png",
+    )
 
     #####################################################
     ### Evaluate

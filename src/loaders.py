@@ -49,10 +49,13 @@ def load_config(path: str):
     dataconfig = load_module(config_dict["data"], classname="DataConfig")
 
     # Transform
-    transformconfig = [
-        load_module(cfg, classname="TransformConfig")
-        for cfg in config_dict["transform"]
-    ]
+    transform_list = config_dict.get("transform", None)
+    transformconfig = None
+    if transform_list is not None:
+        transformconfig = [
+            load_module(cfg, classname="TransformConfig")
+            for cfg in config_dict["transform"]
+        ]
 
     # Model
     modelconfig = load_module(config_dict["modelconfig"], classname="ModelConfig")

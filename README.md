@@ -37,6 +37,8 @@ cd dependencies
 make venv
 ```
 
+**Please note: Always import torch before either of the two packages, else you will encounter errors.**
+
 Once the dependencies are installed run `uv sync` in the 
 top level directory.
 

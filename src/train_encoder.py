@@ -48,6 +48,8 @@ def train(
     no_progressbar,
     results_base_dir,
     dev,
+    m,
+    s,
 ):
 
     step = 0
@@ -56,7 +58,8 @@ def train(
         for pcs in tqdm(dataloader, disable=no_progressbar):
             optimizer.zero_grad(set_to_none=True)
             batch_idx += 1
-            pcs = transform(pcs)
+            if transform is not None:
+                pcs = transform(pcs)
 
             ect = ecttransform(pcs).unsqueeze(1)
             pcs_recon = model(ect)
@@ -126,6 +129,8 @@ def test(
     no_progressbar,
     results_base_dir,
     dev,
+    m,
+    s,
 ):
 
     model.eval()
@@ -150,12 +155,19 @@ def test(
         pcs_recon_list.append(pcs_recon.detach().cpu())
         pcs_gt_list.append(pcs.detach().cpu())
 
-    # End of training.
+    # End of test loop.
+    pcs_recon = torch.vstack(pcs_recon_list).cpu()
+    pcs_gt = torch.vstack(pcs_gt_list).cpu()
+
+    if m is not None and s is not None:
+        pcs_recon = pcs_recon * s.cpu() + m.cpu()
+        pcs_gt = pcs_gt * s.cpu() + m.cpu()
+
     torch.save(
-        torch.vstack(pcs_recon_list).cpu(),
+        pcs_recon,
         f"{results_base_dir}/pcs_recon.pt",
     )
-    torch.save(torch.vstack(pcs_gt_list).cpu(), f"{results_base_dir}/pcs_gt.pt")
+    torch.save(pcs_gt, f"{results_base_dir}/pcs_gt.pt")
     print(f"Saving screenshot to: {results_base_dir}/pcs_final.png")
     plot_recon_3d(
         pcs_recon_list[0],
@@ -243,11 +255,15 @@ def main():
 
     # Dataloaders
     dm = load_datamodule(dataconfig, dev=dev)
+    m, s = dm.m, dm.s
     dataloader = fabric.setup_dataloaders(dm.train_dataloader)
-    valdataloader = fabric.setup_dataloaders(dm.test_dataloader)
+    valdataloader = fabric.setup_dataloaders(dm.val_dataloader)
 
-    transform = load_transform(transformconfig)
-    transform = fabric.setup_module(transform)
+    if transformconfig is not None:
+        transform = load_transform(transformconfig)
+        transform = fabric.setup_module(transform)
+    else:
+        transform = None
 
     # Create the model and dataset.
     model = load_model(modelconfig)
@@ -303,6 +319,8 @@ def main():
         no_progressbar,
         results_base_dir,
         dev,
+        m,
+        s,
     )
     test(
         fabric,
@@ -318,6 +336,8 @@ def main():
         no_progressbar,
         results_base_dir,
         dev,
+        m,
+        s,
     )
 
 
