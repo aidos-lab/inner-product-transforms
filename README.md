@@ -2,6 +2,8 @@
 
 Welcome to the repository for our work on point cloud generation. 
 
+**Please note: This is a work-in-progress repository. Expect some breaking changes!**
+
 # Installation 
 
 ## Data
