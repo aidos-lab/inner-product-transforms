@@ -1,4 +1,6 @@
-# Shape Synthesis and reconstruction
+# Point Cloud Synthesis Using Inner Product Transforms
+
+Welcome to the repository for our work on point cloud generation. 
 
 # Installation 
 
@@ -21,7 +23,10 @@ unzip ShapeNetCore.v2.PC15k.zip
 ## Virtual environment
 
 First install the dependencies and then the full virtual 
-environment. For the dependencies run 
+environment. The dependencies are known to cause some trouble at times 
+and the code is provided on an as is basis. The cuda toolkit for 
+cuda 12 is required to compile the code, which can be checked with the 
+command `nvcc`. If present you should be good to go. 
 
 ```shell
 cd dependencies
@@ -29,7 +34,7 @@ make venv
 ```
 
 Once the dependencies are installed run `uv sync` in the 
-top level directory. 
+top level directory.
 
 Motivation for the custom installation is the fact that 
 the kernel is dependent on the specific GPU architecture 
@@ -63,8 +68,8 @@ To check that model training works we can train a VAE and an encoder in the
 development environment via the commands
 
 ```
-python train.py ./configs/encoder_airplane.yaml --dev
-python train.py ./configs/vae_airplane.yaml --dev
+python train_encoder.py ./configs/encoder_airplane.yaml --dev
+python train_vae.py ./configs/vae_airplane.yaml --dev
 ```
 
 It will store the trained model under `trained_models_dev`. 

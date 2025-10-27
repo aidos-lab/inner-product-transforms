@@ -5,8 +5,8 @@ import pydantic
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from src.datasets.shapenetbase import get_datasets as get_raw_datasets
-from src.layers.ect import EctConfig
+from datasets.shapenetbase import get_datasets as get_raw_datasets
+from layers.ect import EctConfig
 
 
 class DataConfig(pydantic.BaseModel):

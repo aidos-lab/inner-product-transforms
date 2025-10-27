@@ -92,6 +92,9 @@ coverage.xml
 .pytest_cache/
 cover/
 results_dev/
+results_bak/
+configs_dev/
+configs_bak/
 
 # Translations
 *.mo

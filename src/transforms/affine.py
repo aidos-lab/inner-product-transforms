@@ -11,8 +11,8 @@ import torch
 from torch import nn
 from torchvision.transforms import ToTensor
 
-from src.layers.directions import generate_2d_directions, generate_uniform_directions
-from src.layers.ect import EctConfig, compute_ect_point_cloud
+from layers.directions import generate_2d_directions, generate_uniform_directions
+from layers.ect import EctConfig, compute_ect_point_cloud
 
 
 class TransformConfig(pydantic.BaseModel):

@@ -1,12 +1,36 @@
+#
+# Global ect config, referenced in modelconfig.
 ectconfig: &ref-ectconfig
   seed: 2024
   num_thetas: 128
   resolution: 128 
-  scale: 100
+  scale: 128
   r: 7
   ect_type: "points"
   ambient_dimension: 3
   normalized: True
+
+ectlossconfig: &ref-ectlossconfig 
+  num_thetas: 128
+  resolution: 128
+  scale: 8
+  r: 7
+  ect_type: "points"
+  ambient_dimension: 3
+  normalized: True
+  seed: 2024
+
+transform: 
+  - module: transforms.rotate
+    axis: 1
+    max_degrees: 5 
+  - module: transforms.affine
+    mean_mean: [0.0,0.0,0.0]
+    mean_std: [0.06275183707475662, 0.11978594958782196, 0.45289620757102966]
+    scale_mean: 3.407453775405884
+    scale_std: 0.4171832799911499
+    max_scale: 7
+
 
 data: 
   module: datasets.shapenet
@@ -14,35 +38,41 @@ data:
   raw_dir: ./data/shapenet/raw/ShapeNetCore.v2.PC15k
   cates: 
     - airplane
-  num_workers: 0
+  num_workers: 2
   batch_size: 64
   pin_memory: True
   drop_last: False
   force_reload: False
   ectconfig: *ref-ectconfig
 
-modelconfig:
-  module: models.vae_baseline_sampling
-  # in_channels: 1
-  latent_dim: 64
-  beta_min: 0.00000001
-  beta_max: 0.001
-  beta_period: 400
-  learning_rate: 0.0001
-  ectconfig: *ref-ectconfig 
-
-trainer:
-  accelerator: auto
-  max_epochs: 500 # Should be 20k
+trainer: &ref-trainer
+  module: trainer
+  seed : 1111
+  max_epochs: 1000 # Should be 20k
   log_every_n_steps: 1
-  save_dir: ./trained_models 
-  model_name: vae_airplane.ckpt
-  results_dir: ./results
+  accelerator: auto
+  precision: null
+  checkpoint_interval: 100
 
-loggers: 
-  logger: wandb
+modelconfig:
+  module: models.vae_baseline
+  num_pts: 2048
+  learning_rate: 0.0001
+  ectlossconfig: *ref-ectlossconfig
+  ectconfig: *ref-ectconfig
+
+logger:
+  module: loggers.wandblogger
   project: shape-synthesis
   entity: aidos-labs
-  save_dir: ./lightning_logs
-  experiment_name: "vae_airplane"
-  tags: []
+  trainconfig: *ref-trainer
+  results_dir: encoder_airplane
+
+
+# trainer:
+#   accelerator: auto
+#   max_epochs: 5000
+#   log_every_n_steps: 5
+#   save_dir: trained_models
+#   model_name: encoder_new_airplane.ckpt
+#   results_dir: ./results

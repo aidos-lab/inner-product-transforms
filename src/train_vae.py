@@ -10,15 +10,15 @@ from torch.optim import Adam
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-from src.loaders import (
+from loaders import (
     load_config,
     load_datamodule,
     load_logger,
     load_model,
     load_transform,
 )
-from src.models.discrimminator import Discrimminator, DiscrimminatorConfig
-from src.models.lpips import LPIPS
+from models.discrimminator import Discrimminator, DiscrimminatorConfig
+from models.lpips import LPIPS
 
 # Global settings.
 torch.set_float32_matmul_precision("medium")
@@ -195,7 +195,7 @@ def main():
     parser.add_argument(
         "--config",
         dest="config_path",
-        default="configs/vqvae_airplane_new.yaml",
+        default="configs/vae_airplane.yaml",
         type=str,
     )
     parser.add_argument(

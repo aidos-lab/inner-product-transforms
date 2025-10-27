@@ -1,3 +1,10 @@
+"""
+Trains the encoder given a configuration from the config folder.
+For training your own model, have a look at the encoder_airplane
+configuration.
+
+"""
+
 import argparse
 import os
 
@@ -13,16 +20,16 @@ from torchinfo import summary
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-from metrics.loss import chamfer
-from src.loaders import (
+from loaders import (
     load_config,
     load_datamodule,
     load_logger,
     load_model,
     load_transform,
 )
-from src.plotting import plot_recon_3d
-from src.transforms.ecttransform import Transform, TransformConfig
+from metrics.loss import chamfer
+from plotting import plot_recon_3d
+from transforms.ecttransform import Transform, TransformConfig
 
 torch.set_float32_matmul_precision("medium")
 
@@ -75,8 +82,6 @@ def train(
                 step=step,
             )
             step += 1
-
-            # Save output
 
             # Save model.
             if batch_idx == 0 and epoch % trainerconfig.checkpoint_interval == 0:
@@ -167,7 +172,7 @@ def main():
     parser.add_argument(
         "--config",
         dest="config_path",
-        default="configs/vqvae_airplane_new.yaml",
+        default="configs/encoder_airplane.yaml",
         type=str,
     )
     parser.add_argument(
