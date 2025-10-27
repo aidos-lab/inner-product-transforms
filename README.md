@@ -1,4 +1,6 @@
 # Point Cloud Synthesis Using Inner Product Transforms
+[![arXiv](https://img.shields.io/badge/arXiv-2410.18987-b31b1b.svg)](https://arxiv.org/abs/2410.18987) ![GitHub contributors](https://img.shields.io/github/contributors/aidos-lab/inner-product-transforms) ![GitHub](https://img.shields.io/github/license/aidos-lab/inner-product-transforms) [![Maintainability](https://qlty.sh/badges/b7958e48-8382-4fb0-ac0b-63b95b7a5426/maintainability.svg)](https://qlty.sh/gh/aidos-lab/projects/inner-product-transforms)
+
 
 Welcome to the repository for our work on point cloud generation. 
 
