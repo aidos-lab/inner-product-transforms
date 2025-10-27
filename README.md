@@ -1,4 +1,6 @@
-# Shape Synthesis and reconstruction
+# Point Cloud Synthesis Using Inner Product Transforms
+
+**Please note: This is a work-in-progress repository. Expect some breaking changes!**
 
 # Installation 
 
