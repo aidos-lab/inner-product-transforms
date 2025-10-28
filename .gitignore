@@ -1,40 +1,29 @@
 data/
-ect/
-results/
 img/
 wandb/
 scratch/
-tables/
 lightning_logs/
-lightning_logs_dev/
 **/__pycache__
 trained_models/**
-**/*.pt
-*.pt
-**.out
 trained_models**
 scratch**
 viz**
 diffusers**
 ddpm-butterflies-128/
-**/.jukit
+.jukit/
 
-**/**.npy
-**/**.svg 
-# metrics/ChamferDistancePytorch 
-# metrics/PyTorchEMD
-**.zip 
+
+*.ckpt
+*.npy
+*.svg 
+*.pt
+*.out
+*.zip 
 *.ps1
 *.txt
 figures/
 scratch/
-tables/
 visualizations/
-
-my_logs/
-shapenet/
-metrics_base/
-metrics_pointflow/
 
 trained_models_bu/
 
